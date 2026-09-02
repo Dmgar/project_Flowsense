@@ -37,10 +37,14 @@ FlowSense combines three layers:
 
 ## AWS usage
 
-- **Video processing:** EC2 instances (GPU-backed) running OpenCV/ONNX inference on video feeds.
-- **Stream ingestion:** Amazon Kinesis Video Streams (or S3 + batch processing for recorded datasets in the initial phase).
-- **Orchestration:** FastAPI backend deployed on ECS/EC2, with graph state persisted in Redis/DynamoDB.
-- The full vision pipeline (capture → inference → congestion signal) runs on AWS, not just incidental storage.
+> **Note:** No AWS credits were assigned to the team for this competition. The plan below is scoped to fit within **AWS Free Tier** limits, with GPU-backed inference deferred to local development (or a free alternative like Google Colab) until deployment.
+
+- **Video processing (dev phase):** Vehicle/pedestrian detection with OpenCV/ONNX runs **locally** on recorded datasets (UA-DETRAC/BDD100K) rather than on paid EC2 GPU instances.
+- **Video processing (deployment, if credits become available):** EC2 instances (GPU-backed) running OpenCV/ONNX inference on live video feeds.
+- **Stream ingestion:** S3 + batch processing for recorded datasets initially; Amazon Kinesis Video Streams considered only if credits/budget allow.
+- **Orchestration:** FastAPI backend deployed on a Free Tier–eligible EC2 instance (e.g. `t2.micro`/`t3.micro`), with graph state persisted in a lightweight store (Redis/DynamoDB, within free-tier limits).
+- A **billing alert** is configured from day one with a low threshold to avoid unexpected charges.
+- The full vision pipeline (capture → inference → congestion signal) is designed to run on AWS for the final deployment, but development stays local/free wherever possible given the lack of assigned credits.
 
 ## Work plan (Aug 26 – Oct 26)
 
@@ -66,7 +70,6 @@ FlowSense combines three layers:
 - **Thomas Cristhancho**
 - **Jesus Campo Yuunes** — Full stack developer
 - **Daniel Franco**
--
 
 ## Responsible use & licensing
 
@@ -81,9 +84,8 @@ FlowSense combines three layers:
 > _Setup instructions coming soon as the pipeline components are built out._
 
 ```bash
-git clone <https://github.com/Dmgar/project_Flowsense>
-cd flowsense
-# instructions TBD
+git clone https://github.com/Dmgar/project_Flowsense.git
+cd project_Flowsense
 ```
 
 ## License
