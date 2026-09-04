@@ -1,0 +1,25 @@
+# Entornos virtuales
+venv/
+.env
+
+# Caché
+__pycache__/
+*.pyc
+
+# Archivos de video y datasets pesados locales
+*.mp4
+*.avi
+*.mkv
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Pesos de modelos
+*.weights
+*.pt
+*.onnx
+
+# Archivos temporales de sistema y editores
+.vscode/
+.DS_Store
