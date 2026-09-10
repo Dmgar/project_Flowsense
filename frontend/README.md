@@ -18,7 +18,7 @@ Digital twin urbano en tiempo real para el OpenCV AI Competition 2026.
 
 ```bash
 npm install
-npm run dev        # dev server :5173 (proxy /api y /ws -> localhost:8000)
+npm run dev        # dev server :3000 (proxy /api y /ws -> localhost:8000)
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 npm run preview    # sirve el build

@@ -95,7 +95,7 @@ Scaffold `React 19 + TypeScript + Vite 8 + Tailwind CSS v4` dentro del repo.
 | `npm run lint` (oxlint) | 0 warnings, 0 errors |
 | `npx tsc -b` (typecheck) | OK |
 | `npm run build` (vite) | OK (bundle 778 kB, gzip 230 kB) |
-| Dev server Vite :5173 | 200 en todos los módulos transformados |
+| Dev server Vite :3000 | 200 en todos los módulos transformados |
 | Backend uvicorn :8000 | `GET /` operacional, 1074 nodos / 2076 aristas (Manhattan real) |
 | Proxy Vite → backend (`/api`, `/ws`) | OK |
 | End-to-end WebSocket | dispatch con savings 60.5 %, `vehicle_telemetry` fluyendo, `route_recalculated` emitido en vivo |
@@ -111,7 +111,7 @@ python -m uvicorn src.main:app --host 0.0.0.0 --port 8000
 cd frontend
 npm install
 npm run dev
-# abrir http://localhost:5173
+# abrir http://localhost:3000
 ```
 
 Flujo recomendado para el video:
