@@ -5,6 +5,7 @@ venv/
 # Caché
 __pycache__/
 *.pyc
+cache/
 
 # Archivos de video y datasets pesados locales
 *.mp4

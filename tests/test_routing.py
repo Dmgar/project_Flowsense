@@ -71,3 +71,23 @@ def test_dynamic_routing_avoids_congestion():
         assert route_2.route_id != route_1.route_id
         # The route should adapt
         assert len(route_2.waypoints) >= 2
+
+def test_dispatch_mode_reports_savings():
+    # Dispatch with simulate=True should choke the naive corridor and yield savings.
+    req = DispatchRequest(
+        origin=Coordinates(latitude=40.7500, longitude=-73.9900),
+        destination=Coordinates(latitude=40.7600, longitude=-73.9800),
+        vehicle_type="ambulance",
+        priority="high"
+    )
+
+    # Reset congestion so the scenario starts clean
+    graph_service.reset_all_congestion()
+
+    route = routing_engine.calculate_emergency_route(req, simulate=True)
+    assert route.baseline_eta_seconds > 0
+    assert route.baseline_distance_m > 0
+    # Static corridor was choked, so FlowSense must be faster
+    assert route.total_estimated_time_s < route.baseline_eta_seconds
+    assert route.savings_pct > 0
+    assert route.static_geojson is not None

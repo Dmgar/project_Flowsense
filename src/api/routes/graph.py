@@ -22,10 +22,5 @@ async def get_graph_geojson():
 @router.post("/reset")
 async def reset_graph_congestion():
     """Resets all congestion factors in the network to free flow (0.0)."""
-    G = graph_service.get_graph()
-    for _, _, _, data in G.edges(keys=True, data=True):
-        data["congestion_factor"] = 0.0
-        data["vehicle_count"] = 0
-        length = float(data.get("length", 100.0))
-        data["emergency_weight"] = length
-    return {"status": "success", "message": "All network congestion reset to 0.0."}
+    count = graph_service.reset_all_congestion()
+    return {"status": "success", "message": f"All network congestion reset to 0.0 ({count} segments)."}

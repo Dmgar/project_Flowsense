@@ -50,13 +50,21 @@ class GraphService:
         try:
             import osmnx as ox  # type: ignore
             logger.info(f"Fetching {settings.PILOT_CITY} road network via OSMnx...")
-            # Using bounding box for Manhattan
+            # Apply tight network timeouts so the dashboard never hangs on an OSM fetch.
+            try:
+                ox.settings.requests_timeout = 8
+                # Manhattan (~59 km2) fits well below the default max query area,
+                # but keep a generous cap to avoid sub-query subdivision.
+                ox.settings.max_query_area_size = 100_000 * 100_000
+            except Exception:  # pragma: no cover
+                pass
+            # Bounding box for Manhattan: (west, south, east, north) in lon/lat order.
             G = ox.graph_from_bbox(
                 bbox=(
-                    settings.PILOT_BBOX_NORTH,
+                    settings.PILOT_BBOX_WEST,
                     settings.PILOT_BBOX_SOUTH,
                     settings.PILOT_BBOX_EAST,
-                    settings.PILOT_BBOX_WEST
+                    settings.PILOT_BBOX_NORTH
                 ),
                 network_type="drive"
             )
@@ -312,6 +320,21 @@ class GraphService:
 
         return True
 
+    def reset_all_congestion(self) -> int:
+        """Resets congestion on every edge to free flow. Returns number of edges reset."""
+        G = self.get_graph()
+        count = 0
+        for _, _, _, data in G.edges(keys=True, data=True):
+            data["congestion_factor"] = 0.0
+            data["vehicle_count"] = 0
+            data["average_speed_kmh"] = settings.DEFAULT_SPEED_KMH
+            length = float(data.get("length", 100.0))
+            road_class = data.get("highway", "secondary")
+            factor = 0.85 if road_class in ("primary", "secondary") else 1.0
+            data["emergency_weight"] = length * factor
+            count += 1
+        return count
+
     def get_status(self) -> GraphStatus:
         G = self.get_graph()
         congested_count = 0
@@ -373,8 +396,11 @@ class GraphService:
                     "key": k,
                     "name": data.get("name", "Unknown"),
                     "highway": data.get("highway", "secondary"),
+                    "length": round(float(data.get("length", 0.0)), 1),
                     "length_m": round(float(data.get("length", 0.0)), 1),
                     "congestion_factor": round(cg, 2),
+                    "vehicle_count": int(data.get("vehicle_count", 0)),
+                    "average_speed_kmh": round(float(data.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)), 1),
                     "color": color,
                     "emergency_weight": round(float(data.get("emergency_weight", 0.0)), 1)
                 }

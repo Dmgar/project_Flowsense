@@ -20,7 +20,7 @@ async def compute_emergency_route(
     Computes an optimal dynamic corridor for an emergency vehicle, avoiding congestion in real time.
     """
     try:
-        route = routing_engine.calculate_emergency_route(request)
+        route = routing_engine.calculate_emergency_route(request, simulate=simulate)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

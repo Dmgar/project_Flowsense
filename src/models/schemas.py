@@ -49,6 +49,10 @@ class RouteResponse(BaseModel):
     geojson: dict[str, Any]
     status: str = "optimal"
     recalculated: bool = False
+    baseline_eta_seconds: float = 0.0
+    baseline_distance_m: float = 0.0
+    savings_pct: float = 0.0
+    static_geojson: Optional[dict[str, Any]] = None
 
 class GraphStatus(BaseModel):
     city: str
