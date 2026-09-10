@@ -24,7 +24,7 @@ export function BenchmarkPanel() {
   if (!showBenchmark) return null;
 
   return (
-    <div className="animate-fade-in absolute bottom-24 left-1/2 z-[600] w-[620px] -translate-x-1/2 rounded-lg border border-border-primary bg-bg-panel/95 p-4 shadow-2xl backdrop-blur">
+    <div className="animate-fade-in absolute bottom-24 left-1/2 z-[600] w-[min(620px,calc(100vw-1rem))] -translate-x-1/2 rounded-lg border border-border-primary bg-bg-panel/95 p-4 shadow-2xl backdrop-blur">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-text-secondary">
           Benchmark — Tiempo de Respuesta
@@ -36,7 +36,7 @@ export function BenchmarkPanel() {
           ✕
         </button>
       </div>
-      <div className="h-56">
+      <div className="h-40 md:h-56">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={CHART_DATA} layout="vertical" margin={{ left: 20, right: 20 }}>
             <CartesianGrid stroke="#1e3a5f" strokeDasharray="3 3" />

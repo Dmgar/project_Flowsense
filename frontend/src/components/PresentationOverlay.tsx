@@ -9,6 +9,8 @@ export function PresentationOverlay() {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-[900] flex flex-col justify-between p-4">
+      <div className="scanlines" />
+      <div className="scanline-beam" />
       <div className="flex items-start justify-between">
         <div>
           <h1 className="font-mono text-xl font-bold tracking-widest text-text-primary">

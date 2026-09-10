@@ -31,23 +31,31 @@ function tooltipContent(p: GeoJsonEdgeFeature['properties']): string {
   </div>`;
 }
 
+const SEVERE_THRESHOLD = 0.7;
+
 export function CongestionLayer() {
   const map = useMap();
   const geojsonEdges = useStore((s) => s.geojsonEdges);
   const pathsRef = useRef<Map<string, L.Polyline>>(new Map());
+  const severeRef = useRef<Set<string>>(new Set());
+  const pulseOnRef = useRef(false);
 
-  const renderer = useMemo(
-    () => L.canvas({ padding: 0.5, tolerance: 8 }),
-    []
-  );
+  const renderer = useMemo(() => L.canvas({ padding: 0.5, tolerance: 8 }), []);
 
   useEffect(() => {
     if (geojsonEdges.length === 0) return;
+
+    severeRef.current = new Set(
+      geojsonEdges
+        .filter((e) => (e.properties.congestion_factor ?? 0) >= SEVERE_THRESHOLD)
+        .map((e) => edgeKey(e.properties))
+    );
 
     for (const edge of geojsonEdges) {
       const path = pathsRef.current.get(edgeKey(edge.properties));
       if (path) {
         path.setStyle(edgeStyle(edge.properties));
+        path.setTooltipContent(tooltipContent(edge.properties));
       }
     }
 
@@ -68,15 +76,10 @@ export function CongestionLayer() {
         ...edgeStyle(edge.properties),
         renderer,
       });
-      path.on('mouseover', (e: L.LeafletMouseEvent) => {
-        L.tooltip({ sticky: true, direction: 'top', className: 'flowsense-tooltip' })
-          .setContent(tooltipContent(edge.properties))
-          .addTo(map);
-        (e.target as L.Path).openTooltip();
-      });
-      path.on('mouseout', () => {
-        path.closeTooltip();
-        path.unbindTooltip();
+      path.bindTooltip(tooltipContent(edge.properties), {
+        sticky: true,
+        direction: 'top',
+        className: 'flowsense-tooltip',
       });
       path.addTo(map);
       pathsRef.current.set(k, path);
@@ -84,10 +87,27 @@ export function CongestionLayer() {
   }, [renderer, map, geojsonEdges]);
 
   useEffect(() => {
+    const pulse = setInterval(() => {
+      pulseOnRef.current = !pulseOnRef.current;
+      for (const k of severeRef.current) {
+        const path = pathsRef.current.get(k);
+        if (!path) continue;
+        path.setStyle(
+          pulseOnRef.current
+            ? { opacity: 1, weight: 3 }
+            : { opacity: 0.55, weight: 1.4 }
+        );
+      }
+    }, 800);
+    return () => clearInterval(pulse);
+  }, []);
+
+  useEffect(() => {
     const current = pathsRef.current;
     return () => {
       current.forEach((p) => p.remove());
       current.clear();
+      severeRef.current.clear();
     };
   }, []);
 

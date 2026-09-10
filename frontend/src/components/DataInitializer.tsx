@@ -8,6 +8,7 @@ export function DataInitializer() {
   const setGeojsonEdges = useStore((s) => s.setGeojsonEdges);
   const setReplayFrames = useStore((s) => s.setReplayFrames);
   const addAlert = useStore((s) => s.addAlert);
+  const setIsBooted = useStore((s) => s.setIsBooted);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +43,8 @@ export function DataInitializer() {
           severity: 'warning',
           timestamp: new Date().toISOString(),
         });
+      } finally {
+        if (!cancelled) setIsBooted(true);
       }
     }
 
@@ -49,7 +52,7 @@ export function DataInitializer() {
     return () => {
       cancelled = true;
     };
-  }, [setGraphStatus, setGeojsonEdges, setReplayFrames, addAlert]);
+  }, [setGraphStatus, setGeojsonEdges, setReplayFrames, addAlert, setIsBooted]);
 
   return null;
 }

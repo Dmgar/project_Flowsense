@@ -35,7 +35,7 @@ export function AlertsFeed() {
   };
 
   return (
-    <section className="pointer-events-none absolute left-4 top-4 z-[500] flex w-72 flex-col">
+    <section className="pointer-events-none absolute left-3 top-3 z-[500] flex w-72 max-w-[calc(100vw-1rem)] flex-col md:left-4 md:top-4">
       <div className="pointer-events-auto flex items-center justify-between px-1 pb-1">
         <h2 className="font-mono text-[10px] font-bold uppercase tracking-widest text-text-muted">
           Alertas en Vivo
@@ -47,7 +47,7 @@ export function AlertsFeed() {
           LIMPIAR
         </button>
       </div>
-      <div ref={containerRef} className="pointer-events-auto max-h-56 space-y-1.5 overflow-y-auto">
+      <div ref={containerRef} className="pointer-events-auto max-h-40 space-y-1.5 overflow-y-auto md:max-h-56">
         {alerts.length === 0 && (
           <div className="rounded border border-border-subtle bg-bg-panel/80 px-3 py-2 font-mono text-[11px] text-text-muted backdrop-blur">
             Esperando alertas…

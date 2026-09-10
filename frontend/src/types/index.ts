@@ -3,17 +3,6 @@ export interface Coordinates {
   longitude: number;
 }
 
-export interface TrafficSignalUpdate {
-  u: number;
-  v: number;
-  key: number;
-  vehicle_count: number;
-  average_speed_kmh: number;
-  congestion_factor: number;
-  camera_id?: string;
-  timestamp?: string;
-}
-
 export interface RouteStep {
   node_id: number;
   latitude: number;

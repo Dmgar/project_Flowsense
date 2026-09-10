@@ -1,18 +1,23 @@
 import { useEffect, useRef } from 'react';
-import { useStore } from '../store/useStore';
+import { useStore, type ReplaySpeed } from '../store/useStore';
 
 export function ReplayController() {
   const isReplaying = useStore((s) => s.isReplaying);
   const replayFrames = useStore((s) => s.replayFrames);
+  const replaySpeed = useStore((s) => s.replaySpeed);
   const updateEdgeCongestion = useStore((s) => s.updateEdgeCongestion);
   const updateVehicle = useStore((s) => s.updateVehicle);
   const addAlert = useStore((s) => s.addAlert);
   const setActiveRoute = useStore((s) => s.setActiveRoute);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const prevPlayingRef = useRef(false);
+  const prevSpeedRef = useRef<ReplaySpeed>(replaySpeed);
 
   useEffect(() => {
     if (!isReplaying) {
-      clearInterval(intervalRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = undefined;
+      prevPlayingRef.current = false;
       return;
     }
     if (replayFrames.length === 0) return;
@@ -30,22 +35,43 @@ export function ReplayController() {
       if (frame.route) setActiveRoute(frame.route);
     };
 
-    applyFrame(replayFrames[0]);
-
-    intervalRef.current = setInterval(() => {
+    const step = () => {
       const store = useStore.getState();
       const next = store.currentReplayIndex + 1;
       if (next >= replayFrames.length) {
-        clearInterval(intervalRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+        prevPlayingRef.current = false;
         store.setIsReplaying(false);
         return;
       }
       applyFrame(replayFrames[next]);
       store.setCurrentReplayIndex(next);
-    }, 1500);
+    };
 
-    return () => clearInterval(intervalRef.current);
-  }, [isReplaying, replayFrames, updateEdgeCongestion, updateVehicle, addAlert, setActiveRoute]);
+    const startedFresh = isReplaying && !prevPlayingRef.current;
+    if (startedFresh) {
+      applyFrame(replayFrames[0]);
+      prevPlayingRef.current = true;
+    }
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(step, 1500 / replaySpeed);
+    prevSpeedRef.current = replaySpeed;
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = undefined;
+    };
+  }, [
+    isReplaying,
+    replayFrames,
+    replaySpeed,
+    updateEdgeCongestion,
+    updateVehicle,
+    addAlert,
+    setActiveRoute,
+  ]);
 
   return null;
 }

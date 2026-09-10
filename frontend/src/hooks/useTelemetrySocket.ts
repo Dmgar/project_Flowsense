@@ -28,6 +28,7 @@ export function useTelemetrySocket() {
   const addAlert = useStore((s) => s.addAlert);
   const addSecondsSaved = useStore((s) => s.addSecondsSaved);
   const setActiveRoute = useStore((s) => s.setActiveRoute);
+  const setFollowUnitId = useStore((s) => s.setFollowUnitId);
 
   function handleMessage(raw: string) {
     try {
@@ -65,6 +66,15 @@ export function useTelemetrySocket() {
         case 'vehicle_telemetry': {
           const v = msg.data as VehiclePosition;
           updateVehicle(v);
+          if (useStore.getState().autoFollowNextDispatch) {
+            useStore.getState().setAutoFollowNextDispatch(false);
+            setFollowUnitId(v.vehicle_id);
+            addAlert({
+              message: `Siguiendo ${v.vehicle_id} en vivo`,
+              severity: 'info',
+              timestamp: msg.timestamp,
+            });
+          }
           break;
         }
         case 'mission_alert': {

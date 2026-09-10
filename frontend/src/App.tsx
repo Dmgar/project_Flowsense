@@ -11,6 +11,9 @@ import { PrivacyBadge } from './components/PrivacyBadge';
 import { TimelineScrubber } from './components/TimelineScrubber';
 import { ReplayController } from './components/ReplayController';
 import { DataInitializer } from './components/DataInitializer';
+import { BootSplash } from './components/BootSplash';
+import { BottomDock } from './components/BottomDock';
+import { MobileSheets } from './components/MobileSheets';
 import { useTelemetrySocket } from './hooks/useTelemetrySocket';
 import { useStore } from './store/useStore';
 
@@ -18,19 +21,25 @@ export default function App() {
   useTelemetrySocket();
   const isPresentationMode = useStore((s) => s.isPresentationMode);
   const togglePresentationMode = useStore((s) => s.togglePresentationMode);
+  const setMobilePanel = useStore((s) => s.setMobilePanel);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isPresentationMode) {
-        togglePresentationMode();
+      if (e.key === 'Escape') {
+        if (isPresentationMode) {
+          togglePresentationMode();
+        } else if (useStore.getState().mobilePanel !== 'none') {
+          setMobilePanel('none');
+        }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isPresentationMode, togglePresentationMode]);
+  }, [isPresentationMode, togglePresentationMode, setMobilePanel]);
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-primary">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-bg-primary supports-[height:100dvh]:h-dvh supports-[width:100dvw]:w-dvw">
+      <BootSplash />
       <DataInitializer />
       <ReplayController />
       {!isPresentationMode && <StatusBar />}
@@ -46,7 +55,9 @@ export default function App() {
           <PresentationOverlay />
         </main>
         {!isPresentationMode && <Sidebar />}
+        {!isPresentationMode && <MobileSheets />}
       </div>
+      {!isPresentationMode && <BottomDock />}
     </div>
   );
 }

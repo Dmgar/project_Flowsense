@@ -24,17 +24,33 @@ export function RouteLayer() {
   const map = useMap();
   const activeRoute = useStore((s) => s.activeRoute);
   const dynamicRef = useRef<L.Polyline | null>(null);
+  const glowRef = useRef<L.Polyline | null>(null);
   const staticRef = useRef<L.Polyline | null>(null);
 
   const dynamicCoords = useMemo(() => routeToLatLngs(activeRoute), [activeRoute]);
   const staticCoords = useMemo(() => staticToLatLngs(activeRoute), [activeRoute]);
+  const recalculated = activeRoute?.recalculated === true;
 
   useEffect(() => {
-    if (dynamicRef.current) {
-      dynamicRef.current.remove();
-      dynamicRef.current = null;
-    }
+    const removeLayer = (ref: { current: L.Polyline | null }) => {
+      if (ref.current) {
+        ref.current.remove();
+        ref.current = null;
+      }
+    };
+
+    removeLayer(glowRef);
+    removeLayer(dynamicRef);
     if (!dynamicCoords?.length) return;
+
+    const glow = L.polyline(dynamicCoords, {
+      color: '#00e5ff',
+      weight: 14,
+      opacity: 0.12,
+      lineCap: 'round',
+    });
+    glow.addTo(map);
+    glowRef.current = glow;
 
     const poly = L.polyline(dynamicCoords, {
       color: '#00e5ff',
@@ -42,15 +58,22 @@ export function RouteLayer() {
       opacity: 0.95,
       dashArray: '14 8',
       lineCap: 'round',
-      className: 'animate-dash-flow',
+      className: recalculated ? 'animate-dash-flow-fast' : 'animate-dash-flow',
     });
     poly.addTo(map);
     dynamicRef.current = poly;
+
     return () => {
-      poly.remove();
-      dynamicRef.current = null;
+      if (dynamicRef.current) {
+        dynamicRef.current.remove();
+        dynamicRef.current = null;
+      }
+      if (glowRef.current) {
+        glowRef.current.remove();
+        glowRef.current = null;
+      }
     };
-  }, [map, dynamicCoords]);
+  }, [map, dynamicCoords, recalculated]);
 
   useEffect(() => {
     if (staticRef.current) {

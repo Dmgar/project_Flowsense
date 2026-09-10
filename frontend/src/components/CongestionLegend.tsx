@@ -5,7 +5,7 @@ export function CongestionLegend() {
   if (!showCongestionLayer) return null;
 
   return (
-    <div className="pointer-events-none absolute bottom-5 left-4 z-[500] rounded border border-border-primary bg-bg-panel/90 p-3 backdrop-blur">
+    <div className="pointer-events-none absolute bottom-20 left-3 z-[500] rounded border border-border-primary bg-bg-panel/90 p-3 backdrop-blur md:bottom-5 md:left-4">
       <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-text-secondary">
         Congestión
       </div>

@@ -44,7 +44,7 @@ export function LayerControls() {
     'rounded border px-3 py-1.5 font-mono text-[11px] font-bold transition-colors';
 
   return (
-    <div className="absolute bottom-6 right-4 z-[500] flex flex-col items-end gap-2">
+    <div className="absolute bottom-6 right-4 z-[500] hidden flex-col items-end gap-2 md:flex">
       <div className="flex flex-col items-end gap-2 rounded border border-border-primary bg-bg-panel/90 p-3 backdrop-blur">
         <div className="mb-1 w-full font-mono text-[10px] uppercase tracking-widest text-text-muted">
           Controles

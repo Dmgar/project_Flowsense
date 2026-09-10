@@ -9,6 +9,9 @@ import type {
   ReplayFrame,
 } from '../types';
 
+export type MobilePanel = 'none' | 'dispatch' | 'layers' | 'follow';
+export type ReplaySpeed = 1 | 2;
+
 interface FlowSenseState {
   connectionStatus: ConnectionStatus;
   setConnectionStatus: (s: ConnectionStatus) => void;
@@ -56,9 +59,20 @@ interface FlowSenseState {
   setCurrentReplayIndex: (i: number) => void;
   isReplaying: boolean;
   setIsReplaying: (v: boolean) => void;
+  replaySpeed: ReplaySpeed;
+  setReplaySpeed: (s: ReplaySpeed) => void;
 
   showPrivacyBadge: boolean;
   togglePrivacyBadge: () => void;
+
+  isBooted: boolean;
+  setIsBooted: (v: boolean) => void;
+
+  mobilePanel: MobilePanel;
+  setMobilePanel: (p: MobilePanel) => void;
+
+  autoFollowNextDispatch: boolean;
+  setAutoFollowNextDispatch: (v: boolean) => void;
 }
 
 export const useStore = create<FlowSenseState>((set) => ({
@@ -129,13 +143,24 @@ export const useStore = create<FlowSenseState>((set) => ({
   setCurrentReplayIndex: (currentReplayIndex) => set({ currentReplayIndex }),
   isReplaying: false,
   setIsReplaying: (isReplaying) => set({ isReplaying }),
+  replaySpeed: 2,
+  setReplaySpeed: (replaySpeed) => set({ replaySpeed }),
 
   showPrivacyBadge: true,
   togglePrivacyBadge: () => set((s) => ({ showPrivacyBadge: !s.showPrivacyBadge })),
+
+  isBooted: false,
+  setIsBooted: (isBooted) => set({ isBooted }),
+
+  mobilePanel: 'none',
+  setMobilePanel: (mobilePanel) => set({ mobilePanel }),
+
+  autoFollowNextDispatch: false,
+  setAutoFollowNextDispatch: (autoFollowNextDispatch) => set({ autoFollowNextDispatch }),
 }));
 
 function getCongestionColor(c: number): string {
   if (c < 0.35) return '#00e676';
-  if (c < 0.70) return '#ffab00';
+  if (c < 0.7) return '#ffab00';
   return '#ff1744';
 }
