@@ -7,6 +7,9 @@ from src.models.schemas import (
     RouteStep,
     RouteResponse,
     GraphStatus,
+    AlternativeRoutesResponse,
+    FleetDispatchRequest,
+    PerceptionStatus,
 )
 from src.models.telemetry import (
     TelemetryEventType,
@@ -22,7 +25,11 @@ __all__ = [
     "RouteStep",
     "RouteResponse",
     "GraphStatus",
+    "AlternativeRoutesResponse",
+    "FleetDispatchRequest",
+    "PerceptionStatus",
     "TelemetryEventType",
     "VehiclePositionEvent",
     "WebSocketMessage",
 ]
+

@@ -21,7 +21,21 @@ class Settings(BaseSettings):
     # Cache and directories
     DATA_PROCESSED_DIR: Path = Path("data/processed")
     GRAPH_CACHE_FILE: Path = Path("data/processed/manhattan_graph.graphml")
-    
+
+    # ---- Perception Engine (OpenCV 5) ----
+    PERCEPTION_MODEL_PATH: Path = Path("models/yolov8n.onnx")
+    PERCEPTION_CONFIDENCE: float = 0.45
+    PERCEPTION_NMS_THRESHOLD: float = 0.5
+    PERCEPTION_SKIP_FRAMES: int = 3
+    PERCEPTION_BACKEND: str = "opencv_dnn"  # "opencv_dnn" | "onnxruntime"
+    PERCEPTION_PIXELS_PER_METER: float = 12.0
+
+    # ---- Routing Optimization ----
+    ROUTING_ALGORITHM: str = "astar"  # "dijkstra" | "astar"
+    MAX_ALTERNATIVE_ROUTES: int = 3
+    NSGA2_POPULATION_SIZE: int = 50
+    NSGA2_GENERATIONS: int = 100
+
     # CORS
     ALLOWED_ORIGINS: list[str] = ["*"]
 

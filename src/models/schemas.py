@@ -116,3 +116,34 @@ class CameraTelemetryReport(BaseModel):
     average_speed_kmh: float = Field(default=35.0, ge=0.0)
     congestion_factor: float = Field(..., ge=0.0, le=1.0)
     frame_timestamp: Optional[str] = None
+
+
+# ---- Advanced Routing Schemas ----
+
+class AlternativeRoutesResponse(BaseModel):
+    """Response containing a primary route and K-1 alternative corridors."""
+    primary: RouteResponse
+    alternatives: List[RouteResponse]
+    algorithm: str = Field(default="astar", description="Algorithm used: astar, dijkstra, nsga2")
+
+
+class FleetDispatchRequest(BaseModel):
+    """Request for multi-vehicle fleet optimisation."""
+    vehicles: List[DispatchRequest]
+    optimize_for: str = Field(
+        default="min_total_eta",
+        description="Optimization objective: min_total_eta | min_max_congestion | balanced",
+    )
+
+
+# ---- Perception Engine Schemas ----
+
+class PerceptionStatus(BaseModel):
+    """Status snapshot of the perception pipeline for a camera."""
+    camera_id: str
+    pipeline_active: bool
+    model_loaded: str
+    fps_processing: float
+    last_detection_count: int
+    last_congestion_factor: float
+
