@@ -17,6 +17,7 @@ class GraphService:
     def __init__(self):
         self.graph: Optional[nx.MultiDiGraph] = None
         self.is_synthetic: bool = False
+        self.active_incidents: Dict[str, Dict[str, Any]] = {}
         self._ensure_cache_dir()
 
     def _ensure_cache_dir(self):
@@ -282,6 +283,91 @@ class GraphService:
         if best_node is None:
             raise ValueError("Graph has no nodes to find nearest match.")
         return int(best_node)
+
+    def find_nodes_in_radius(self, lat: float, lon: float, radius_m: float) -> List[int]:
+        """Finds all nodes within a given radius (meters) using Haversine approximation."""
+        G = self.get_graph()
+        nodes: List[int] = []
+        cos_lat = math.cos(math.radians(lat))
+
+        for node, data in G.nodes(data=True):
+            nx_lat = data.get("y", 0.0)
+            nx_lon = data.get("x", 0.0)
+            d_lat_m = (nx_lat - lat) * 111139.0
+            d_lon_m = (nx_lon - lon) * 111139.0 * cos_lat
+            dist_m = math.hypot(d_lat_m, d_lon_m)
+            if dist_m <= radius_m:
+                nodes.append(int(node))
+
+        # Fallback to closest node if none inside radius
+        if not nodes:
+            nodes.append(self.find_nearest_node(lat, lon))
+        return nodes
+
+    def report_incident(
+        self,
+        incident_id: str,
+        lat: float,
+        lon: float,
+        radius_m: float = 180.0,
+        block_traffic: bool = True
+    ) -> Tuple[List[int], int]:
+        """
+        Injects a localized accident or blockage on street edges near coordinates.
+        Returns (affected_node_ids, count_of_affected_edges).
+        """
+        G = self.get_graph()
+        affected_nodes = self.find_nodes_in_radius(lat, lon, radius_m)
+        affected_nodes_set = set(affected_nodes)
+        incident_backup: List[Dict[str, Any]] = []
+
+        cg = 1.0 if block_traffic else 0.85
+        multiplier = 20.0 if block_traffic else 4.0
+        affected_edges_count = 0
+
+        for u, v, k, data in G.edges(keys=True, data=True):
+            if u in affected_nodes_set or v in affected_nodes_set:
+                incident_backup.append({
+                    "u": u, "v": v, "key": k,
+                    "congestion_factor": data.get("congestion_factor", 0.0),
+                    "vehicle_count": data.get("vehicle_count", 0),
+                    "average_speed_kmh": data.get("average_speed_kmh", 50.0),
+                    "emergency_weight": data.get("emergency_weight", 100.0)
+                })
+                length = float(data.get("length", 100.0))
+                data["congestion_factor"] = cg
+                data["vehicle_count"] = 55 if block_traffic else 35
+                data["average_speed_kmh"] = 3.0 if block_traffic else 12.0
+                data["emergency_weight"] = length * multiplier
+                affected_edges_count += 1
+
+        self.active_incidents[incident_id] = {
+            "lat": lat,
+            "lon": lon,
+            "radius_m": radius_m,
+            "affected_nodes": affected_nodes,
+            "edges_backup": incident_backup
+        }
+
+        return affected_nodes, affected_edges_count
+
+    def clear_incident(self, incident_id: str) -> bool:
+        """Restores road edges affected by an incident to their prior state."""
+        if incident_id not in self.active_incidents:
+            return False
+
+        G = self.get_graph()
+        incident_data = self.active_incidents.pop(incident_id)
+        for b in incident_data.get("edges_backup", []):
+            u, v, k = b["u"], b["v"], b["key"]
+            if G.has_edge(u, v, k):
+                edge = G[u][v][k]
+                edge["congestion_factor"] = b["congestion_factor"]
+                edge["vehicle_count"] = b["vehicle_count"]
+                edge["average_speed_kmh"] = b["average_speed_kmh"]
+                edge["emergency_weight"] = b["emergency_weight"]
+
+        return True
 
     def update_edge_congestion(
         self,

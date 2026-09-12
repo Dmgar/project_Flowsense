@@ -1,9 +1,10 @@
+import uuid
 import logging
 from fastapi import APIRouter, HTTPException, status
-from src.models.schemas import TrafficSignalUpdate, BatchTrafficUpdate
+from src.models.schemas import TrafficSignalUpdate, BatchTrafficUpdate, IncidentReport
 from src.services.graph_service import graph_service
 from src.api.websockets.connection_manager import manager
-from src.models.telemetry import WebSocketMessage, TelemetryEventType
+from src.models.telemetry import WebSocketMessage, TelemetryEventType, MissionAlertEvent
 
 logger = logging.getLogger("flowsense.api.traffic")
 router = APIRouter(prefix="/traffic", tags=["Traffic Perception Ingestion"])
@@ -80,3 +81,73 @@ async def batch_update_traffic(batch: BatchTrafficUpdate):
         "applied_count": applied,
         "failed_edges": not_found
     }
+
+@router.post("/incident", response_model=dict, status_code=status.HTTP_200_OK)
+async def report_incident(incident: IncidentReport):
+    """
+    Injects a real-time localized road blockage or accident.
+    Broadcasts high-priority mission_alert and traffic_update over WebSockets.
+    """
+    incident_id = f"inc_{uuid.uuid4().hex[:6]}"
+    affected_nodes, affected_edges = graph_service.report_incident(
+        incident_id=incident_id,
+        lat=incident.latitude,
+        lon=incident.longitude,
+        radius_m=incident.radius_m,
+        block_traffic=incident.block_traffic
+    )
+
+    alert = MissionAlertEvent(
+        message=f"{incident.description} (Radio {int(incident.radius_m)}m - {affected_edges} vías afectadas)",
+        severity=incident.severity
+    )
+
+    # Broadcast mission_alert to dashboard AlertsFeed
+    await manager.broadcast(
+        WebSocketMessage(
+            event=TelemetryEventType.MISSION_ALERT,
+            data=alert.model_dump()
+        )
+    )
+
+    # Broadcast updated street network state
+    await manager.broadcast(
+        WebSocketMessage(
+            event=TelemetryEventType.TRAFFIC_UPDATE,
+            data={"incident_id": incident_id, "nodes": affected_nodes, "status": "blocked"}
+        )
+    )
+
+    return {
+        "incident_id": incident_id,
+        "affected_nodes": affected_nodes,
+        "affected_edges_count": affected_edges,
+        "message": alert.message,
+        "alert_broadcasted": True
+    }
+
+@router.post("/incident/{incident_id}/clear", status_code=status.HTTP_200_OK)
+async def clear_incident(incident_id: str):
+    """
+    Clears an active incident and restores original corridor impedance.
+    """
+    cleared = graph_service.clear_incident(incident_id)
+    if not cleared:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Active incident '{incident_id}' not found."
+        )
+
+    alert = MissionAlertEvent(
+        message=f"Incidente {incident_id} despejado. Vía rehabilitada para tránsito prioritario.",
+        severity="info"
+    )
+
+    await manager.broadcast(
+        WebSocketMessage(
+            event=TelemetryEventType.MISSION_ALERT,
+            data=alert.model_dump()
+        )
+    )
+
+    return {"status": "cleared", "incident_id": incident_id}

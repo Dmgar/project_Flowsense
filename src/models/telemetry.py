@@ -21,6 +21,11 @@ class VehiclePositionEvent(BaseModel):
     route_id: Optional[str] = None
     corridor_cleared_ahead_m: float = Field(default=250.0, description="Active emergency clearance buffer in meters")
 
+class MissionAlertEvent(BaseModel):
+    message: str
+    severity: str = Field(default="info", description="Severity: info, warning, critical")
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 class WebSocketMessage(BaseModel):
     event: TelemetryEventType
     data: Any

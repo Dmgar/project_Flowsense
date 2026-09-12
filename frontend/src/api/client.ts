@@ -49,3 +49,33 @@ export function startTrafficSimulation(interval = 3.0): Promise<unknown> {
 export function stopTrafficSimulation(): Promise<unknown> {
   return apiFetch('/api/v1/dispatch/simulate/traffic/stop', { method: 'POST' });
 }
+
+export function fetchBenchmarkSummary(): Promise<{ metrics: { metric: string; static: number; flowsense: number }[] }> {
+  return apiFetch('/api/v1/benchmark/summary');
+}
+
+export function runBenchmark(numSamples = 15): Promise<{ metrics: { metric: string; static: number; flowsense: number }[] }> {
+  return apiFetch(`/api/v1/benchmark/run?num_samples=${numSamples}`, { method: 'POST' });
+}
+
+export function fetchReplayLatest(frames = 30): Promise<unknown[]> {
+  return apiFetch(`/api/v1/replay/latest?frames=${frames}`);
+}
+
+export function reportIncident(payload: {
+  latitude: number;
+  longitude: number;
+  description?: string;
+  severity?: 'info' | 'warning' | 'critical';
+  radius_m?: number;
+  block_traffic?: boolean;
+}): Promise<unknown> {
+  return apiFetch('/api/v1/traffic/incident', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function clearIncident(incidentId: string): Promise<unknown> {
+  return apiFetch(`/api/v1/traffic/incident/${incidentId}/clear`, { method: 'POST' });
+}

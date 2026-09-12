@@ -61,3 +61,30 @@ class GraphStatus(BaseModel):
     congested_edges_count: int
     avg_congestion_factor: float
     cache_loaded: bool
+
+class IncidentReport(BaseModel):
+    latitude: float = Field(..., description="Latitude of the incident location", ge=-90.0, le=90.0)
+    longitude: float = Field(..., description="Longitude of the incident location", ge=-180.0, le=180.0)
+    description: str = Field(default="Traffic bottleneck reported", description="Brief description of the event")
+    severity: str = Field(default="critical", description="Severity level: info, warning, or critical")
+    radius_m: float = Field(default=180.0, description="Affected radius in meters", ge=50.0, le=1000.0)
+    block_traffic: bool = Field(default=True, description="Whether the street is completely impassable")
+
+class IncidentResponse(BaseModel):
+    incident_id: str
+    affected_nodes: List[int]
+    affected_edges_count: int
+    message: str
+    alert_broadcasted: bool
+
+class BenchmarkMetric(BaseModel):
+    metric: str
+    static: float
+    flowsense: float
+
+class BenchmarkSummaryResponse(BaseModel):
+    num_trips_evaluated: int
+    average_time_savings_pct: float
+    total_seconds_saved: float
+    success_rate_pct: float
+    metrics: List[BenchmarkMetric]

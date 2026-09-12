@@ -7,7 +7,13 @@ from src.core.config import settings
 from src.services.graph_service import graph_service
 from src.services.mock_simulator import simulator
 from src.api.websockets.connection_manager import manager
-from src.api.routes import traffic_router, dispatch_router, graph_router
+from src.api.routes import (
+    traffic_router,
+    dispatch_router,
+    graph_router,
+    benchmark_router,
+    replay_router,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -46,6 +52,8 @@ app.add_middleware(
 app.include_router(traffic_router, prefix=settings.API_V1_STR)
 app.include_router(dispatch_router, prefix=settings.API_V1_STR)
 app.include_router(graph_router, prefix=settings.API_V1_STR)
+app.include_router(benchmark_router, prefix=settings.API_V1_STR)
+app.include_router(replay_router, prefix=settings.API_V1_STR)
 
 # Real-Time WebSocket Telemetry Channel
 @app.websocket("/ws/telemetry")
