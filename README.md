@@ -89,8 +89,8 @@ For deep technical dives into the specific modules, check the versioned document
 | :--- | :--- | :--- | :--- |
 | 1–2 | Graph & Base Vision | Extract pilot city graph via osmnx. Implement initial vehicle detection with OpenCV 5. | ✅ Done |
 | 3–4 | Density Metrics | Build road segment impedance algorithm based on vehicle counts and flow velocity. | ✅ Done |
-| 5–6 | Emergency Routing Engine | Dynamic weight integration on networkx (A* Multi-criteria). Emergency clearance path selection. | ✅ Done |
-| 7–8 | Real-Time Dispatch Dashboard | FastAPI WebSocket pipeline connected to interactive Leaflet.js command map. | ✅ Done |
+| 5–6 | Emergency Routing Engine | Dynamic weight integration on networkx (A* Multi-criteria). Emergency clearance path selection. | 🚧 In Progress |
+| 7–8 | Real-Time Dispatch Dashboard | FastAPI WebSocket pipeline connected to interactive Leaflet.js command map. | 🚧 In Progress |
 | 9–10 | Benchmarking & Submission | Simulated response time reduction benchmarks, project video, and final documentation. | 🚧 In Progress |
 
 ## Engineering Team
