@@ -9,6 +9,8 @@ class TelemetryEventType(str, Enum):
     ROUTE_RECALCULATED = "route_recalculated"
     VEHICLE_TELEMETRY = "vehicle_telemetry"
     MISSION_ALERT = "mission_alert"
+    SIGNAL_PREEMPTION = "signal_preemption"
+    GREEN_WAVE_ACTIVE = "green_wave_active"
 
 class VehiclePositionEvent(BaseModel):
     vehicle_id: str

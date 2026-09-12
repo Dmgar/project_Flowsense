@@ -88,3 +88,31 @@ class BenchmarkSummaryResponse(BaseModel):
     total_seconds_saved: float
     success_rate_pct: float
     metrics: List[BenchmarkMetric]
+
+class TrafficLightState(BaseModel):
+    node_id: int
+    intersection_name: str
+    state: str = Field(default="normal", description="normal, preempted, clearing")
+    cleared_direction_deg: Optional[float] = None
+    preempted_by_vehicle: Optional[str] = None
+    expires_at: Optional[str] = None
+
+class CameraDevice(BaseModel):
+    camera_id: str
+    name: str
+    intersection_node: int
+    latitude: float
+    longitude: float
+    bearing_degrees: float = 0.0
+    status: str = "online"
+    latest_vehicle_count: int = 0
+    latest_speed_kmh: float = 45.0
+    latest_congestion_factor: float = 0.0
+    last_update: Optional[str] = None
+
+class CameraTelemetryReport(BaseModel):
+    camera_id: str
+    vehicle_count: int = Field(..., ge=0)
+    average_speed_kmh: float = Field(default=35.0, ge=0.0)
+    congestion_factor: float = Field(..., ge=0.0, le=1.0)
+    frame_timestamp: Optional[str] = None

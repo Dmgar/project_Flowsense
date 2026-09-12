@@ -79,3 +79,37 @@ export function reportIncident(payload: {
 export function clearIncident(incidentId: string): Promise<unknown> {
   return apiFetch(`/api/v1/traffic/incident/${incidentId}/clear`, { method: 'POST' });
 }
+
+export function fetchSignals(): Promise<unknown[]> {
+  return apiFetch('/api/v1/signals');
+}
+
+export function fetchActiveSignals(): Promise<unknown[]> {
+  return apiFetch('/api/v1/signals/active');
+}
+
+export function preemptSignal(nodeId: number, vehicleId = 'EMS-MEDIC-101', duration = 20): Promise<unknown> {
+  return apiFetch(`/api/v1/signals/${nodeId}/preempt?vehicle_id=${vehicleId}&duration_seconds=${duration}`, { method: 'POST' });
+}
+
+export function releaseSignal(nodeId: number): Promise<unknown> {
+  return apiFetch(`/api/v1/signals/${nodeId}/release`, { method: 'POST' });
+}
+
+export function fetchCameras(): Promise<unknown[]> {
+  return apiFetch('/api/v1/cameras');
+}
+
+export function fetchCamerasGeoJson(): Promise<GeoJSON.FeatureCollection> {
+  return apiFetch('/api/v1/cameras/geojson');
+}
+
+export function sendCameraTelemetry(
+  cameraId: string,
+  payload: { vehicle_count: number; average_speed_kmh?: number; congestion_factor: number }
+): Promise<unknown> {
+  return apiFetch(`/api/v1/cameras/${cameraId}/telemetry`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

@@ -13,6 +13,8 @@ from src.api.routes import (
     graph_router,
     benchmark_router,
     replay_router,
+    signals_router,
+    cameras_router,
 )
 
 # Configure logging
@@ -54,6 +56,8 @@ app.include_router(dispatch_router, prefix=settings.API_V1_STR)
 app.include_router(graph_router, prefix=settings.API_V1_STR)
 app.include_router(benchmark_router, prefix=settings.API_V1_STR)
 app.include_router(replay_router, prefix=settings.API_V1_STR)
+app.include_router(signals_router, prefix=settings.API_V1_STR)
+app.include_router(cameras_router, prefix=settings.API_V1_STR)
 
 # Real-Time WebSocket Telemetry Channel
 @app.websocket("/ws/telemetry")

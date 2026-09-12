@@ -6,6 +6,7 @@ from typing import Optional
 from src.core.config import settings
 from src.services.graph_service import graph_service
 from src.services.routing_engine import routing_engine
+from src.services.signal_service import signal_service
 from src.api.websockets.connection_manager import manager
 from src.models.schemas import RouteResponse, DispatchRequest, Coordinates
 from src.models.telemetry import (
@@ -142,6 +143,18 @@ class MockSimulator:
                     data=telemetry.model_dump()
                 )
                 await manager.broadcast(msg)
+
+                # Dynamically trigger intelligent Green Wave for intersections ahead
+                try:
+                    await signal_service.update_green_wave_corridor(
+                        vehicle_id=vehicle_id,
+                        current_wp_idx=waypoint_idx,
+                        waypoints=guard,
+                        clearance_lookahead_count=3
+                    )
+                except Exception as e:
+                    logger.debug(f"Signal preemption update skipped: {e}")
+
                 await asyncio.sleep(1.5)
 
                 waypoint_idx += 1
@@ -181,6 +194,10 @@ class MockSimulator:
                             break
                     except Exception as e:
                         logger.warning(f"Route recalculation skipped: {e}")
+
+        # Release all remaining preemption signals upon reaching destination
+        for wp in current_route.waypoints:
+            await signal_service.release_intersection(wp.node_id)
 
         logger.info(f"Emergency vehicle {vehicle_id} reached destination.")
 
