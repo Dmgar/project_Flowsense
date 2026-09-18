@@ -135,6 +135,19 @@ class FleetDispatchRequest(BaseModel):
         description="Optimization objective: min_total_eta | min_max_congestion | balanced",
     )
 
+class RerouteRequest(BaseModel):
+    """Request to recalculate dynamic emergency route mid-transit."""
+    route_id: str = Field(..., description="ID of the currently active route being updated")
+    current_position: Coordinates = Field(..., description="Current GPS coordinates of the vehicle")
+    destination: Coordinates = Field(..., description="Destination GPS coordinates")
+    vehicle_type: str = Field(default="ambulance", description="Vehicle type: ambulance or fire_truck")
+    priority: str = Field(default="critical", description="Emergency priority level")
+
+class ClearanceCorridorRequest(BaseModel):
+    """Request to apply green wave pre-clearance impedance reductions along a path."""
+    path_nodes: List[int] = Field(..., description="Ordered list of node IDs forming the corridor")
+    reduction_factor: float = Field(default=0.3, ge=0.05, le=0.8, description="Percentage impedance reduction")
+
 
 # ---- Perception Engine Schemas ----
 

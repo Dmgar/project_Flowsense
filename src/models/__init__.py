@@ -9,6 +9,8 @@ from src.models.schemas import (
     GraphStatus,
     AlternativeRoutesResponse,
     FleetDispatchRequest,
+    RerouteRequest,
+    ClearanceCorridorRequest,
     PerceptionStatus,
 )
 from src.models.telemetry import (
@@ -27,6 +29,8 @@ __all__ = [
     "GraphStatus",
     "AlternativeRoutesResponse",
     "FleetDispatchRequest",
+    "RerouteRequest",
+    "ClearanceCorridorRequest",
     "PerceptionStatus",
     "TelemetryEventType",
     "VehiclePositionEvent",

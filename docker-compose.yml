@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowsense-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=FlowSense - Priority Routing & Perception
+      - PILOT_CITY=New York (Manhattan)
+      - CONGESTION_ALPHA=3.0
+      - ROUTING_ALGORITHM=astar
+    volumes:
+      - ./data/processed:/app/data/processed
+    networks:
+      - flowsense-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flowsense-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - flowsense-net
+
+networks:
+  flowsense-net:
+    driver: bridge
