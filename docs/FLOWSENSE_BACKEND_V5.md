@@ -64,6 +64,19 @@ Normaliza automáticamente longitudes, límites de velocidad y pesos de emergenc
 
 ---
 
+### 5. Resiliencia de Serialización GraphML y Compatibilidad CI
+
+- **Corrección en Restauración de Corredores (`src/api/routes/dispatch.py`):**
+  - Se corrigió la validación `if backup is None:` en lugar de `if not backup:`. Esto evita falsos errores `404 Not Found` cuando una solicitud de despeje no tiene aristas que modificar pero el identificador de corredor sí existe en memoria.
+- **Soporte Bimodal (Enteros y Cadenas) para IDs de Nodos (`src/services/routing_engine.py`):**
+  - Los métodos `precompute_clearance_corridor` y `restore_corridor_weights` ahora verifican automáticamente tanto claves enteras (`int`) como representaciones en texto (`str`), garantizando compatibilidad idéntica entre grafos sintéticos y grafos importados vía GraphML u OSMnx.
+- **Saneamiento de Atributos de Grafo (`src/services/graph_service.py` y `scripts/download_city_graph.py`):**
+  - Se normalizan atributos complejos de OSMnx (listas de etiquetas viales como `osmid` o `highway`) a cadenas escalares antes de llamar a `nx.write_graphml()`, eliminando excepciones `TypeError: GraphML writer does not support <class 'list'>`.
+- **Nodos Dinámicos en Pruebas (`tests/test_dispatch_advanced.py`):**
+  - Las pruebas de despacho obtienen nodos reales calculados a partir de rutas dinámicas activas, asegurando una ejecución 100% exitosa tanto en entornos de desarrollo local como en los runners de GitHub Actions en Ubuntu.
+
+---
+
 ## 🧪 Pruebas Automatizadas
 
 Se añadieron pruebas de integración en `tests/test_dispatch_advanced.py`:

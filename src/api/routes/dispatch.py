@@ -138,7 +138,7 @@ async def restore_clearance_corridor(corridor_id: str = Query(...)):
     Restores original weights of a previously cleared corridor.
     """
     backup = _active_corridor_backups.pop(corridor_id, None)
-    if not backup:
+    if backup is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Corridor '{corridor_id}' not found.")
     restored = routing_engine.restore_corridor_weights(backup)
     return {"status": "restored", "corridor_id": corridor_id, "edges_restored": restored}

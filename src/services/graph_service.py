@@ -231,10 +231,20 @@ class GraphService:
         for node_id, data in self.graph.nodes(data=True):
             data["x"] = float(data.get("x", -73.9850))
             data["y"] = float(data.get("y", 40.7580))
+            # Sanitize node attributes for GraphML serialization
+            for k, v in list(data.items()):
+                if isinstance(v, (list, tuple, set)):
+                    data[k] = ",".join(str(item) for item in v)
+                elif not isinstance(v, (str, int, float, bool)):
+                    data[k] = str(v)
 
         for u, v, k, data in self.graph.edges(keys=True, data=True):
             # Ensure length is float
-            length = float(data.get("length", 100.0))
+            raw_len = data.get("length", 100.0)
+            if isinstance(raw_len, (list, tuple)):
+                length = float(raw_len[0])
+            else:
+                length = float(raw_len)
             data["length"] = length
             
             # Ensure congestion factor
@@ -252,6 +262,13 @@ class GraphService:
             # W_e = length * (1 + alpha * congestion) * road_class_factor
             emergency_weight = length * (1.0 + settings.CONGESTION_ALPHA * congestion) * road_class_factor
             data["emergency_weight"] = emergency_weight
+
+            # Sanitize edge attributes for GraphML serialization
+            for ek, ev in list(data.items()):
+                if isinstance(ev, (list, tuple, set)):
+                    data[ek] = ",".join(str(item) for item in ev)
+                elif not isinstance(ev, (str, int, float, bool)):
+                    data[ek] = str(ev)
 
     def _save_cache(self):
         if self.graph:

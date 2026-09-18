@@ -392,13 +392,23 @@ class RoutingEngine:
         for idx in range(len(path_nodes) - 1):
             u, v = path_nodes[idx], path_nodes[idx + 1]
             edge_data = G.get_edge_data(u, v)
+            target_u, target_v = u, v
+            if not edge_data:
+                target_u, target_v = str(u), str(v)
+                edge_data = G.get_edge_data(target_u, target_v)
+            if not edge_data:
+                try:
+                    target_u, target_v = int(u), int(v)
+                    edge_data = G.get_edge_data(target_u, target_v)
+                except (ValueError, TypeError):
+                    pass
             if not edge_data:
                 continue
 
             for k, data in edge_data.items():
                 original_weight = float(data.get("emergency_weight", 100.0))
                 backup.append({
-                    "u": u, "v": v, "key": k,
+                    "u": target_u, "v": target_v, "key": k,
                     "original_weight": original_weight,
                 })
                 data["emergency_weight"] = round(original_weight * multiplier, 2)
@@ -421,6 +431,9 @@ class RoutingEngine:
             u, v, k = entry["u"], entry["v"], entry["key"]
             if G.has_edge(u, v, k):
                 G[u][v][k]["emergency_weight"] = entry["original_weight"]
+                count += 1
+            elif G.has_edge(str(u), str(v), k):
+                G[str(u)][str(v)][k]["emergency_weight"] = entry["original_weight"]
                 count += 1
         logger.info(f"Clearance corridor restored: {count} edges reset.")
         return count

@@ -53,7 +53,8 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
     # Normalize weights and attributes for FlowSense routing engine
     print("[INFO] Normalizing edge impedances and emergency weights...")
     for u, v, k, data in G.edges(keys=True, data=True):
-        length = float(data.get("length", 100.0))
+        raw_len = data.get("length", 100.0)
+        length = float(raw_len[0]) if isinstance(raw_len, (list, tuple)) else float(raw_len)
         data["length"] = length
         data["congestion_factor"] = 0.0
         data["vehicle_count"] = 0
@@ -61,6 +62,18 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
         road_type = str(data.get("highway", "secondary"))
         factor = 0.85 if ("primary" in road_type or "trunk" in road_type) else 1.0
         data["emergency_weight"] = length * factor
+        for ek, ev in list(data.items()):
+            if isinstance(ev, (list, tuple, set)):
+                data[ek] = ",".join(str(item) for item in ev)
+            elif not isinstance(ev, (str, int, float, bool)):
+                data[ek] = str(ev)
+
+    for node_id, data in G.nodes(data=True):
+        for nk, nv in list(data.items()):
+            if isinstance(nv, (list, tuple, set)):
+                data[nk] = ",".join(str(item) for item in nv)
+            elif not isinstance(nv, (str, int, float, bool)):
+                data[nk] = str(nv)
 
     print(f"[INFO] Saving GraphML cache to: {target_file}...")
     nx.write_graphml(G, str(target_file))

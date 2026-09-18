@@ -75,18 +75,34 @@ def test_reroute_endpoint(client: TestClient):
     assert updated_route["total_distance_m"] > 0
 
 def test_corridor_preempt_and_restore_endpoints(client: TestClient):
-    # Preempt corridor
+    # Preempt corridor using node IDs from an actual dispatched route
+    init_payload = {
+        "origin": {"latitude": 40.7490, "longitude": -73.9920},
+        "destination": {"latitude": 40.7600, "longitude": -73.9780},
+        "vehicle_type": "ambulance",
+        "priority": "critical"
+    }
+    route_resp = client.post("/api/v1/dispatch/route", json=init_payload)
+    assert route_resp.status_code == 200
+    route_data = route_resp.json()
+    path_nodes = route_data.get("path_node_ids", [])[:4]
+
     preempt_payload = {
-        "path_nodes": [1000, 1001, 1002],
+        "path_nodes": path_nodes,
         "reduction_factor": 0.35
     }
     preempt_resp = client.post("/api/v1/dispatch/corridor/preempt", json=preempt_payload)
     assert preempt_resp.status_code == 200
     data = preempt_resp.json()
     assert data["status"] == "applied"
+    assert "corridor_id" in data
     corridor_id = data["corridor_id"]
 
     # Restore corridor
     restore_resp = client.post(f"/api/v1/dispatch/corridor/restore?corridor_id={corridor_id}")
     assert restore_resp.status_code == 200
     assert restore_resp.json()["status"] == "restored"
+
+    # Restoring nonexistent corridor should return 404
+    bad_restore = client.post("/api/v1/dispatch/corridor/restore?corridor_id=non_existent_corridor_xyz")
+    assert bad_restore.status_code == 404
