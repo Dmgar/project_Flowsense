@@ -41,14 +41,31 @@ def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node):
     straight-line geographic distance, which is always ≤ the road-network
     distance encoded in ``emergency_weight``.
     """
-    target_data = G.nodes[target_node]
+    target_data = G.nodes.get(target_node)
+    if target_data is None:
+        if str(target_node) in G.nodes:
+            target_node = str(target_node)
+            target_data = G.nodes[target_node]
+        elif isinstance(target_node, str) and target_node.isdigit() and int(target_node) in G.nodes:
+            target_node = int(target_node)
+            target_data = G.nodes[target_node]
+        else:
+            raise KeyError(f"Target node {target_node} not found in graph.")
+
     t_lat = float(target_data.get("y", 0.0))
     t_lon = float(target_data.get("x", 0.0))
 
     def heuristic(u, v):
         # In nx.astar_path, the heuristic receives (current, target).
         # 'u' is the node being expanded.
-        u_data = G.nodes[u]
+        u_data = G.nodes.get(u)
+        if u_data is None:
+            if str(u) in G.nodes:
+                u_data = G.nodes[str(u)]
+            elif isinstance(u, str) and u.isdigit() and int(u) in G.nodes:
+                u_data = G.nodes[int(u)]
+            else:
+                u_data = {}
         u_lat = float(u_data.get("y", 0.0))
         u_lon = float(u_data.get("x", 0.0))
         return _haversine_m(u_lat, u_lon, t_lat, t_lon)
@@ -91,7 +108,10 @@ class RoutingEngine:
         total_time_seconds = 0.0
 
         for idx in range(len(path_nodes)):
-            node_data = G.nodes[path_nodes[idx]]
+            node_key = path_nodes[idx]
+            node_data = G.nodes.get(node_key)
+            if node_data is None:
+                node_data = G.nodes.get(str(node_key)) or G.nodes.get(int(node_key) if str(node_key).isdigit() else node_key, {})
             lat = float(node_data.get("y", 0.0))
             lon = float(node_data.get("x", 0.0))
             corridor_coords.append([lon, lat])
@@ -101,7 +121,15 @@ class RoutingEngine:
             street_name = node_data.get("street") or node_data.get("name")
 
             if idx < len(path_nodes) - 1:
-                edge_candidates = G[path_nodes[idx]][path_nodes[idx + 1]]
+                u, v = path_nodes[idx], path_nodes[idx + 1]
+                edge_candidates = G.get_edge_data(u, v)
+                if not edge_candidates:
+                    edge_candidates = G.get_edge_data(str(u), str(v))
+                if not edge_candidates:
+                    if str(u).isdigit() and str(v).isdigit():
+                        edge_candidates = G.get_edge_data(int(u), int(v))
+                if not edge_candidates:
+                    edge_candidates = {0: {}}
                 best_key = min(edge_candidates.keys(), key=lambda k: edge_candidates[k].get("emergency_weight", 1000.0))
                 edge = edge_candidates[best_key]
 
@@ -190,16 +218,26 @@ class RoutingEngine:
 
     def _find_path_dijkstra(self, G: nx.MultiDiGraph, source: int, target: int, weight: str = "emergency_weight") -> List[int]:
         """Compute shortest path using Dijkstra's algorithm."""
-        return nx.shortest_path(G, source=source, target=target, weight=weight)
+        if source not in G.nodes and str(source) in G.nodes:
+            source = str(source)
+        if target not in G.nodes and str(target) in G.nodes:
+            target = str(target)
+        raw_path = nx.shortest_path(G, source=source, target=target, weight=weight)
+        return [int(p) if isinstance(p, str) and p.isdigit() else p for p in raw_path]
 
     def _find_path_astar(self, G: nx.MultiDiGraph, source: int, target: int, weight: str = "emergency_weight") -> List[int]:
         """
         Compute shortest path using A* with a Haversine heuristic.
         Falls back to Dijkstra if A* fails (e.g., disconnected components).
         """
+        if source not in G.nodes and str(source) in G.nodes:
+            source = str(source)
+        if target not in G.nodes and str(target) in G.nodes:
+            target = str(target)
         heuristic = _make_haversine_heuristic(G, target)
         try:
-            return list(nx.astar_path(G, source=source, target=target, heuristic=heuristic, weight=weight))
+            raw_path = list(nx.astar_path(G, source=source, target=target, heuristic=heuristic, weight=weight))
+            return [int(p) if isinstance(p, str) and p.isdigit() else p for p in raw_path]
         except nx.NetworkXNoPath:
             raise
         except Exception as e:
@@ -324,11 +362,19 @@ class RoutingEngine:
                 simple_G.add_edge(u, v, emergency_weight=w)
 
         # Use networkx's built-in K shortest simple paths on the simplified graph
+        src_match = source_node
+        tgt_match = target_node
+        if src_match not in simple_G.nodes and str(src_match) in simple_G.nodes:
+            src_match = str(src_match)
+        if tgt_match not in simple_G.nodes and str(tgt_match) in simple_G.nodes:
+            tgt_match = str(tgt_match)
+
         try:
-            k_paths_iter = nx.shortest_simple_paths(simple_G, source_node, target_node, weight="emergency_weight")
+            k_paths_iter = nx.shortest_simple_paths(simple_G, src_match, tgt_match, weight="emergency_weight")
             selected_paths = []
             for i, path in enumerate(k_paths_iter):
-                selected_paths.append(path)
+                int_path = [int(p) if isinstance(p, str) and p.isdigit() else p for p in path]
+                selected_paths.append(int_path)
                 if i + 1 >= k:
                     break
         except nx.NetworkXNoPath:

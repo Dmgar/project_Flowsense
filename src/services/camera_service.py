@@ -42,7 +42,7 @@ class CameraService:
 
         for cam_id, name, lat, lon, bearing in cctv_configs:
             nearest_node = graph_service.find_nearest_node(lat, lon)
-            node_data = G.nodes[nearest_node]
+            node_data = G.nodes.get(nearest_node) or G.nodes.get(str(nearest_node), {})
 
             self._cameras[cam_id] = {
                 "camera_id": cam_id,

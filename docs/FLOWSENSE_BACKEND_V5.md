@@ -72,6 +72,11 @@ Normaliza automáticamente longitudes, límites de velocidad y pesos de emergenc
   - Los métodos `precompute_clearance_corridor` y `restore_corridor_weights` ahora verifican automáticamente tanto claves enteras (`int`) como representaciones en texto (`str`), garantizando compatibilidad idéntica entre grafos sintéticos y grafos importados vía GraphML u OSMnx.
 - **Saneamiento de Atributos de Grafo (`src/services/graph_service.py` y `scripts/download_city_graph.py`):**
   - Se normalizan atributos complejos de OSMnx (listas de etiquetas viales como `osmid` o `highway`) a cadenas escalares antes de llamar a `nx.write_graphml()`, eliminando excepciones `TypeError: GraphML writer does not support <class 'list'>`.
+- **Carga de Caché GraphML Tipada e Inmutable (`src/services/graph_service.py`):**
+  - Se invoca `nx.read_graphml(path, node_type=int, force_multigraph=True)`. Al definir `node_type=int`, se evita que NetworkX convierta silenciosamente los identificadores numéricos de nodos a cadenas (`str`), lo cual provocaba `KeyError` al indexar `G.nodes[node_id]`.
+  - En `_normalize_graph_attributes()`, se asegura la conversión a `MultiDiGraph` y se re-etiquetan con `nx.relabel_nodes()` cualquier identificador de nodo residual en formato texto.
+- **Acceso Resiliente a Nodos en Enrutamiento (`src/services/routing_engine.py` y `src/services/camera_service.py`):**
+  - Las funciones heurísticas de Haversine (`_make_haversine_heuristic`), los algoritmos de búsqueda (`_find_path_astar`, `_find_path_dijkstra`), el generador de $K$-alternativas y la asignación de cámaras implementan resolución adaptativa `G.nodes.get(node) or G.nodes.get(str(node))` protegiendo los cálculos contra cualquier disparidad de tipos.
 - **Nodos Dinámicos en Pruebas (`tests/test_dispatch_advanced.py`):**
   - Las pruebas de despacho obtienen nodos reales calculados a partir de rutas dinámicas activas, asegurando una ejecución 100% exitosa tanto en entornos de desarrollo local como en los runners de GitHub Actions en Ubuntu.
 

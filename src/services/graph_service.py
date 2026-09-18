@@ -29,8 +29,11 @@ class GraphService:
         if cache_path.exists():
             try:
                 logger.info(f"Loading graph from local cache: {cache_path}")
-                self.graph = nx.read_graphml(str(cache_path))
-                # Ensure node coordinates and numeric edge attributes are float
+                try:
+                    self.graph = nx.read_graphml(str(cache_path), node_type=int, force_multigraph=True)
+                except Exception:
+                    self.graph = nx.read_graphml(str(cache_path), force_multigraph=True)
+                # Ensure node coordinates and numeric edge attributes are float, and node keys are int
                 self._normalize_graph_attributes()
                 logger.info(f"Graph loaded successfully with {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges.")
                 return
@@ -224,9 +227,20 @@ class GraphService:
         return G
 
     def _normalize_graph_attributes(self):
-        """Ensures all nodes and edges have valid coordinates and numeric weights."""
+        """Ensures all nodes and edges have valid coordinates and numeric weights, and integer node IDs."""
         if not self.graph:
             return
+
+        if not isinstance(self.graph, nx.MultiDiGraph):
+            self.graph = nx.MultiDiGraph(self.graph)
+
+        # Relabel any string-encoded integer node IDs to int
+        relabel_map = {}
+        for n in self.graph.nodes():
+            if isinstance(n, str) and (n.isdigit() or (n.startswith('-') and n[1:].isdigit())):
+                relabel_map[n] = int(n)
+        if relabel_map:
+            self.graph = nx.relabel_nodes(self.graph, relabel_map)
 
         for node_id, data in self.graph.nodes(data=True):
             data["x"] = float(data.get("x", -73.9850))
@@ -470,8 +484,8 @@ class GraphService:
         features: List[Dict[str, Any]] = []
 
         for u, v, k, data in G.edges(keys=True, data=True):
-            u_data = G.nodes[u]
-            v_data = G.nodes[v]
+            u_data = G.nodes.get(u) or G.nodes.get(str(u), {})
+            v_data = G.nodes.get(v) or G.nodes.get(str(v), {})
 
             coords = [
                 [float(u_data.get("x", 0.0)), float(u_data.get("y", 0.0))],
