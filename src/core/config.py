@@ -8,10 +8,12 @@ class Settings(BaseSettings):
     
     # Pilot City Configuration (New York - Manhattan)
     PILOT_CITY: str = "New York (Manhattan)"
-    PILOT_BBOX_NORTH: float = 40.7700
-    PILOT_BBOX_SOUTH: float = 40.7300
-    PILOT_BBOX_EAST: float = -73.9700
-    PILOT_BBOX_WEST: float = -74.0100
+    # Cover Manhattan from the southern tip through Inwood so nearby routes
+    # do not silently snap to the edge of a small midtown-only graph.
+    PILOT_BBOX_NORTH: float = 40.8800
+    PILOT_BBOX_SOUTH: float = 40.7000
+    PILOT_BBOX_EAST: float = -73.9000
+    PILOT_BBOX_WEST: float = -74.0200
     
     # Dynamic Routing Parameters
     # Formula: W_e = Length * (1 + alpha * CongestionFactor) * RoadClassFactor

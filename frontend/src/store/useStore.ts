@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   GraphStatus,
+  Coordinates,
   RouteResponse,
   VehiclePosition,
   MissionAlert,
@@ -11,6 +12,11 @@ import type {
 
 export type MobilePanel = 'none' | 'dispatch' | 'layers' | 'follow';
 export type ReplaySpeed = 1 | 2;
+
+export interface MapPlace extends Coordinates {
+  label: string;
+  category: 'hospital' | 'fire_station' | 'water' | 'destination';
+}
 
 interface FlowSenseState {
   connectionStatus: ConnectionStatus;
@@ -28,6 +34,8 @@ interface FlowSenseState {
 
   activeRoute: RouteResponse | null;
   setActiveRoute: (r: RouteResponse | null) => void;
+  routeOptions: RouteResponse[];
+  setRouteOptions: (routes: RouteResponse[]) => void;
 
   vehicles: Record<string, VehiclePosition>;
   updateVehicle: (v: VehiclePosition) => void;
@@ -73,6 +81,11 @@ interface FlowSenseState {
 
   autoFollowNextDispatch: boolean;
   setAutoFollowNextDispatch: (v: boolean) => void;
+
+  origin: MapPlace;
+  setOrigin: (p: MapPlace) => void;
+  destination: MapPlace | null;
+  setDestination: (p: MapPlace | null) => void;
 }
 
 export const useStore = create<FlowSenseState>((set) => ({
@@ -101,11 +114,13 @@ export const useStore = create<FlowSenseState>((set) => ({
       ),
     })),
 
-  showCongestionLayer: true,
+  showCongestionLayer: false,
   toggleCongestionLayer: () => set((s) => ({ showCongestionLayer: !s.showCongestionLayer })),
 
   activeRoute: null,
   setActiveRoute: (activeRoute) => set({ activeRoute }),
+  routeOptions: [],
+  setRouteOptions: (routeOptions) => set({ routeOptions }),
 
   vehicles: {},
   updateVehicle: (v) =>
@@ -157,6 +172,11 @@ export const useStore = create<FlowSenseState>((set) => ({
 
   autoFollowNextDispatch: false,
   setAutoFollowNextDispatch: (autoFollowNextDispatch) => set({ autoFollowNextDispatch }),
+
+  origin: { label: 'Times Square, Manhattan', latitude: 40.758, longitude: -73.9855, category: 'destination' },
+  setOrigin: (origin) => set({ origin }),
+  destination: null,
+  setDestination: (destination) => set({ destination }),
 }));
 
 function getCongestionColor(c: number): string {

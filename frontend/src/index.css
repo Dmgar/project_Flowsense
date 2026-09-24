@@ -348,3 +348,160 @@ body,
   );
   animation: scanline-move 6s linear infinite;
 }
+
+/* ---------- FlowSense map-first interface ---------- */
+
+:root {
+  color-scheme: light;
+  --color-bg-primary: #f4f6f8;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #f6f8f7;
+  --color-bg-panel: #ffffff;
+  --color-bg-hover: #edf3ef;
+  --color-border-primary: #e3e9e5;
+  --color-border-subtle: #e8edea;
+  --color-text-primary: #25332c;
+  --color-text-secondary: #66736b;
+  --color-text-muted: #89958e;
+  --color-text-accent: #26734d;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body,
+#root {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  color-scheme: light;
+  font-family: var(--font-sans);
+}
+
+.app-shell { display: flex; width: 100%; height: 100dvh; min-height: 0; flex-direction: column; overflow: hidden; background: #f4f6f8; }
+.app-header { position: relative; z-index: 650; display: flex; height: 62px; flex: none; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #e8ece9; background: #fff; padding: 0 26px; }
+.header-brand { display: flex; align-items: center; gap: 9px; color: #26362d; font-size: 15px; font-weight: 750; letter-spacing: -0.35px; text-decoration: none; }
+.brand-mark { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 10px; background: #e9f4ed; color: #287a50; font-size: 17px; font-weight: 800; }
+.header-city { position: absolute; left: 50%; display: flex; align-items: center; gap: 7px; transform: translateX(-50%); color: #58665e; font-size: 12px; font-weight: 550; }
+.city-pin { color: #408b61; font-size: 18px; }
+.header-divider { color: #c0c9c3; }
+.header-status { display: flex; align-items: center; gap: 7px; color: #7c8981; font-size: 11px; }
+.header-status i, .service-status i, .route-summary-top i { width: 7px; height: 7px; border-radius: 50%; background: #e7a24a; }
+.header-status i.connected, .service-status.is-online i, .route-summary-top i { background: #43a46a; }
+.map-stage { position: relative; min-height: 0; flex: 1; overflow: hidden; }
+.map-stage > div:first-child { position: absolute; inset: 0; }
+.leaflet-container { background: #e8ece9 !important; color: #33423a; font-family: var(--font-sans); cursor: crosshair; }
+.leaflet-control-zoom { overflow: hidden; border: 1px solid #e4e9e6 !important; border-radius: 12px !important; box-shadow: 0 3px 12px #20372b14 !important; }
+.leaflet-control-zoom a { width: 34px !important; height: 34px !important; border-color: #edf0ee !important; background: #fff !important; color: #4c5d53 !important; line-height: 34px !important; }
+.leaflet-control-attribution { border-radius: 7px 0 0 0; background: #ffffffd9 !important; color: #77837b !important; font-size: 9px !important; }
+.leaflet-control-attribution a { color: #4b8060 !important; }
+.place-pin-shell, .origin-marker-shell { border: 0; background: transparent; }
+.place-pin { display: block; position: relative; width: 26px; height: 26px; border: 3px solid #fff; border-radius: 50% 50% 50% 4px; background: #df685b; box-shadow: 0 2px 8px #31453a50; transform: rotate(-45deg); }
+.place-pin span { position: absolute; inset: 7px; border-radius: 50%; background: #fff; }
+.origin-marker { display: grid; width: 32px; height: 32px; place-items: center; border: 3px solid white; border-radius: 50%; background: #418b60; box-shadow: 0 2px 10px #31573e55; color: white; font-size: 21px; font-weight: 700; }
+.planner-card { position: absolute; z-index: 500; top: 20px; left: 22px; width: min(392px, calc(100vw - 44px)); border: 1px solid #e7ece8; border-radius: 18px; background: #fff; padding: 20px; box-shadow: 0 10px 36px #1b30251a, 0 2px 8px #1b30250b; }
+.planner-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.planner-brand { display: flex; align-items: center; gap: 8px; color: #2b3a31; font-size: 13px; font-weight: 720; }
+.planner-brand .brand-mark { width: 27px; height: 27px; border-radius: 8px; font-size: 15px; }
+.service-status { display: flex; align-items: center; gap: 6px; border: 1px solid #edf0ee; border-radius: 99px; background: #fafbfa; padding: 5px 9px; color: #879189; font-size: 10px; }
+.service-status i { width: 6px; height: 6px; }
+.planner-eyebrow { margin-bottom: 4px; color: #538366; font-size: 9px; font-weight: 750; letter-spacing: 1.05px; }
+.planner-card h1 { color: #25352c; font-size: 23px; font-weight: 740; letter-spacing: -0.8px; line-height: 1.25; }
+.planner-subtitle { margin-top: 4px; color: #859088; font-size: 11px; }
+.vehicle-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 17px 0 13px; border-radius: 12px; background: #f3f6f4; padding: 4px; }
+.vehicle-switch button { display: flex; min-height: 39px; align-items: center; justify-content: center; gap: 7px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #748078; font-size: 11px; font-weight: 600; cursor: pointer; transition: background .16s ease, box-shadow .16s ease, color .16s ease; }
+.vehicle-switch button span { font-size: 15px; }
+.vehicle-switch button.selected { border-color: #e3ebe5; background: #fff; box-shadow: 0 1px 3px #25352c0a; color: #317950; }
+.place-search-wrap { position: relative; z-index: 10; }
+.place-search { display: flex; height: 45px; align-items: center; gap: 9px; border: 1px solid #dfe7e1; border-radius: 11px; background: #fff; padding: 0 12px; transition: border-color .16s ease, box-shadow .16s ease; }
+.place-search:focus-within { border-color: #76a988; box-shadow: 0 0 0 3px #56936c17; }
+.search-icon { color: #62836c; font-size: 22px; line-height: 1; transform: rotate(-20deg); }
+.place-search input { width: 100%; border: 0; outline: 0; background: transparent; color: #34433a; font: inherit; font-size: 11px; }
+.place-search input::placeholder { color: #a0aaa4; }
+.clear-search, .destination-selected > button { border: 0; background: none; color: #98a29c; font-size: 20px; cursor: pointer; }
+.search-results { position: absolute; top: 51px; right: 0; left: 0; overflow: hidden; border: 1px solid #e5ebe6; border-radius: 12px; background: #fff; padding: 9px 7px 7px; box-shadow: 0 10px 28px #1a30261c; }
+.search-results > p { padding: 2px 8px 6px; color: #87938b; font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.search-results > button { display: flex; width: 100%; align-items: center; gap: 9px; border: 0; border-radius: 8px; background: #fff; padding: 8px; color: #35443a; text-align: left; font: inherit; font-size: 11px; cursor: pointer; }
+.search-results > button:hover { background: #f2f7f3; }
+.search-results > button > span:nth-child(2) { flex: 1; font-weight: 580; }
+.search-results small { display: block; margin-top: 3px; color: #929e95; font-size: 9px; font-weight: 400; }
+.search-results b { color: #9ba69f; font-size: 17px; font-weight: 400; }
+.place-result-icon { display: grid; width: 29px; height: 29px; flex: none; place-items: center; border-radius: 9px; background: #edf5ef; color: #43865a; font-size: 14px; }
+.no-results { display: block; padding: 7px 8px 9px; color: #89948d; font-size: 10px; line-height: 1.5; }
+.origin-row { display: flex; width: 100%; align-items: center; gap: 9px; border: 0; border-bottom: 1px solid #edf0ee; background: #fff; padding: 13px 2px; text-align: left; cursor: pointer; }
+.origin-dot { color: #55936a; font-size: 13px; }
+.origin-row > span:nth-child(2), .destination-selected > span:nth-child(2) { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.origin-row small, .destination-selected small { color: #9ba59f; font-size: 8px; font-weight: 700; letter-spacing: .65px; }
+.origin-row strong, .destination-selected strong { overflow: hidden; color: #46554b; font-size: 10px; font-weight: 570; text-overflow: ellipsis; white-space: nowrap; }
+.origin-action { color: #397e54; font-size: 9px; font-weight: 650; white-space: nowrap; }
+.inline-message { padding: 5px 0 0; color: #8b968f; font-size: 9px; }
+.destination-selected { display: flex; align-items: center; gap: 9px; padding: 12px 2px 8px; }
+.destination-pin { color: #dc7262; font-size: 15px; }
+.map-hint { display: flex; align-items: center; gap: 8px; margin: 10px 0 11px; color: #87938b; font-size: 10px; }
+.map-hint span { color: #5d946e; font-size: 14px; }
+.route-button { display: flex; width: 100%; min-height: 45px; align-items: center; justify-content: space-between; gap: 10px; border: 0; border-radius: 11px; background: #36865a; padding: 0 14px; color: #fff; font-size: 11px; font-weight: 670; cursor: pointer; transition: background .16s ease, transform .16s ease; }
+.route-button:hover:not(:disabled) { background: #2e784f; transform: translateY(-1px); }
+.route-button:disabled { background: #c3d1c7; cursor: not-allowed; }
+.route-button > span { font-size: 17px; }
+.route-summary { max-height: 330px; overflow-y: auto; margin-top: 12px; border: 1px solid #e3eee6; border-radius: 11px; background: #f5faf6; padding: 11px 12px; }
+.route-summary-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.route-summary-top span { display: flex; align-items: center; gap: 6px; color: #548064; font-size: 8px; font-weight: 730; letter-spacing: .5px; }
+.route-summary-top i { width: 6px; height: 6px; }
+.route-summary-top strong { color: #2e714b; font-size: 18px; letter-spacing: -.4px; }
+.route-summary p { margin-top: 5px; color: #617067; font-size: 10px; }
+.route-summary p span { padding: 0 4px; color: #bac5bd; }
+.route-summary > small { display: block; margin-top: 7px; color: #89968e; font-size: 9px; line-height: 1.4; }
+.route-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.route-options button { display: flex; min-width: 0; flex-direction: column; gap: 3px; border: 1px solid #e1e9e3; border-radius: 9px; background: #fff; padding: 7px 6px; text-align: left; cursor: pointer; }
+.route-options button.selected { border-color: #65a47b; background: #edf7f0; box-shadow: inset 0 0 0 1px #65a47b30; }
+.route-options button strong { color: #3a714e; font-size: 13px; }
+.route-options button span { color: #68766d; font-size: 9px; }
+.route-options button small { overflow: hidden; color: #929d95; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.route-directions { display: grid; gap: 0; margin: 9px 0 0; padding: 0; list-style: none; }
+.route-directions li { position: relative; border-top: 1px solid #e4ece6; padding: 8px 2px 8px 19px; color: #526158; font-size: 9px; line-height: 1.4; }
+.route-directions li::before { position: absolute; left: 3px; color: #398358; content: '↱'; font-size: 12px; font-weight: 700; }
+.route-directions li:first-child::before { content: '↑'; }
+.route-error { margin-top: 9px; border-radius: 8px; background: #fff4ee; padding: 8px 9px; color: #ad614a; font-size: 9px; line-height: 1.4; }
+.planner-footnote { margin-top: 12px; color: #a3aca6; font-size: 8px; text-align: center; }
+.traffic-toggle { position: absolute; z-index: 450; top: 88px; right: 20px; display: flex; align-items: center; gap: 7px; min-height: 35px; border: 1px solid #e4eae5; border-radius: 10px; background: #fff; padding: 0 11px; color: #66746a; font: inherit; font-size: 10px; font-weight: 620; box-shadow: 0 3px 12px #20372b12; cursor: pointer; }
+.traffic-toggle i { width: 7px; height: 7px; border-radius: 50%; background: #c2cbc5; }
+.traffic-toggle.is-active { border-color: #cfe4d5; color: #347a50; }
+.traffic-toggle.is-active i { background: #4aa66a; box-shadow: 0 0 0 3px #4aa66a20; }
+.congestion-legend { position: absolute; z-index: 450; bottom: 20px; left: 22px; width: 224px; border: 1px solid #e6ebe7; border-radius: 12px; background: #ffffffed; padding: 11px 13px; box-shadow: 0 3px 13px #23382b10; backdrop-filter: blur(8px); }
+.legend-heading { display: flex; align-items: center; justify-content: space-between; color: #58675d; font-size: 10px; font-weight: 660; }
+.legend-live { display: flex; align-items: center; gap: 4px; color: #9aa49d; font-size: 7px; font-weight: 700; letter-spacing: .35px; }
+.legend-live i { width: 5px; height: 5px; border-radius: 50%; background: #e7a24a; }
+.legend-scale { display: flex; height: 5px; gap: 2px; margin-top: 9px; }
+.legend-scale span { flex: 1; border-radius: 5px; }
+.traffic-free { background: #63b77b; }.traffic-medium { background: #edbd56; }.traffic-heavy { background: #db776b; }
+.legend-labels { display: flex; justify-content: space-between; margin-top: 5px; color: #9aa39d; font-size: 8px; }
+.map-credit { position: absolute; right: 19px; bottom: 33px; z-index: 400; border: 1px solid #e5eae6; border-radius: 8px; background: #ffffffd9; padding: 8px 11px; color: #67766c; font-size: 10px; box-shadow: 0 2px 8px #253b2d10; }
+.map-credit span { padding: 0 4px; color: #b5beb8; }
+
+@media (max-width: 640px) {
+  .app-header { height: 54px; padding: 0 15px; }
+  .header-brand { gap: 7px; font-size: 13px; }
+  .header-brand .brand-mark { width: 28px; height: 28px; }
+  .header-city { position: static; margin-left: auto; transform: none; gap: 4px; font-size: 10px; }
+  .city-pin { font-size: 15px; }
+  .header-divider { display: none; }
+  .header-status { display: none; }
+  .planner-card { top: 11px; left: 10px; width: min(100% - 20px, 420px); margin: 0; border-radius: 16px; padding: 15px 15px 13px; }
+  .traffic-toggle { top: auto; right: 10px; bottom: 100px; min-height: 32px; font-size: 9px; }
+  .planner-heading { margin-bottom: 13px; }
+  .planner-card h1 { font-size: 20px; }
+  .planner-subtitle { font-size: 10px; }
+  .vehicle-switch { margin: 12px 0 10px; }
+  .vehicle-switch button { min-height: 36px; }
+  .place-search { height: 42px; }
+  .origin-row { padding: 10px 2px; }
+  .map-hint { margin: 8px 0; }
+  .route-button { min-height: 42px; }
+  .planner-footnote { margin-top: 8px; }
+  .congestion-legend { bottom: 14px; left: 10px; width: 190px; padding: 9px 10px; }
+  .map-credit { right: 10px; bottom: 19px; padding: 7px 8px; font-size: 9px; }
+}
+
+@media (max-width: 370px) {
+  .header-brand > span:last-child { display: none; }
+  .origin-action { font-size: 8px; }
+  .congestion-legend { width: 165px; }
+}

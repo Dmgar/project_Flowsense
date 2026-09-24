@@ -1,5 +1,8 @@
 import math
+import json
 import logging
+import tempfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 import networkx as nx
@@ -26,7 +29,7 @@ class GraphService:
     def initialize(self):
         """Initializes the graph from cache, OSMnx, or synthetic Manhattan grid."""
         cache_path = settings.GRAPH_CACHE_FILE
-        if cache_path.exists():
+        if cache_path.exists() and cache_path.stat().st_size > 0:
             try:
                 logger.info(f"Loading graph from local cache: {cache_path}")
                 try:
@@ -34,7 +37,16 @@ class GraphService:
                 except Exception:
                     self.graph = nx.read_graphml(str(cache_path), force_multigraph=True)
                 # Ensure node coordinates and numeric edge attributes are float, and node keys are int
+                graph_marker = self.graph.graph.get("flowsense_is_synthetic")
+                self.is_synthetic = str(graph_marker).lower() == "true" or (
+                    graph_marker is None and self.graph.number_of_nodes() < 200
+                )
                 self._normalize_graph_attributes()
+                if self.is_synthetic and self._load_cached_osm_graph():
+                    self._normalize_graph_attributes()
+                    self._save_cache()
+                    logger.info("Replaced the synthetic graph with real streets from the local OSM cache.")
+                    return
                 logger.info(f"Graph loaded successfully with {self.graph.number_of_nodes()} nodes and {self.graph.number_of_edges()} edges.")
                 return
             except Exception as e:
@@ -43,12 +55,96 @@ class GraphService:
         # Attempt to load from OSMnx
         loaded_osmnx = self._try_load_osmnx()
         if not loaded_osmnx:
-            logger.info("Generating synthetic Manhattan street grid...")
+            loaded_osmnx = self._load_cached_osm_graph()
+        if not loaded_osmnx:
+            logger.warning("No local OSM road graph is available; generating a limited demo grid.")
             self.graph = self._build_synthetic_manhattan_grid()
             self.is_synthetic = True
 
         self._normalize_graph_attributes()
         self._save_cache()
+
+    def _load_cached_osm_graph(self) -> bool:
+        """Build a drivable graph from a cached Overpass JSON response, if available."""
+        try:
+            import osmnx as ox  # type: ignore
+        except ImportError:
+            return False
+
+        cache_dir = Path(ox.settings.cache_folder)
+        if not cache_dir.is_absolute():
+            cache_dir = Path.cwd() / cache_dir
+        if not cache_dir.is_dir():
+            return False
+
+        drivable = {
+            "motorway", "trunk", "primary", "secondary", "tertiary", "unclassified",
+            "residential", "living_street", "service", "road", "track",
+            "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link",
+        }
+        # Prefer cached extracts covering the city center; a whole-island
+        # bbox center falls north of many useful Manhattan extracts.
+        center_lat = 40.75
+        center_lon = -73.985
+        candidates = []
+
+        for response_path in cache_dir.glob("*.json"):
+            try:
+                payload = json.loads(response_path.read_text(encoding="utf-8"))
+                elements = payload.get("elements", [])
+                nodes = [item for item in elements if item.get("type") == "node" and "lat" in item and "lon" in item]
+                ways = [
+                    item for item in elements
+                    if item.get("type") == "way"
+                    and item.get("tags", {}).get("highway") in drivable
+                    and all(item.get("tags", {}).get(key) not in {"no", "private"} for key in ("access", "vehicle", "motor_vehicle", "motorcar"))
+                ]
+                if len(nodes) < 100 or len(ways) < 100:
+                    continue
+                south = min(float(node["lat"]) for node in nodes)
+                north = max(float(node["lat"]) for node in nodes)
+                west = min(float(node["lon"]) for node in nodes)
+                east = max(float(node["lon"]) for node in nodes)
+                covers_center = south <= center_lat <= north and west <= center_lon <= east
+                if covers_center:
+                    candidates.append((len(ways), response_path, nodes, ways))
+            except (OSError, ValueError, TypeError, KeyError):
+                continue
+
+        if not candidates:
+            return False
+
+        _, source_path, nodes, ways = max(candidates, key=lambda candidate: candidate[0])
+        needed_nodes = {int(ref) for way in ways for ref in way.get("nodes", [])}
+        root = ET.Element("osm", version="0.6", generator="FlowSense cached OSM roads")
+        for item in nodes:
+            if int(item["id"]) not in needed_nodes:
+                continue
+            element = ET.SubElement(root, "node", id=str(item["id"]), lat=str(item["lat"]), lon=str(item["lon"]), version="1")
+            for key, value in item.get("tags", {}).items():
+                ET.SubElement(element, "tag", k=str(key), v=str(value))
+        for item in ways:
+            element = ET.SubElement(root, "way", id=str(item["id"]), version="1")
+            for ref in item.get("nodes", []):
+                ET.SubElement(element, "nd", ref=str(ref))
+            for key, value in item.get("tags", {}).items():
+                ET.SubElement(element, "tag", k=str(key), v=str(value))
+
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                osm_path = Path(temp_dir) / "cached-manhattan.osm"
+                ET.ElementTree(root).write(osm_path, encoding="utf-8", xml_declaration=True)
+                self.graph = ox.graph_from_xml(osm_path, simplify=True, retain_all=False)
+            self.is_synthetic = False
+            logger.info(
+                "Loaded %d OSM streets and %d junctions from cached response %s.",
+                self.graph.number_of_edges(), self.graph.number_of_nodes(), source_path.name,
+            )
+            return True
+        except Exception as error:
+            logger.warning("Could not build a road graph from cached OSM response: %s", error)
+            self.graph = None
+            return False
 
     def _try_load_osmnx(self) -> bool:
         try:
@@ -233,6 +329,7 @@ class GraphService:
 
         if not isinstance(self.graph, nx.MultiDiGraph):
             self.graph = nx.MultiDiGraph(self.graph)
+        self.graph.graph["flowsense_is_synthetic"] = self.is_synthetic
 
         # Relabel any string-encoded integer node IDs to int
         relabel_map = {}
@@ -297,22 +394,27 @@ class GraphService:
             self.initialize()
         return self.graph
 
-    def find_nearest_node(self, lat: float, lon: float) -> int:
+    def find_nearest_node(self, lat: float, lon: float, max_distance_m: float | None = None) -> int:
         """Finds the closest node to the specified latitude and longitude."""
         G = self.get_graph()
         best_node = None
-        min_dist_sq = float("inf")
+        min_dist_m = float("inf")
+        cos_lat = math.cos(math.radians(lat))
 
         for node, data in G.nodes(data=True):
             nx_lat = data.get("y", 0.0)
             nx_lon = data.get("x", 0.0)
-            dist_sq = (nx_lat - lat) ** 2 + (nx_lon - lon) ** 2
-            if dist_sq < min_dist_sq:
-                min_dist_sq = dist_sq
+            d_lat_m = (nx_lat - lat) * 111139.0
+            d_lon_m = (nx_lon - lon) * 111139.0 * cos_lat
+            dist_m = math.hypot(d_lat_m, d_lon_m)
+            if dist_m < min_dist_m:
+                min_dist_m = dist_m
                 best_node = node
 
         if best_node is None:
             raise ValueError("Graph has no nodes to find nearest match.")
+        if max_distance_m is not None and min_dist_m > max_distance_m:
+            raise ValueError("The selected point is outside the available street network.")
         return int(best_node)
 
     def find_nodes_in_radius(self, lat: float, lon: float, radius_m: float) -> List[int]:
@@ -472,7 +574,8 @@ class GraphService:
             edge_count=edge_count,
             congested_edges_count=congested_count,
             avg_congestion_factor=round(avg_cg, 3),
-            cache_loaded=settings.GRAPH_CACHE_FILE.exists()
+            cache_loaded=settings.GRAPH_CACHE_FILE.exists() and settings.GRAPH_CACHE_FILE.stat().st_size > 0,
+            is_synthetic=self.is_synthetic,
         )
 
     def to_geojson(self) -> Dict[str, Any]:

@@ -114,7 +114,9 @@ class RoutingEngine:
                 node_data = G.nodes.get(str(node_key)) or G.nodes.get(int(node_key) if str(node_key).isdigit() else node_key, {})
             lat = float(node_data.get("y", 0.0))
             lon = float(node_data.get("x", 0.0))
-            corridor_coords.append([lon, lat])
+            if idx == 0:
+                corridor_coords.append([request.origin.longitude, request.origin.latitude])
+                corridor_coords.append([lon, lat])
 
             segment_len = 0.0
             segment_cg = 0.0
@@ -133,6 +135,30 @@ class RoutingEngine:
                 best_key = min(edge_candidates.keys(), key=lambda k: edge_candidates[k].get("emergency_weight", 1000.0))
                 edge = edge_candidates[best_key]
 
+                # OSMnx stores full street geometry on simplified edges. Use it
+                # so the displayed route follows bends and curves in the map.
+                edge_geometry = edge.get("geometry")
+                edge_coords = []
+                if edge_geometry is not None:
+                    try:
+                        if hasattr(edge_geometry, "coords"):
+                            edge_coords = [[float(x), float(y)] for x, y in edge_geometry.coords]
+                        elif isinstance(edge_geometry, str):
+                            from shapely import wkt
+                            parsed = wkt.loads(edge_geometry)
+                            edge_coords = [[float(x), float(y)] for x, y in parsed.coords]
+                    except (ImportError, TypeError, ValueError):
+                        edge_coords = []
+
+                if edge_coords:
+                    start_lon, start_lat = float(node_data.get("x", lon)), float(node_data.get("y", lat))
+                    if math.hypot(edge_coords[0][0] - start_lon, edge_coords[0][1] - start_lat) > math.hypot(edge_coords[-1][0] - start_lon, edge_coords[-1][1] - start_lat):
+                        edge_coords.reverse()
+                    corridor_coords.extend(edge_coords[1:])
+                else:
+                    next_data = G.nodes.get(v) or G.nodes.get(str(v)) or {}
+                    corridor_coords.append([float(next_data.get("x", lon)), float(next_data.get("y", lat))])
+
                 segment_len = float(edge.get("length", 100.0))
                 segment_cg = float(edge.get("congestion_factor", 0.0))
                 street_name = edge.get("name", street_name)
@@ -144,6 +170,7 @@ class RoutingEngine:
                 total_time_seconds += segment_duration
             else:
                 segment_duration = 0.0
+                corridor_coords.append([request.destination.longitude, request.destination.latitude])
 
             waypoints.append(
                 RouteStep(
@@ -265,10 +292,12 @@ class RoutingEngine:
         dynamically re-routes through the cleared corridors.
         """
         G = graph_service.get_graph()
+        if graph_service.is_synthetic:
+            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
 
         # 1. Match geographic coordinates to nearest network nodes
-        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude)
-        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude)
+        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
+        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
         # 2. Compute static shortest path using physical length only
         try:
@@ -314,8 +343,10 @@ class RoutingEngine:
         Useful for comparative benchmarks.
         """
         G = graph_service.get_graph()
-        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude)
-        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude)
+        if graph_service.is_synthetic:
+            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
+        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
+        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
         path = self._find_path_astar(G, source_node, target_node, weight="emergency_weight")
         return self._build_route(path, request)
@@ -345,8 +376,10 @@ class RoutingEngine:
             Number of total routes to return (1 primary + k-1 alternatives).
         """
         G = graph_service.get_graph()
-        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude)
-        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude)
+        if graph_service.is_synthetic:
+            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
+        source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
+        target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
         k = min(k, settings.MAX_ALTERNATIVE_ROUTES)
 
@@ -529,4 +562,4 @@ class RoutingEngine:
 
 
 # Global singleton instance
-routing_engine = RoutingEngine()
+routing_engine = RoutingEngine()

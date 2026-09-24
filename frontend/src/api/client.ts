@@ -3,6 +3,7 @@ import type {
   GeoJsonEdgeFeature,
   RouteResponse,
   DispatchRequest,
+  AlternativeRoutesResponse,
 } from '../types';
 
 const BASE = '';
@@ -12,7 +13,10 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
-  if (!res.ok) throw new Error(`API ${res.status}: ${res.statusText}`);
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null) as { detail?: string } | null;
+    throw new Error(payload?.detail || `API ${res.status}: ${res.statusText}`);
+  }
   return res.json();
 }
 
@@ -35,6 +39,16 @@ export function computeRoute(
 ): Promise<RouteResponse> {
   const q = simulate ? '?simulate=true' : '';
   return apiFetch<RouteResponse>(`/api/v1/dispatch/route${q}`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export function computeAlternativeRoutes(
+  req: DispatchRequest,
+  count = 3
+): Promise<AlternativeRoutesResponse> {
+  return apiFetch<AlternativeRoutesResponse>(`/api/v1/dispatch/alternatives?k=${count}`, {
     method: 'POST',
     body: JSON.stringify(req),
   });

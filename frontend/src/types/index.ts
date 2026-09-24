@@ -36,6 +36,13 @@ export interface GraphStatus {
   congested_edges_count: number;
   avg_congestion_factor: number;
   cache_loaded: boolean;
+  is_synthetic: boolean;
+}
+
+export interface AlternativeRoutesResponse {
+  primary: RouteResponse;
+  alternatives: RouteResponse[];
+  algorithm: string;
 }
 
 export interface DispatchRequest {

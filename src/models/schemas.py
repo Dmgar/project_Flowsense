@@ -61,6 +61,7 @@ class GraphStatus(BaseModel):
     congested_edges_count: int
     avg_congestion_factor: float
     cache_loaded: bool
+    is_synthetic: bool = False
 
 class IncidentReport(BaseModel):
     latitude: float = Field(..., description="Latitude of the incident location", ge=-90.0, le=90.0)
