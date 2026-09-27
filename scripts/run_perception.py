@@ -102,6 +102,22 @@ def main():
         action="store_true",
         help="Disable sending telemetry to backend (recommended when backend is not running)",
     )
+    parser.add_argument(
+        "--demo-route",
+        action="store_true",
+        help="Simulate and display dynamic A* emergency routing avoiding the video-detected traffic",
+    )
+    parser.add_argument(
+        "--html-map",
+        type=str,
+        default="data/processed/traffic_route_demo.html",
+        help="Path to generate the interactive Leaflet HTML map (default: data/processed/traffic_route_demo.html)",
+    )
+    parser.add_argument(
+        "--open-map",
+        action="store_true",
+        help="Automatically open the interactive HTML routing map in your default browser",
+    )
 
     args = parser.parse_args()
 
@@ -142,18 +158,23 @@ def main():
         free_flow_speed=45.0,
     )
 
+    camera_id = args.camera_id
+    if not camera_id or camera_id.lower() == "auto":
+        import time as _t
+        camera_id = f"CAM-AUTO-{int(_t.time()) % 1000:03d}"
+
     api_url = None if args.no_telemetry else args.api_url
     pipeline = PerceptionPipeline(
         detector=detector,
         tracker=tracker,
         estimator=estimator,
-        camera_id=args.camera_id,
+        camera_id=camera_id,
         api_url=api_url,
     )
 
     # Run pipeline
     logger.info(f"Starting perception on: {args.video}")
-    logger.info(f"Camera ID: {args.camera_id} | Backend: {args.backend} | Skip: {args.skip_frames}")
+    logger.info(f"Camera ID: {camera_id} | Backend: {args.backend} | Skip: {args.skip_frames}")
 
     summary = asyncio.run(
         pipeline.process_video(
@@ -172,6 +193,31 @@ def main():
     for k, v in summary.items():
         print(f"  {k:.<35} {v}")
     print("=" * 60)
+
+    # Run dynamic A* emergency routing demo if requested
+    if args.demo_route or args.open_map:
+        from src.perception.route_demo import run_route_simulation
+
+        print("\n" + "=" * 60)
+        print("  FlowSense Dynamic A* Routing — Emergency Simulation")
+        print("=" * 60)
+        route_res = run_route_simulation(
+            camera_id=camera_id,
+            congestion_factor=summary.get("last_congestion_factor", 0.4),
+            vehicle_count=summary.get("last_vehicle_count", 15),
+            output_html_path=args.html_map,
+            open_browser=args.open_map,
+        )
+        print(f"  Camera Assigned.................... {route_res['camera_id']} ({route_res['camera_name']})")
+        print(f"  Camera Coordinates................. {route_res['camera_coords']}")
+        print(f"  Traffic Congestion Level........... {route_res['congestion_factor']*100:.0f}% ({route_res['vehicle_count']} vehicles)")
+        print(f"  Naive Static Route ETA............. {route_res['baseline_eta_s']} s ({route_res['baseline_distance_m']} m)")
+        print(f"  FlowSense Dynamic A* Route ETA..... {route_res['route_eta_s']} s ({route_res['route_distance_m']} m)")
+        print(f"  Time Saved with FlowSense.......... {route_res['savings_pct']}% faster")
+        print(f"  Route Status....................... {route_res['status']}")
+        if "html_path" in route_res:
+            print(f"  Interactive HTML Map Saved......... {route_res['html_path']}")
+        print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":

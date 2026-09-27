@@ -144,8 +144,8 @@ class PerceptionPipeline:
                         avg_speed_override=avg_flow if avg_flow > 0 else None,
                     )
 
-                    self._last_detection_count = metrics.vehicle_count
-                    self._last_congestion_factor = metrics.congestion_factor
+                    self._last_detection_count = int(metrics.vehicle_count)
+                    self._last_congestion_factor = float(metrics.congestion_factor)
 
                     # Send telemetry to backend periodically (non-blocking)
                     if self.api_url and detection_cycle % telemetry_interval == 0:

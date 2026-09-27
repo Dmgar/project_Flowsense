@@ -109,7 +109,38 @@ class CameraService:
         """
         self.initialize()
         if report.camera_id not in self._cameras:
-            return None
+            # Smart Auto-Registration of Dynamic / Unregistered Cameras
+            G = graph_service.get_graph()
+            occupied_nodes = {c["intersection_node"] for c in self._cameras.values()}
+            available_nodes = [n for n in G.nodes if n not in occupied_nodes]
+
+            if available_nodes:
+                # Pick a strategic intersection with high road connectivity
+                selected_node = max(available_nodes, key=lambda n: G.degree(n))
+            elif G.nodes:
+                selected_node = list(G.nodes)[0]
+            else:
+                return None
+
+            node_data = G.nodes.get(selected_node) or G.nodes.get(str(selected_node), {})
+            lat = float(node_data.get("y", 40.7550))
+            lon = float(node_data.get("x", -73.9850))
+            name = node_data.get("name") or f"Dynamic Camera ({report.camera_id})"
+
+            self._cameras[report.camera_id] = {
+                "camera_id": report.camera_id,
+                "name": name,
+                "intersection_node": selected_node,
+                "latitude": lat,
+                "longitude": lon,
+                "bearing_degrees": 0.0,
+                "status": "online",
+                "latest_vehicle_count": report.vehicle_count,
+                "latest_speed_kmh": report.average_speed_kmh,
+                "latest_congestion_factor": report.congestion_factor,
+                "last_update": report.frame_timestamp or datetime.now(timezone.utc).isoformat(),
+            }
+            logger.info(f"Auto-registered dynamic camera '{report.camera_id}' at node {selected_node} ('{name}') [{lat}, {lon}].")
 
         cam = self._cameras[report.camera_id]
         cam["latest_vehicle_count"] = report.vehicle_count

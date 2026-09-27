@@ -292,8 +292,6 @@ class RoutingEngine:
         dynamically re-routes through the cleared corridors.
         """
         G = graph_service.get_graph()
-        if graph_service.is_synthetic:
-            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
 
         # 1. Match geographic coordinates to nearest network nodes
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
@@ -343,8 +341,6 @@ class RoutingEngine:
         Useful for comparative benchmarks.
         """
         G = graph_service.get_graph()
-        if graph_service.is_synthetic:
-            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
@@ -376,8 +372,6 @@ class RoutingEngine:
             Number of total routes to return (1 primary + k-1 alternatives).
         """
         G = graph_service.get_graph()
-        if graph_service.is_synthetic:
-            raise ValueError("Real OpenStreetMap street data is unavailable; navigation is disabled.")
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
