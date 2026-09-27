@@ -52,13 +52,13 @@ class PerceptionPipeline:
         tracker: VehicleTracker,
         estimator: CongestionEstimator,
         camera_id: str,
-        api_url: str = "http://localhost:8000",
+        api_url: Optional[str] = "http://localhost:8000",
     ):
         self.detector = detector
         self.tracker = tracker
         self.estimator = estimator
         self.camera_id = camera_id
-        self.api_url = api_url.rstrip("/")
+        self.api_url = api_url.rstrip("/") if api_url else None
 
         # Runtime state
         self._is_running: bool = False
@@ -117,7 +117,7 @@ class PerceptionPipeline:
         )
 
         self._is_running = True
-        self._frames_processed = 0
+        tracked: List[TrackedVehicle] = []
         frame_idx = 0
         detection_cycle = 0
         start_time = time.perf_counter()
@@ -147,16 +147,16 @@ class PerceptionPipeline:
                     self._last_detection_count = metrics.vehicle_count
                     self._last_congestion_factor = metrics.congestion_factor
 
-                    # Send telemetry to backend periodically
-                    if detection_cycle % telemetry_interval == 0:
-                        await self._send_telemetry(metrics)
+                    # Send telemetry to backend periodically (non-blocking)
+                    if self.api_url and detection_cycle % telemetry_interval == 0:
+                        asyncio.create_task(self._send_telemetry(metrics))
 
-                    # Visual debug window
-                    if visualize:
-                        annotated = self.annotate_frame(frame, tracked)
-                        cv2.imshow(f"FlowSense — {self.camera_id}", annotated)
-                        if cv2.waitKey(1) & 0xFF == ord("q"):
-                            break
+                # Visual debug window
+                if visualize:
+                    annotated = self.annotate_frame(frame, tracked)
+                    cv2.imshow(f"FlowSense — {self.camera_id}", annotated)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        break
 
                 frame_idx += 1
                 self._frames_processed = frame_idx
@@ -187,6 +187,9 @@ class PerceptionPipeline:
 
     async def _send_telemetry(self, metrics) -> None:
         """POST congestion metrics to the FlowSense backend."""
+        if not self.api_url:
+            return
+
         url = f"{self.api_url}/api/v1/cameras/{self.camera_id}/telemetry"
         payload = {
             "camera_id": self.camera_id,

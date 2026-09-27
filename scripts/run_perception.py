@@ -97,6 +97,11 @@ def main():
         action="store_true",
         help="Enable Farneback optical flow for global velocity estimation",
     )
+    parser.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="Disable sending telemetry to backend (recommended when backend is not running)",
+    )
 
     args = parser.parse_args()
 
@@ -137,12 +142,13 @@ def main():
         free_flow_speed=45.0,
     )
 
+    api_url = None if args.no_telemetry else args.api_url
     pipeline = PerceptionPipeline(
         detector=detector,
         tracker=tracker,
         estimator=estimator,
         camera_id=args.camera_id,
-        api_url=args.api_url,
+        api_url=api_url,
     )
 
     # Run pipeline
