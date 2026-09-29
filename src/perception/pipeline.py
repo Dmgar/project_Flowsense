@@ -153,10 +153,14 @@ class PerceptionPipeline:
 
                 # Visual debug window
                 if visualize:
-                    annotated = self.annotate_frame(frame, tracked)
-                    cv2.imshow(f"FlowSense — {self.camera_id}", annotated)
-                    if cv2.waitKey(1) & 0xFF == ord("q"):
-                        break
+                    try:
+                        annotated = self.annotate_frame(frame, tracked)
+                        cv2.imshow(f"FlowSense — {self.camera_id}", annotated)
+                        if cv2.waitKey(1) & 0xFF == ord("q"):
+                            break
+                    except cv2.error as e:
+                        logger.warning(f"GUI display not supported in this environment: {e}")
+                        visualize = False
 
                 frame_idx += 1
                 self._frames_processed = frame_idx
@@ -164,7 +168,10 @@ class PerceptionPipeline:
         finally:
             cap.release()
             if visualize:
-                cv2.destroyAllWindows()
+                try:
+                    cv2.destroyAllWindows()
+                except Exception:
+                    pass
             self._is_running = False
 
         elapsed = time.perf_counter() - start_time
