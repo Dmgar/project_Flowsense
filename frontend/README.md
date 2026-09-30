@@ -18,7 +18,7 @@ Digital twin urbano en tiempo real para el OpenCV AI Competition 2026.
 
 ```bash
 npm install
-npm run dev        # dev server :3000 (proxy /api y /ws -> localhost:8000)
+npm run dev        # dev server :3001 (proxy /api y /ws -> localhost:8002)
 npm run build      # tsc -b && vite build
 npm run lint       # oxlint
 npm run preview    # sirve el build
@@ -26,7 +26,7 @@ npm run preview    # sirve el build
 
 ## Requisitos
 
-Backend FastAPI corriendo en `http://localhost:8000` (ver raíz del repo).
+Backend FastAPI corriendo en `http://localhost:8002` para el perfil de Cartagena (`scripts/run_cartagena_pilot.ps1`).
 El frontend funciona también en **modo offline** con datos mock si el backend no responde.
 
 ## Estructura

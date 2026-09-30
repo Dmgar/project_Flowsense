@@ -9,6 +9,14 @@
 
 **FlowSense** leverages **OpenCV 5** on traffic cameras to extract real-time congestion and lane availability signals, dynamically updating an urban graph to compute zero-latency optimal corridors for **ambulances and fire trucks** navigating congested cities.
 
+For dispatch teams, FlowSense pairs each recommended corridor with a topology-based backup assessment, so an operator can see whether the alternate route depends on the same vulnerable streets. Camera-derived incident candidates can be reviewed before they affect routing, then exported as verified partner-feed events.
+
+## Product Wedge: Dispatch Continuity
+
+The target user is a municipal emergency dispatcher or traffic-management operator. FlowSense is designed to complement existing CAD and navigation tools with three connected steps: review roadway evidence, compare the primary emergency route with a lower-overlap fallback, and measure verification and clearance times. Verified events can be exported in Waze CIFS format for an agency-approved partner feed.
+
+For the Cartagena pilot, confirmed and unexpired water-depth reports remove affected road nodes from emergency route calculations. A dispatcher sees the source, reported depth, confirmation state, expiry and alternate-route continuity. Pending and synthetic demo observations never silently change a route. The default water tolerance is 0 cm for both unit types; the agency must set approved operating limits before live use. See [Cartagena pilot setup and data limits](docs/CARTAGENA_PILOT.md).
+
 ---
 
 ## The Problem: The Golden Hour Bottleneck

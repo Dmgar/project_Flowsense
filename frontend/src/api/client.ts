@@ -4,6 +4,7 @@ import type {
   RouteResponse,
   DispatchRequest,
   AlternativeRoutesResponse,
+  FloodReport,
 } from '../types';
 
 const BASE = '';
@@ -88,6 +89,71 @@ export function reportIncident(payload: {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
+
+export interface IncidentCandidate {
+  incident_id: string;
+  event_type: string;
+  label: string;
+  latitude: number;
+  longitude: number;
+  confidence: number;
+  urgency: string;
+  status: 'pending_review' | 'validated' | 'false_alarm' | 'cleared';
+  rationale: string[];
+  detected_classes: string[];
+  camera_id: string;
+  demo: boolean;
+  created_at: string;
+  affected_edges_count: number;
+}
+
+export function fetchIncidentCandidates(): Promise<IncidentCandidate[]> {
+  return apiFetch('/api/v1/traffic/detections');
+}
+
+export function fetchFloodReports(): Promise<FloodReport[]> {
+  return apiFetch('/api/v1/traffic/flood-reports');
+}
+
+export function createFloodReport(payload: Pick<FloodReport, 'latitude' | 'longitude' | 'depth_cm' | 'radius_m' | 'source' | 'note' | 'demo'>): Promise<FloodReport> {
+  return apiFetch('/api/v1/traffic/flood-reports', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function reviewFloodReport(id: string, action: 'confirm' | 'dismiss' | 'clear'): Promise<FloodReport> {
+  return apiFetch(`/api/v1/traffic/flood-reports/${id}/${action}`, { method: 'POST' });
+}
+
+export function analyzeIncidentCandidate(payload: {
+  latitude: number; longitude: number; event_type: string; model_confidence: number;
+  corroborating_frames: number; stationary_seconds: number; speed_drop_pct: number;
+  detected_classes: string[]; camera_id: string; demo: boolean;
+}): Promise<IncidentCandidate> {
+  return apiFetch('/api/v1/traffic/detections', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function validateIncidentCandidate(id: string): Promise<IncidentCandidate> {
+  return apiFetch(`/api/v1/traffic/detections/${id}/validate`, { method: 'POST' });
+}
+
+export function dismissIncidentCandidate(id: string): Promise<IncidentCandidate> {
+  return apiFetch(`/api/v1/traffic/detections/${id}/dismiss`, { method: 'POST' });
+}
+
+export interface IncidentResponseMetrics {
+  candidate_count: number;
+  verified_count: number;
+  false_alarm_rate_pct: number | null;
+  median_verify_seconds: number | null;
+  average_clear_seconds: number | null;
+  active_verified_count: number;
+  published_feed_count: number;
+  flood_reports_count: number;
+  active_confirmed_flood_count: number;
+}
+
+export function fetchIncidentResponseMetrics(): Promise<IncidentResponseMetrics> {
+  return apiFetch('/api/v1/traffic/metrics/response');
 }
 
 export function clearIncident(incidentId: string): Promise<unknown> {

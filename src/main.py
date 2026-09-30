@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
 from src.services.graph_service import graph_service
+from src.services.incident_intelligence import incident_intelligence
 from src.services.mock_simulator import simulator
 from src.api.websockets.connection_manager import manager
 from src.api.routes import (
@@ -29,6 +30,16 @@ logger = logging.getLogger("flowsense.main")
 async def lifespan(app: FastAPI):
     logger.info("Initializing FlowSense Urban Graph Engine...")
     graph_service.initialize()
+    # Restore active, human-verified incidents after a backend restart.
+    for candidate in incident_intelligence.list():
+        if candidate.status == "validated" and not candidate.demo:
+            graph_service.report_incident(
+                incident_id=candidate.incident_id,
+                lat=candidate.latitude,
+                lon=candidate.longitude,
+                radius_m=candidate.radius_m,
+                block_traffic=True,
+            )
     status = graph_service.get_status()
     logger.info(f"Graph initialized: {status.node_count} nodes, {status.edge_count} edges for {status.city}.")
     yield

@@ -1,4 +1,4 @@
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Literal
 from pydantic import BaseModel, Field
 
 class Coordinates(BaseModel):
@@ -56,6 +56,10 @@ class RouteResponse(BaseModel):
 
 class GraphStatus(BaseModel):
     city: str
+    city_profile: str = "manhattan"
+    center_latitude: float = 40.7484
+    center_longitude: float = -73.9857
+    default_zoom: int = 13
     node_count: int
     edge_count: int
     congested_edges_count: int
@@ -70,6 +74,61 @@ class IncidentReport(BaseModel):
     severity: str = Field(default="critical", description="Severity level: info, warning, or critical")
     radius_m: float = Field(default=180.0, description="Affected radius in meters", ge=50.0, le=1000.0)
     block_traffic: bool = Field(default=True, description="Whether the street is completely impassable")
+
+class IncidentCandidateInput(BaseModel):
+    """Evidence emitted by a camera perception adapter for human triage."""
+    latitude: float = Field(..., ge=-90.0, le=90.0)
+    longitude: float = Field(..., ge=-180.0, le=180.0)
+    event_type: Literal["collision", "stopped_vehicle", "road_obstruction", "smoke_fire", "flooding", "unknown"]
+    model_confidence: float = Field(..., ge=0.0, le=1.0)
+    corroborating_frames: int = Field(default=1, ge=1, le=10000)
+    stationary_seconds: float = Field(default=0.0, ge=0.0, le=86400.0)
+    speed_drop_pct: float = Field(default=0.0, ge=0.0, le=100.0)
+    detected_classes: List[str] = Field(default_factory=list, max_length=30)
+    camera_id: str = Field(default="CAM-DEMO-01", max_length=80)
+    demo: bool = False
+
+class IncidentCandidate(BaseModel):
+    incident_id: str
+    event_type: str
+    label: str
+    latitude: float
+    longitude: float
+    confidence: float
+    urgency: str
+    status: str
+    rationale: List[str]
+    detected_classes: List[str]
+    camera_id: str
+    demo: bool
+    created_at: str
+    validated_at: Optional[str] = None
+    cleared_at: Optional[str] = None
+    affected_edges_count: int = 0
+    radius_m: float = 180.0
+
+class FloodReportInput(BaseModel):
+    latitude: float = Field(..., ge=-90.0, le=90.0)
+    longitude: float = Field(..., ge=-180.0, le=180.0)
+    depth_cm: float = Field(..., ge=0.0, le=300.0)
+    radius_m: float = Field(default=60.0, ge=10.0, le=500.0)
+    source: str = Field(default="operator", max_length=80)
+    note: str = Field(default="", max_length=500)
+    demo: bool = False
+
+class FloodReport(BaseModel):
+    report_id: str
+    latitude: float
+    longitude: float
+    depth_cm: float
+    radius_m: float
+    source: str
+    note: str
+    demo: bool
+    status: Literal["pending_review", "confirmed", "false_alarm", "cleared", "expired"]
+    created_at: str
+    confirmed_at: Optional[str] = None
+    expires_at: str
 
 class IncidentResponse(BaseModel):
     incident_id: str
@@ -121,11 +180,23 @@ class CameraTelemetryReport(BaseModel):
 
 # ---- Advanced Routing Schemas ----
 
+class RouteResilience(BaseModel):
+    """Topology-based continuity assessment for a primary route and its fallback."""
+    score_pct: int = Field(ge=0, le=100)
+    status: Literal["resilient", "constrained", "fragile", "no_backup"]
+    backup_route_id: Optional[str] = None
+    shared_segment_pct: float = Field(ge=0.0, le=100.0)
+    detour_pct: Optional[float] = None
+    explanation: str
+    flood_reports_considered: int = 0
+    flood_reports_excluded_by_vehicle: int = 0
+
 class AlternativeRoutesResponse(BaseModel):
-    """Response containing a primary route and K-1 alternative corridors."""
+    """Response containing primary, alternate corridors, and continuity assessment."""
     primary: RouteResponse
     alternatives: List[RouteResponse]
     algorithm: str = Field(default="astar", description="Algorithm used: astar, dijkstra, nsga2")
+    resilience: Optional[RouteResilience] = None
 
 
 class FleetDispatchRequest(BaseModel):

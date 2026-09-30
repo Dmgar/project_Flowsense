@@ -570,6 +570,10 @@ class GraphService:
 
         return GraphStatus(
             city=settings.PILOT_CITY,
+            city_profile=settings.CITY_PROFILE,
+            center_latitude=settings.MAP_CENTER_LATITUDE,
+            center_longitude=settings.MAP_CENTER_LONGITUDE,
+            default_zoom=settings.MAP_DEFAULT_ZOOM,
             node_count=G.number_of_nodes(),
             edge_count=edge_count,
             congested_edges_count=congested_count,

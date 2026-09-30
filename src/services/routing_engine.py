@@ -6,12 +6,14 @@ import networkx as nx
 
 from src.core.config import settings
 from src.services.graph_service import graph_service
+from src.services.flood_intelligence import flood_intelligence
 from src.models.schemas import (
     Coordinates,
     RouteStep,
     RouteResponse,
     DispatchRequest,
     AlternativeRoutesResponse,
+    RouteResilience,
     FleetDispatchRequest,
 )
 
@@ -281,6 +283,14 @@ class RoutingEngine:
     # Primary emergency routing (existing public API — preserved)
     # ==================================================================
 
+    def _flood_safe_graph(self, graph: nx.MultiDiGraph, request: DispatchRequest):
+        blocked, considered, excluded = flood_intelligence.blocked_nodes(graph, request.vehicle_type)
+        if not blocked:
+            return graph, considered, excluded
+        safe_graph = graph.copy()
+        safe_graph.remove_nodes_from(blocked)
+        return safe_graph, considered, excluded
+
     def calculate_emergency_route(self, request: DispatchRequest, simulate: bool = False) -> RouteResponse:
         """
         Calculates optimal emergency corridor between origin and destination coordinates.
@@ -296,10 +306,14 @@ class RoutingEngine:
         # 1. Match geographic coordinates to nearest network nodes
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
+        route_graph, _, _ = self._flood_safe_graph(G, request)
+        if source_node not in route_graph or target_node not in route_graph:
+            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
 
         # 2. Compute static shortest path using physical length only
         try:
-            static_path = self._find_path(G, source_node, target_node, weight="length")
+            # A baseline may ignore congestion, but it must respect confirmed hazards.
+            static_path = self._find_path(route_graph, source_node, target_node, weight="length")
         except nx.NetworkXNoPath:
             logger.error(f"No path found between node {source_node} and {target_node}")
             raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
@@ -310,7 +324,7 @@ class RoutingEngine:
 
         # 3. Compute dynamic shortest path using real-time 'emergency_weight'
         try:
-            dynamic_path = self._find_path(G, source_node, target_node, weight="emergency_weight")
+            dynamic_path = self._find_path(route_graph, source_node, target_node, weight="emergency_weight")
         except nx.NetworkXNoPath:
             logger.error(f"No path found between node {source_node} and {target_node}")
             raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
@@ -343,8 +357,10 @@ class RoutingEngine:
         G = graph_service.get_graph()
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
-
-        path = self._find_path_astar(G, source_node, target_node, weight="emergency_weight")
+        route_graph, _, _ = self._flood_safe_graph(G, request)
+        if source_node not in route_graph or target_node not in route_graph:
+            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
+        path = self._find_path_astar(route_graph, source_node, target_node, weight="emergency_weight")
         return self._build_route(path, request)
 
     # ==================================================================
@@ -374,13 +390,16 @@ class RoutingEngine:
         G = graph_service.get_graph()
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
+        safe_G, flood_count, excluded_by_vehicle = self._flood_safe_graph(G, request)
+        if source_node not in safe_G or target_node not in safe_G:
+            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
 
         k = min(k, settings.MAX_ALTERNATIVE_ROUTES)
 
         # nx.shortest_simple_paths does not support MultiDiGraph.
         # Convert to a simple DiGraph keeping only the best (min weight) edge per (u,v).
         simple_G = nx.DiGraph()
-        for u, v, key, data in G.edges(keys=True, data=True):
+        for u, v, key, data in safe_G.edges(keys=True, data=True):
             w = float(data.get("emergency_weight", 100.0))
             if simple_G.has_edge(u, v):
                 if w < simple_G[u][v]["emergency_weight"]:
@@ -415,6 +434,7 @@ class RoutingEngine:
 
         # Build alternatives
         alternatives: List[RouteResponse] = []
+        overlaps: List[float] = []
         primary_edges = set(zip(selected_paths[0][:-1], selected_paths[0][1:]))
 
         for path in selected_paths[1:]:
@@ -425,11 +445,48 @@ class RoutingEngine:
             overlap = len(primary_edges & alt_edges) / max(len(primary_edges), 1)
             alt_route.status = f"alternative (overlap: {overlap:.0%})"
             alternatives.append(alt_route)
+            overlaps.append(overlap)
+
+        # A backup that shares most of the primary corridor can fail with it.
+        # Prefer low overlap while penalizing excessively long fallbacks.
+        resilience = RouteResilience(
+            score_pct=0,
+            status="no_backup",
+            explanation="No existe una segunda ruta calculable con la red vial disponible.",
+            shared_segment_pct=100.0,
+            flood_reports_considered=flood_count,
+            flood_reports_excluded_by_vehicle=excluded_by_vehicle,
+        )
+        if alternatives:
+            candidates = []
+            for alt_route, overlap in zip(alternatives, overlaps):
+                detour = max(0.0, alt_route.total_estimated_time_s / max(primary.total_estimated_time_s, 1.0) - 1.0)
+                objective = 0.72 * overlap + 0.28 * min(detour, 1.5)
+                candidates.append((objective, alt_route, overlap, detour))
+            _, backup, overlap, detour = min(candidates, key=lambda item: item[0])
+            status = "resilient" if overlap <= 0.20 and detour <= 0.35 else "constrained" if overlap <= 0.55 and detour <= 0.75 else "fragile"
+            score = round(100.0 * (1.0 - overlap) * max(0.2, 1.0 - 0.4 * min(detour, 1.5)))
+            if status == "resilient":
+                explanation = "La alternativa comparte pocos tramos críticos y conserva un desvío moderado."
+            elif status == "constrained":
+                explanation = "Hay una alternativa, pero comparte tramos o añade demora; confirma el estado antes del despacho."
+            else:
+                explanation = "Las rutas dependen de muchos tramos comunes o el respaldo es largo; el corredor es frágil ante otro cierre."
+            resilience = RouteResilience(
+                score_pct=max(0, min(100, score)), status=status,
+                backup_route_id=backup.route_id,
+                shared_segment_pct=round(overlap * 100, 1),
+                detour_pct=round(detour * 100, 1),
+                explanation=explanation,
+                flood_reports_considered=flood_count,
+                flood_reports_excluded_by_vehicle=excluded_by_vehicle,
+            )
 
         return AlternativeRoutesResponse(
             primary=primary,
             alternatives=alternatives,
             algorithm=settings.ROUTING_ALGORITHM,
+            resilience=resilience,
         )
 
     # ==================================================================

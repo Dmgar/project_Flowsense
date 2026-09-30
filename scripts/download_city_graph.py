@@ -36,7 +36,8 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
     if bbox:
         north, south, east, west = bbox
         print(f"[INFO] Downloading bounding box: North={north}, South={south}, East={east}, West={west}")
-        G = ox.graph_from_bbox(bbox=(north, south, east, west), network_type="drive")
+        # OSMnx 2.x expects (west, south, east, north).
+        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive")
     elif place:
         print(f"[INFO] Downloading place: '{place}' (drive network)...")
         G = ox.graph_from_place(place, network_type="drive")
@@ -44,7 +45,7 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
         # Default Manhattan Pilot bounding box
         north, south, east, west = 40.7700, 40.7300, -73.9700, -74.0100
         print(f"[INFO] Using default Manhattan BBox: [{north}, {south}, {east}, {west}]")
-        G = ox.graph_from_bbox(bbox=(north, south, east, west), network_type="drive")
+        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive")
 
     node_count = G.number_of_nodes()
     edge_count = G.number_of_edges()

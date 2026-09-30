@@ -31,6 +31,10 @@ export interface RouteResponse {
 
 export interface GraphStatus {
   city: string;
+  city_profile: 'cartagena' | 'manhattan';
+  center_latitude: number;
+  center_longitude: number;
+  default_zoom: number;
   node_count: number;
   edge_count: number;
   congested_edges_count: number;
@@ -43,6 +47,31 @@ export interface AlternativeRoutesResponse {
   primary: RouteResponse;
   alternatives: RouteResponse[];
   algorithm: string;
+  resilience?: {
+    score_pct: number;
+    status: 'resilient' | 'constrained' | 'fragile' | 'no_backup';
+    backup_route_id: string | null;
+    shared_segment_pct: number;
+    detour_pct: number | null;
+    explanation: string;
+    flood_reports_considered: number;
+    flood_reports_excluded_by_vehicle: number;
+  } | null;
+}
+
+export interface FloodReport {
+  report_id: string;
+  latitude: number;
+  longitude: number;
+  depth_cm: number;
+  radius_m: number;
+  source: string;
+  note: string;
+  demo: boolean;
+  status: 'pending_review' | 'confirmed' | 'false_alarm' | 'cleared' | 'expired';
+  created_at: string;
+  confirmed_at: string | null;
+  expires_at: string;
 }
 
 export interface DispatchRequest {

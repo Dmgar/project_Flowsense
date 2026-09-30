@@ -22,6 +22,12 @@ export function DataInitializer() {
         if (cancelled) return;
         if (edges.length === 0) throw new Error('Grafo vacío');
         setGraphStatus(status);
+        useStore.getState().setOrigin({
+          label: status.city_profile === 'cartagena' ? 'Centro, Cartagena' : 'Midtown Manhattan',
+          latitude: status.center_latitude,
+          longitude: status.center_longitude,
+          category: 'destination',
+        });
         setGeojsonEdges(edges);
         setReplayFrames(generateMockReplay(30));
         addAlert({

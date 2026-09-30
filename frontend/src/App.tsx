@@ -7,10 +7,12 @@ import { DataInitializer } from './components/DataInitializer';
 import { BootSplash } from './components/BootSplash';
 import { useTelemetrySocket } from './hooks/useTelemetrySocket';
 import { useStore } from './store/useStore';
+import { IncidentConsole } from './components/IncidentConsole';
 
 export default function App() {
   useTelemetrySocket();
   const isBooted = useStore((s) => s.isBooted);
+  const city = useStore((s) => s.graphStatus?.city ?? 'Cartagena de Indias, Colombia');
   const showCongestionLayer = useStore((s) => s.showCongestionLayer);
   const toggleCongestionLayer = useStore((s) => s.toggleCongestionLayer);
 
@@ -28,6 +30,7 @@ export default function App() {
       <main className="map-stage">
         <MapView />
         <EmergencyPlanner />
+        <IncidentConsole />
         <button
           className={`traffic-toggle ${showCongestionLayer ? 'is-active' : ''}`}
           onClick={toggleCongestionLayer}
@@ -36,7 +39,7 @@ export default function App() {
           <i /> Tráfico en vivo
         </button>
         <CongestionLegend />
-        <div className="map-credit">New York City <span>·</span> Manhattan</div>
+        <div className="map-credit">{city}</div>
       </main>
     </div>
   );
