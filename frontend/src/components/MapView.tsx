@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useStore } from '../store/useStore';
-import { MANHATTAN_CENTER } from '../data/mock';
 import { CongestionLayer } from './CongestionLayer';
 import { RouteLayer } from './RouteLayer';
 import { VehicleMarkers } from './VehicleMarkers';
@@ -41,6 +40,26 @@ function ShowPlaces() {
     <Marker position={[origin.latitude, origin.longitude]} icon={L.divIcon({ className: 'origin-marker-shell', html: '<span class="origin-marker">＋</span>', iconSize: [34, 34], iconAnchor: [17, 17] })} />
     {destination && <Marker position={[destination.latitude, destination.longitude]} icon={pinIcon} />}
   </>;
+}
+
+function IncidentMarkers() {
+  const incidents = useStore((s) => s.incidentPoints);
+  const floods = useStore((s) => s.floodReports);
+  return <>{incidents.map((incident) => <CircleMarker
+    key={incident.incident_id}
+    center={[incident.latitude, incident.longitude]}
+    radius={incident.status === 'validated' ? 10 : 8}
+    pathOptions={{
+      color: incident.status === 'validated' ? '#b84b3e' : '#d89a32',
+      fillColor: incident.status === 'validated' ? '#df685b' : '#f0bd5c',
+      fillOpacity: 0.82, weight: 2,
+    }}
+  ><Popup><strong>{incident.label}</strong><br />{incident.status === 'validated' ? 'Validado · vías afectadas' : 'Pendiente de verificación'}<br />Score de evidencia: {Math.round(incident.confidence * 100)}%</Popup></CircleMarker>)}
+  {floods.filter((f) => ['pending_review', 'confirmed'].includes(f.status)).map((f) => <CircleMarker key={f.report_id}
+    center={[f.latitude, f.longitude]} radius={f.status === 'confirmed' ? 12 : 8}
+    pathOptions={{ color: '#087d99', fillColor: f.status === 'confirmed' ? '#18b8d2' : '#8ddce8', fillOpacity: 0.85, weight: 2 }}>
+    <Popup><strong>{f.demo ? 'SIMULACIÓN · ' : ''}Agua reportada: {f.depth_cm} cm</strong><br />{f.status === 'confirmed' ? 'Confirmada · rutas excluyen el tramo' : 'Pendiente · aún no afecta rutas'}<br />Vence: {new Date(f.expires_at).toLocaleTimeString('es-CO')}</Popup>
+  </CircleMarker>)}</>;
 }
 
 function ZoomControls() {
@@ -104,12 +123,16 @@ function MapController() {
 export function MapView() {
   const showCongestionLayer = useStore((s) => s.showCongestionLayer);
   const isPresentationMode = useStore((s) => s.isPresentationMode);
+  const graphStatus = useStore((s) => s.graphStatus);
+  const cityProfile = graphStatus?.city_profile ?? 'cartagena';
+  const mapCenter: [number, number] = graphStatus
+    ? [graphStatus.center_longitude, graphStatus.center_latitude]
+    : cityProfile === 'cartagena' ? [-75.4794, 10.3910] : [-73.9857, 40.7484];
 
   return (
     <div className="absolute inset-0">
-      <MapContainer
-        center={[MANHATTAN_CENTER[1], MANHATTAN_CENTER[0]]}
-        zoom={13}
+      <MapContainer key={cityProfile} center={[mapCenter[1], mapCenter[0]]}
+        zoom={graphStatus?.default_zoom ?? 12}
         className="h-full w-full"
         zoomControl={false}
         attributionControl={!isPresentationMode}
@@ -122,6 +145,7 @@ export function MapView() {
         {showCongestionLayer && <CongestionLayer />}
         <RouteLayer />
         <VehicleMarkers />
+        <IncidentMarkers />
         <FlyToSelectedUnit />
         <MapController />
         <DestinationPicker />

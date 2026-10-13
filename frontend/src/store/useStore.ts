@@ -8,6 +8,7 @@ import type {
   ConnectionStatus,
   GeoJsonEdgeFeature,
   ReplayFrame,
+  FloodReport,
 } from '../types';
 
 export type MobilePanel = 'none' | 'dispatch' | 'layers' | 'follow';
@@ -16,6 +17,13 @@ export type ReplaySpeed = 1 | 2;
 export interface MapPlace extends Coordinates {
   label: string;
   category: 'hospital' | 'fire_station' | 'water' | 'destination';
+}
+
+export interface IncidentMapPoint extends Coordinates {
+  incident_id: string;
+  label: string;
+  status: string;
+  confidence: number;
 }
 
 interface FlowSenseState {
@@ -86,6 +94,10 @@ interface FlowSenseState {
   setOrigin: (p: MapPlace) => void;
   destination: MapPlace | null;
   setDestination: (p: MapPlace | null) => void;
+  incidentPoints: IncidentMapPoint[];
+  setIncidentPoints: (points: IncidentMapPoint[]) => void;
+  floodReports: FloodReport[];
+  setFloodReports: (reports: FloodReport[]) => void;
 }
 
 export const useStore = create<FlowSenseState>((set) => ({
@@ -173,10 +185,14 @@ export const useStore = create<FlowSenseState>((set) => ({
   autoFollowNextDispatch: false,
   setAutoFollowNextDispatch: (autoFollowNextDispatch) => set({ autoFollowNextDispatch }),
 
-  origin: { label: 'Times Square, Manhattan', latitude: 40.758, longitude: -73.9855, category: 'destination' },
+  origin: { label: 'Centro, Cartagena', latitude: 10.3910, longitude: -75.4794, category: 'destination' },
   setOrigin: (origin) => set({ origin }),
   destination: null,
   setDestination: (destination) => set({ destination }),
+  incidentPoints: [],
+  setIncidentPoints: (incidentPoints) => set({ incidentPoints }),
+  floodReports: [],
+  setFloodReports: (floodReports) => set({ floodReports }),
 }));
 
 function getCongestionColor(c: number): string {

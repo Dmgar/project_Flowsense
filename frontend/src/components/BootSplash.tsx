@@ -31,7 +31,7 @@ export function BootSplash() {
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8f3ed] text-2xl font-extrabold text-[#26734d]">F</div>
       <div className="font-sans text-lg font-bold tracking-tight text-[#24342c]">FlowSense</div>
       <div className="h-1 w-28 overflow-hidden rounded-full bg-[#dce5df]"><div className="h-full w-2/3 animate-pulse rounded-full bg-[#46956d]" /></div>
-      <div className="font-sans text-xs text-[#78847d]">Preparando el mapa de Manhattan…</div>
+      <div className="font-sans text-xs text-[#78847d]">Preparando el mapa y la red vial…</div>
     </div>
   );
 }

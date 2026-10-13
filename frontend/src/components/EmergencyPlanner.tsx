@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { computeAlternativeRoutes, computeRoute } from '../api/client';
 import { useStore, type MapPlace } from '../store/useStore';
-import type { RouteResponse, RouteStep, VehicleType } from '../types';
+import type { AlternativeRoutesResponse, RouteResponse, RouteStep, VehicleType } from '../types';
 
 const PLACES: MapPlace[] = [
   { label: 'NYU Langone Health', latitude: 40.7424, longitude: -73.9743, category: 'hospital' },
@@ -11,6 +11,12 @@ const PLACES: MapPlace[] = [
   { label: 'FDNY Engine 54 / Ladder 4', latitude: 40.7638, longitude: -73.9856, category: 'fire_station' },
   { label: 'FDNY Engine 21', latitude: 40.7487, longitude: -73.9722, category: 'fire_station' },
   { label: 'FDNY Engine 65', latitude: 40.7108, longitude: -73.9957, category: 'fire_station' },
+];
+const CARTAGENA_PLACES: MapPlace[] = [
+  { label: 'Hospital Universitario del Caribe · Zaragocilla', latitude: 10.40058, longitude: -75.50406, category: 'hospital' },
+  { label: 'Hospital Bocagrande', latitude: 10.39578, longitude: -75.5559, category: 'hospital' },
+  { label: 'Bomberos · Santa Lucía', latitude: 10.39417, longitude: -75.4802, category: 'fire_station' },
+  { label: 'Bomberos · Bocagrande', latitude: 10.4180, longitude: -75.5515, category: 'fire_station' },
 ];
 
 function distanceKm(a: MapPlace, b: MapPlace) {
@@ -76,6 +82,7 @@ export function EmergencyPlanner() {
   const [isNavigating, setIsNavigating] = useState(false);
   const [locationMessage, setLocationMessage] = useState('');
   const [routeMessage, setRouteMessage] = useState('');
+  const [resilience, setResilience] = useState<AlternativeRoutesResponse['resilience']>(null);
   const navigationWatchRef = useRef<number | null>(null);
   const lastRerouteOriginRef = useRef<MapPlace | null>(null);
   const rerouteInFlightRef = useRef(false);
@@ -89,6 +96,8 @@ export function EmergencyPlanner() {
   const routeOptions = useStore((s) => s.routeOptions);
   const setRouteOptions = useStore((s) => s.setRouteOptions);
   const graphStatus = useStore((s) => s.graphStatus);
+  const places = graphStatus?.city_profile === 'manhattan' ? PLACES : CARTAGENA_PLACES;
+  const cityName = graphStatus?.city_profile === 'manhattan' ? 'Manhattan' : 'Cartagena';
 
   const stopNavigation = () => {
     if (navigationWatchRef.current !== null) {
@@ -111,11 +120,11 @@ export function EmergencyPlanner() {
 
   const filteredPlaces = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
-    return PLACES.filter((place) => {
+    return places.filter((place) => {
       const matchesType = vehicleType === 'ambulance' ? place.category === 'hospital' : place.category === 'fire_station';
       return matchesType && (!term || place.label.toLocaleLowerCase().includes(term));
     }).slice(0, 4);
-  }, [query, vehicleType]);
+  }, [places, query, vehicleType]);
 
   const choosePlace = (place: MapPlace) => {
     stopNavigation();
@@ -125,6 +134,7 @@ export function EmergencyPlanner() {
     setRouteMessage('');
     setActiveRoute(null);
     setRouteOptions([]);
+    setResilience(null);
   };
 
   const locateMe = () => {
@@ -188,6 +198,7 @@ export function EmergencyPlanner() {
         if (useStore.getState().destination !== destination) return;
         setActiveRoute(route);
         setRouteOptions([route]);
+        setResilience(null);
         setRouteMessage('Ruta actualizada desde tu posición GPS.');
       } catch {
         setLocationMessage('No se pudo actualizar la ruta. Comprueba la conexión con FlowSense.');
@@ -216,6 +227,7 @@ export function EmergencyPlanner() {
       const routes = [result.primary, ...result.alternatives];
       setRouteOptions(routes);
       setActiveRoute(result.primary);
+      setResilience(result.resilience ?? null);
       setRouteMessage(graphStatus?.is_synthetic
         ? 'Ruta calculada sobre la cuadrícula de respaldo.'
         : 'Ruta calculada siguiendo calles de OpenStreetMap.');
@@ -226,7 +238,7 @@ export function EmergencyPlanner() {
       setRouteMessage(detail.includes('synthetic') || detail.includes('street data is unavailable')
         ? 'Los datos reales de calles no están disponibles en este momento.'
         : detail.includes('street network')
-          ? 'El origen o el destino queda fuera de la cobertura vial disponible de Manhattan.'
+          ? `El origen o el destino queda fuera de la cobertura vial disponible de ${cityName}.`
           : 'No se pudo calcular por calles. Comprueba que el backend FlowSense esté conectado.');
     } finally {
       setIsRouting(false);
@@ -242,7 +254,7 @@ export function EmergencyPlanner() {
         <div className="planner-brand"><span className="brand-mark">F</span><span>FlowSense</span></div>
         <span className={`service-status ${online ? 'is-online' : ''}`}><i />{online ? 'En línea' : 'Modo demo'}</span>
       </div>
-      <p className="planner-eyebrow">NAVEGACIÓN DE EMERGENCIA</p>
+      <p className="planner-eyebrow">DESPACHO CON RUTA DE RESPALDO</p>
       <h1>¿A dónde vamos?</h1>
       <p className="planner-subtitle">Busca un lugar o toca cualquier punto del mapa.</p>
 
@@ -258,7 +270,7 @@ export function EmergencyPlanner() {
       <div className="place-search-wrap">
         <label className="place-search">
           <span className="search-icon" aria-hidden="true">⌕</span>
-          <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false); if (event.key === 'Enter' && filteredPlaces[0]) choosePlace(filteredPlaces[0]); }} placeholder="Buscar destino en Manhattan" aria-label="Buscar destino" />
+          <input value={query} onChange={(event) => { setQuery(event.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} onKeyDown={(event) => { if (event.key === 'Escape') setSearchOpen(false); if (event.key === 'Enter' && filteredPlaces[0]) choosePlace(filteredPlaces[0]); }} placeholder={`Buscar destino en ${cityName}`} aria-label="Buscar destino" />
           {query && <button className="clear-search" aria-label="Limpiar búsqueda" onClick={() => { setQuery(''); setDestination(null); setActiveRoute(null); setRouteOptions([]); }}>×</button>}
         </label>
         {searchOpen && (
@@ -296,6 +308,14 @@ export function EmergencyPlanner() {
         <div className="route-summary">
           <div className="route-summary-top"><span><i /> RUTA SELECCIONADA</span><strong>{formatDuration(activeRoute.total_estimated_time_s)}</strong></div>
           <p>{(activeRoute.total_distance_m / 1000).toFixed(1)} km <span>·</span> {destination.label}</p>
+          {resilience && <div className={`route-resilience ${resilience.status}`}>
+            <div className="route-resilience-top"><span>CONTINUIDAD DEL PLAN</span><strong>{resilience.score_pct}/100</strong></div>
+            <p>{resilience.explanation}</p>
+            {(resilience.flood_reports_considered ?? 0) > 0 && <small>{resilience.flood_reports_considered} observaciones confirmadas revisadas · {resilience.flood_reports_excluded_by_vehicle} superan el límite configurado para esta unidad.</small>}
+            <small>Índice topológico: tramos compartidos y demora del desvío; no verifica por sí solo la transitabilidad real.</small>
+            {resilience.backup_route_id && <small>Respaldo: comparte {resilience.shared_segment_pct}% de los tramos · desvío estimado +{resilience.detour_pct ?? 0}%</small>}
+            {resilience.status === 'no_backup' && <small>Un solo camino calculable: considera confirmar el acceso antes de salir.</small>}
+          </div>}
           {routeMessage && <small>{routeMessage}</small>}
           <button className={`navigation-button ${isNavigating ? 'navigating' : ''}`} onClick={isNavigating ? stopNavigation : startNavigation}>
             {isNavigating ? '■ Detener navegación' : '▶ Iniciar navegación GPS'}
@@ -305,7 +325,7 @@ export function EmergencyPlanner() {
               <button key={route.route_id} className={route.route_id === activeRoute.route_id ? 'selected' : ''} onClick={() => setActiveRoute(route)}>
                 <strong>{formatDuration(route.total_estimated_time_s)}</strong>
                 <span>{(route.total_distance_m / 1000).toFixed(1)} km</span>
-                <small>{index === 0 ? 'Recomendada' : `Alternativa ${index}`}</small>
+                <small>{route.route_id === resilience?.backup_route_id ? 'Respaldo de continuidad' : index === 0 ? 'Recomendada' : `Alternativa ${index}`}</small>
               </button>
             ))}
           </div>
