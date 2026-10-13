@@ -158,7 +158,8 @@ class GraphService:
                 ox.settings.max_query_area_size = 100_000 * 100_000
             except Exception:  # pragma: no cover
                 pass
-            # Bounding box for Manhattan: (west, south, east, north) in lon/lat order.
+            # Bounding box for Manhattan in OSMnx >= 2.0 standard order:
+            # bbox=(left, bottom, right, top) == (west, south, east, north)
             G = ox.graph_from_bbox(
                 bbox=(
                     settings.PILOT_BBOX_WEST,
@@ -323,7 +324,7 @@ class GraphService:
         return G
 
     def _normalize_graph_attributes(self):
-        """Ensures all nodes and edges have valid coordinates and numeric weights, and integer node IDs."""
+        """Ensures all nodes and edges have valid coordinates and numeric weights, and strictly integer node IDs."""
         if not self.graph:
             return
 
@@ -331,11 +332,14 @@ class GraphService:
             self.graph = nx.MultiDiGraph(self.graph)
         self.graph.graph["flowsense_is_synthetic"] = self.is_synthetic
 
-        # Relabel any string-encoded integer node IDs to int
+        # Relabel any string-encoded integer node IDs strictly to int
         relabel_map = {}
-        for n in self.graph.nodes():
-            if isinstance(n, str) and (n.isdigit() or (n.startswith('-') and n[1:].isdigit())):
-                relabel_map[n] = int(n)
+        for n in list(self.graph.nodes()):
+            if not isinstance(n, int):
+                try:
+                    relabel_map[n] = int(n)
+                except (ValueError, TypeError):
+                    pass
         if relabel_map:
             self.graph = nx.relabel_nodes(self.graph, relabel_map)
 
@@ -360,19 +364,18 @@ class GraphService:
             
             # Ensure congestion factor
             congestion = float(data.get("congestion_factor", 0.0))
-            data["congestion_factor"] = congestion
+            data["congestion_factor"] = max(0.0, min(1.0, congestion))
 
-            # Ensure vehicle count
+            # Ensure vehicle count and speed
             data["vehicle_count"] = int(data.get("vehicle_count", 0))
+            data["average_speed_kmh"] = float(data.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH))
+
+            # Ensure incident and corridor multipliers
+            data["incident_multiplier"] = float(data.get("incident_multiplier", 1.0))
+            data["corridor_multiplier"] = float(data.get("corridor_multiplier", 1.0))
             
-            # Calculate emergency weight
-            road_type = str(data.get("highway", "secondary"))
-            # Primary avenues are wider and easier to clear for emergency vehicles
-            road_class_factor = 0.85 if "primary" in road_type or "trunk" in road_type else 1.0
-            
-            # W_e = length * (1 + alpha * congestion) * road_class_factor
-            emergency_weight = length * (1.0 + settings.CONGESTION_ALPHA * congestion) * road_class_factor
-            data["emergency_weight"] = emergency_weight
+            # Calculate emergency weight using unified helper
+            self.recompute_edge_weight(u, v, k)
 
             # Sanitize edge attributes for GraphML serialization
             for ek, ev in list(data.items()):
@@ -380,6 +383,29 @@ class GraphService:
                     data[ek] = ",".join(str(item) for item in ev)
                 elif not isinstance(ev, (str, int, float, bool)):
                     data[ek] = str(ev)
+
+    def recompute_edge_weight(self, u: int, v: int, key: int = 0) -> float:
+        """
+        Unified calculation of emergency_weight for edge (u, v, key):
+            W_e = length * (1.0 + alpha * congestion_factor) * road_class_factor * incident_multiplier * corridor_multiplier
+        where road_class_factor is 0.85 for primary/trunk highways, 1.0 otherwise.
+        """
+        G = self.get_graph()
+        u_int, v_int = int(u), int(v)
+        if not G.has_edge(u_int, v_int, key):
+            return 0.0
+        edge_data = G[u_int][v_int][key]
+        raw_len = edge_data.get("length", 100.0)
+        length = float(raw_len[0]) if isinstance(raw_len, (list, tuple)) else float(raw_len)
+        congestion = max(0.0, min(1.0, float(edge_data.get("congestion_factor", 0.0))))
+        road_type = str(edge_data.get("highway", "secondary"))
+        road_class_factor = 0.85 if ("primary" in road_type or "trunk" in road_type) else 1.0
+        incident_mult = float(edge_data.get("incident_multiplier", 1.0))
+        corridor_mult = float(edge_data.get("corridor_multiplier", 1.0))
+
+        w_e = length * (1.0 + settings.CONGESTION_ALPHA * congestion) * road_class_factor * incident_mult * corridor_mult
+        edge_data["emergency_weight"] = round(w_e, 3)
+        return edge_data["emergency_weight"]
 
     def _save_cache(self):
         if self.graph:
@@ -461,17 +487,19 @@ class GraphService:
         for u, v, k, data in G.edges(keys=True, data=True):
             if u in affected_nodes_set or v in affected_nodes_set:
                 incident_backup.append({
-                    "u": u, "v": v, "key": k,
-                    "congestion_factor": data.get("congestion_factor", 0.0),
-                    "vehicle_count": data.get("vehicle_count", 0),
-                    "average_speed_kmh": data.get("average_speed_kmh", 50.0),
-                    "emergency_weight": data.get("emergency_weight", 100.0)
+                    "u": int(u), "v": int(v), "key": k,
+                    "congestion_factor": float(data.get("congestion_factor", 0.0)),
+                    "vehicle_count": int(data.get("vehicle_count", 0)),
+                    "average_speed_kmh": float(data.get("average_speed_kmh", 50.0)),
+                    "incident_multiplier": float(data.get("incident_multiplier", 1.0)),
+                    "corridor_multiplier": float(data.get("corridor_multiplier", 1.0)),
+                    "emergency_weight": float(data.get("emergency_weight", 100.0)),
                 })
-                length = float(data.get("length", 100.0))
                 data["congestion_factor"] = cg
                 data["vehicle_count"] = 55 if block_traffic else 35
                 data["average_speed_kmh"] = 3.0 if block_traffic else 12.0
-                data["emergency_weight"] = length * multiplier
+                data["incident_multiplier"] = multiplier
+                self.recompute_edge_weight(u, v, k)
                 affected_edges_count += 1
 
         self.active_incidents[incident_id] = {
@@ -492,13 +520,14 @@ class GraphService:
         G = self.get_graph()
         incident_data = self.active_incidents.pop(incident_id)
         for b in incident_data.get("edges_backup", []):
-            u, v, k = b["u"], b["v"], b["key"]
+            u, v, k = int(b["u"]), int(b["v"]), b["key"]
             if G.has_edge(u, v, k):
                 edge = G[u][v][k]
-                edge["congestion_factor"] = b["congestion_factor"]
-                edge["vehicle_count"] = b["vehicle_count"]
-                edge["average_speed_kmh"] = b["average_speed_kmh"]
-                edge["emergency_weight"] = b["emergency_weight"]
+                edge["congestion_factor"] = b.get("congestion_factor", 0.0)
+                edge["vehicle_count"] = b.get("vehicle_count", 0)
+                edge["average_speed_kmh"] = b.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)
+                edge["incident_multiplier"] = b.get("incident_multiplier", 1.0)
+                self.recompute_edge_weight(u, v, k)
 
         return True
 
@@ -515,42 +544,30 @@ class GraphService:
         Updates the congestion metrics of an edge and dynamically recomputes W_e.
         """
         G = self.get_graph()
-        # Edge could be int or str node ID depending on graphml serialization
-        # Check both int and str representations
-        target_u, target_v = u, v
-        if not G.has_edge(target_u, target_v, key):
-            target_u, target_v = str(u), str(v)
-            if not G.has_edge(target_u, target_v, key):
-                return False
+        u_int, v_int = int(u), int(v)
+        if not G.has_edge(u_int, v_int, key):
+            return False
 
-        edge_data = G[target_u][target_v][key]
+        edge_data = G[u_int][v_int][key]
         clamped_congestion = max(0.0, min(1.0, float(congestion_factor)))
         edge_data["congestion_factor"] = clamped_congestion
-        edge_data["vehicle_count"] = vehicle_count
-        edge_data["average_speed_kmh"] = average_speed_kmh
+        edge_data["vehicle_count"] = int(vehicle_count)
+        edge_data["average_speed_kmh"] = float(average_speed_kmh)
 
-        # Recalculate W_e
-        length = float(edge_data.get("length", 100.0))
-        road_type = str(edge_data.get("highway", "secondary"))
-        road_class_factor = 0.85 if "primary" in road_type or "trunk" in road_type else 1.0
-
-        emergency_weight = length * (1.0 + settings.CONGESTION_ALPHA * clamped_congestion) * road_class_factor
-        edge_data["emergency_weight"] = emergency_weight
-
+        self.recompute_edge_weight(u_int, v_int, key)
         return True
 
     def reset_all_congestion(self) -> int:
         """Resets congestion on every edge to free flow. Returns number of edges reset."""
         G = self.get_graph()
         count = 0
-        for _, _, _, data in G.edges(keys=True, data=True):
+        for u, v, k, data in G.edges(keys=True, data=True):
             data["congestion_factor"] = 0.0
             data["vehicle_count"] = 0
             data["average_speed_kmh"] = settings.DEFAULT_SPEED_KMH
-            length = float(data.get("length", 100.0))
-            road_class = data.get("highway", "secondary")
-            factor = 0.85 if road_class in ("primary", "secondary") else 1.0
-            data["emergency_weight"] = length * factor
+            data["incident_multiplier"] = 1.0
+            data["corridor_multiplier"] = 1.0
+            self.recompute_edge_weight(u, v, k)
             count += 1
         return count
 
@@ -581,19 +598,33 @@ class GraphService:
     def to_geojson(self) -> Dict[str, Any]:
         """
         Converts the graph edges into a GeoJSON FeatureCollection with traffic styling.
-        Ready for Leaflet.js consumption.
+        Ready for Leaflet.js consumption. Extracts full edge geometry if available.
         """
         G = self.get_graph()
         features: List[Dict[str, Any]] = []
 
         for u, v, k, data in G.edges(keys=True, data=True):
-            u_data = G.nodes.get(u) or G.nodes.get(str(u), {})
-            v_data = G.nodes.get(v) or G.nodes.get(str(v), {})
+            u_data = G.nodes.get(int(u), {})
+            v_data = G.nodes.get(int(v), {})
 
-            coords = [
-                [float(u_data.get("x", 0.0)), float(u_data.get("y", 0.0))],
-                [float(v_data.get("x", 0.0)), float(v_data.get("y", 0.0))]
-            ]
+            u_lon, u_lat = float(u_data.get("x", 0.0)), float(u_data.get("y", 0.0))
+            v_lon, v_lat = float(v_data.get("x", 0.0)), float(v_data.get("y", 0.0))
+
+            edge_geometry = data.get("geometry")
+            coords = []
+            if edge_geometry is not None:
+                try:
+                    if hasattr(edge_geometry, "coords"):
+                        coords = [[float(x), float(y)] for x, y in edge_geometry.coords]
+                    elif isinstance(edge_geometry, str):
+                        from shapely import wkt
+                        parsed = wkt.loads(edge_geometry)
+                        coords = [[float(x), float(y)] for x, y in parsed.coords]
+                except Exception:
+                    coords = []
+
+            if not coords:
+                coords = [[u_lon, u_lat], [v_lon, v_lat]]
 
             cg = float(data.get("congestion_factor", 0.0))
             # Determine color: green (free), amber (medium), red (severe)
@@ -611,8 +642,8 @@ class GraphService:
                     "coordinates": coords
                 },
                 "properties": {
-                    "u": u,
-                    "v": v,
+                    "u": int(u),
+                    "v": int(v),
                     "key": k,
                     "name": data.get("name", "Unknown"),
                     "highway": data.get("highway", "secondary"),

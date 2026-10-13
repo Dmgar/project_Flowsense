@@ -70,20 +70,25 @@ class CongestionEstimator:
         CongestionMetrics
             Ready to be serialised into a ``CameraTelemetryReport``.
         """
-        vehicle_count = len(tracked_vehicles)
+        # Only count vehicles active in current frame or at most 1 missed frame (prevent phantom tracks)
+        active_vehicles = [v for v in tracked_vehicles if v.frames_since_seen <= 1]
+        vehicle_count = len(active_vehicles)
 
-        # Average speed across active tracks
+        # Average speed across mature, currently visible tracks
         if avg_speed_override is not None:
             avg_speed = avg_speed_override
-        elif vehicle_count > 0:
-            speeds = [
+        else:
+            # Mature tracks visible in current frame; newborn tracks (age == 1) are excluded
+            mature_speeds = [
                 v.estimated_speed_kmh
                 for v in tracked_vehicles
-                if v.frames_since_seen == 0
+                if v.frames_since_seen == 0 and (v.age >= 2 or v.age == 0)
             ]
-            avg_speed = sum(speeds) / len(speeds) if speeds else 0.0
-        else:
-            avg_speed = self.free_flow_speed  # no vehicles ⇒ free-flow
+            if mature_speeds:
+                avg_speed = sum(mature_speeds) / len(mature_speeds)
+            else:
+                # No mature tracks (empty or all age == 1) ⇒ fallback to free-flow speed
+                avg_speed = self.free_flow_speed
 
         # Density ratio  (capped at 1.0)
         density_ratio = min(vehicle_count / self.max_density, 1.0)

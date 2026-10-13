@@ -92,7 +92,12 @@ class VehicleTracker:
     # Core tracking
     # ------------------------------------------------------------------
 
-    def update(self, detections: List[Detection], frame: np.ndarray) -> List[TrackedVehicle]:
+    def update(
+        self,
+        detections: List[Detection],
+        frame: np.ndarray,
+        frame_step: int = 1,
+    ) -> List[TrackedVehicle]:
         """
         Update internal tracks with new detections and return currently active tracks.
 
@@ -102,6 +107,10 @@ class VehicleTracker:
             Current-frame detections from ``VehicleDetector.detect()``.
         frame : np.ndarray
             Current BGR frame (used for optical flow if enabled).
+        frame_step : int
+            Number of video frames elapsed since the last update (default 1).
+            When skipping frames, ``frame_step = skip_frames + 1`` to correctly
+            scale per-frame velocity and real-world speed.
 
         Returns
         -------
@@ -110,11 +119,34 @@ class VehicleTracker:
         """
         det_centroids = [_centroid(d.bbox) for d in detections]
 
-        # --- Greedy IoU matching ---
         matched_tracks: set[int] = set()
         matched_dets: set[int] = set()
 
-        # Build cost matrix: track_id -> [(det_idx, iou)]
+        def _assign_detection(tid: int, d_idx: int) -> None:
+            det = detections[d_idx]
+            track = self._tracks[tid]
+
+            old_cx, old_cy = track.centroid
+            new_cx, new_cy = det_centroids[d_idx]
+            displacement = float(np.hypot(new_cx - old_cx, new_cy - old_cy))
+            velocity_px = displacement / max(1, frame_step)  # px/frame
+            raw_speed_kmh = (velocity_px / self.pixels_per_meter) * self.fps * 3.6
+
+            track.bbox = det.bbox
+            track.class_name = det.class_name
+            track.centroid = (new_cx, new_cy)
+            track.velocity_px_per_frame = round(velocity_px, 2)
+
+            # Exponential Moving Average (EMA) smoothing for speed when track is mature
+            if track.age > 2:
+                track.estimated_speed_kmh = round(0.7 * track.estimated_speed_kmh + 0.3 * raw_speed_kmh, 1)
+            else:
+                track.estimated_speed_kmh = round(raw_speed_kmh, 1)
+
+            track.age += 1
+            track.frames_since_seen = 0
+
+        # --- Stage 1: Greedy IoU matching ---
         matches: List[Tuple[int, int, float]] = []  # (track_id, det_idx, iou)
         for tid, track in self._tracks.items():
             for d_idx, det in enumerate(detections):
@@ -128,26 +160,36 @@ class VehicleTracker:
         for tid, d_idx, score in matches:
             if tid in matched_tracks or d_idx in matched_dets:
                 continue
-
-            det = detections[d_idx]
-            track = self._tracks[tid]
-
-            old_cx, old_cy = track.centroid
-            new_cx, new_cy = det_centroids[d_idx]
-            displacement = np.hypot(new_cx - old_cx, new_cy - old_cy)
-            velocity_px = displacement  # px/frame
-            speed_kmh = (velocity_px / self.pixels_per_meter) * self.fps * 3.6
-
-            track.bbox = det.bbox
-            track.class_name = det.class_name
-            track.centroid = (new_cx, new_cy)
-            track.velocity_px_per_frame = round(velocity_px, 2)
-            track.estimated_speed_kmh = round(speed_kmh, 1)
-            track.age += 1
-            track.frames_since_seen = 0
-
+            _assign_detection(tid, d_idx)
             matched_tracks.add(tid)
             matched_dets.add(d_idx)
+
+        # --- Stage 2: Centroid distance fallback matching for unmatched detections ---
+        unmatched_tids = [tid for tid in self._tracks if tid not in matched_tracks]
+        unmatched_d_idxs = [d_idx for d_idx in range(len(detections)) if d_idx not in matched_dets]
+
+        if unmatched_tids and unmatched_d_idxs:
+            # Distance threshold scales with frame_step to tolerate inter-frame separation
+            max_centroid_dist = max(80.0, 30.0 * max(1, frame_step))
+            centroid_matches: List[Tuple[int, int, float]] = []
+            for tid in unmatched_tids:
+                track = self._tracks[tid]
+                tcx, tcy = track.centroid
+                for d_idx in unmatched_d_idxs:
+                    dcx, dcy = det_centroids[d_idx]
+                    dist = float(np.hypot(dcx - tcx, dcy - tcy))
+                    if dist <= max_centroid_dist:
+                        centroid_matches.append((tid, d_idx, dist))
+
+            # Sort ascending by distance (closest first)
+            centroid_matches.sort(key=lambda m: m[2])
+
+            for tid, d_idx, dist in centroid_matches:
+                if tid in matched_tracks or d_idx in matched_dets:
+                    continue
+                _assign_detection(tid, d_idx)
+                matched_tracks.add(tid)
+                matched_dets.add(d_idx)
 
         # --- Age out unmatched tracks ---
         for tid in list(self._tracks.keys()):
@@ -175,7 +217,7 @@ class VehicleTracker:
 
         # --- Optional global optical flow ---
         if self.use_optical_flow:
-            self._compute_optical_flow(frame)
+            self._compute_optical_flow(frame, frame_step=frame_step)
 
         return list(self._tracks.values())
 
@@ -183,7 +225,7 @@ class VehicleTracker:
     # Optical flow (aggregate velocity estimation)
     # ------------------------------------------------------------------
 
-    def _compute_optical_flow(self, frame: np.ndarray) -> None:
+    def _compute_optical_flow(self, frame: np.ndarray, frame_step: int = 1) -> None:
         """
         Compute dense optical flow (Farneback) between current and previous
         frame to estimate global traffic movement speed.
@@ -200,7 +242,12 @@ class VehicleTracker:
             )
             # Compute magnitude of flow vectors
             mag, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
-            self._global_flow_speed = float(np.median(mag))
+            # Only consider pixels with significant movement (filter out static road/background)
+            moving_pixels = mag[mag > 0.8]
+            if moving_pixels.size > 0:
+                self._global_flow_speed = float(np.median(moving_pixels)) / max(1, frame_step)
+            else:
+                self._global_flow_speed = 0.0
 
         self._prev_gray = gray
 
@@ -212,19 +259,23 @@ class VehicleTracker:
         """Number of currently active tracks."""
         return len(self._tracks)
 
-    def get_average_flow_velocity(self) -> float:
+    def get_average_flow_velocity(self, free_flow_fallback: Optional[float] = None) -> float:
         """
-        Average speed (km/h) across all tracked vehicles.
-        Falls back to optical flow estimate if no individual tracks are available.
+        Average speed (km/h) across mature tracked vehicles visible in current frame.
+        Excludes newborn tracks (age == 1) to prevent pulling the average down.
+        Falls back to optical flow estimate or free_flow_fallback if no mature tracks are available.
         """
-        active = [t for t in self._tracks.values() if t.frames_since_seen == 0]
-        if active:
-            speeds = [t.estimated_speed_kmh for t in active]
+        mature = [t for t in self._tracks.values() if t.frames_since_seen == 0 and t.age >= 2]
+        if mature:
+            speeds = [t.estimated_speed_kmh for t in mature]
             return round(sum(speeds) / len(speeds), 1)
 
         # Fallback to optical flow global estimate
         if self.use_optical_flow and self._global_flow_speed > 0:
             return round((self._global_flow_speed / self.pixels_per_meter) * self.fps * 3.6, 1)
+
+        if free_flow_fallback is not None:
+            return float(free_flow_fallback)
 
         return 0.0
 

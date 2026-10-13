@@ -24,7 +24,7 @@ class TrackedVehicle:
     centroid: Tuple[float, float] = (0.0, 0.0)  # (cx, cy) center of bounding box
     velocity_px_per_frame: float = 0.0
     estimated_speed_kmh: float = 0.0
-    age: int = 0  # number of consecutive frames this vehicle has been tracked
+    age: int = 2  # number of consecutive frames this vehicle has been tracked
     frames_since_seen: int = 0  # frames since the last matched detection
 
 

@@ -73,3 +73,55 @@ def test_green_wave_corridor_ahead():
             await signal_service.release_intersection(nid)
 
     asyncio.run(_run())
+
+
+@pytest.mark.anyio
+async def test_preempt_incident_edges_and_weight_update():
+    G = graph_service.get_graph()
+    target_node = list(G.nodes())[0]
+
+    out_edges = list(G.out_edges(target_node, keys=True))
+    if out_edges:
+        u, v, k = out_edges[0]
+        graph_service.update_edge_congestion(u, v, k, congestion_factor=0.8, vehicle_count=30, average_speed_kmh=15.0)
+        weight_before = G[u][v][k]["emergency_weight"]
+
+        # Preempt the node
+        await signal_service.preempt_intersection(target_node, vehicle_id="EMS-PREEMPT-TEST")
+        weight_after = G[u][v][k]["emergency_weight"]
+
+        # Congestion factor should have been reduced and emergency_weight recomputed
+        assert G[u][v][k]["congestion_factor"] == pytest.approx(0.24, abs=0.01)
+        assert weight_after < weight_before
+
+        await signal_service.release_intersection(target_node)
+
+
+@pytest.mark.anyio
+async def test_mock_simulator_mission_terminates_cleanly():
+    from unittest.mock import patch
+    from src.services.mock_simulator import simulator
+    from src.services.routing_engine import routing_engine
+    from src.models.schemas import DispatchRequest, Coordinates
+
+    G = graph_service.get_graph()
+    nodes = list(G.nodes())
+    start_node, end_node = nodes[0], nodes[2]
+
+    route = routing_engine.calculate_emergency_route(
+        DispatchRequest(
+            origin=Coordinates(latitude=G.nodes[start_node]["y"], longitude=G.nodes[start_node]["x"]),
+            destination=Coordinates(latitude=G.nodes[end_node]["y"], longitude=G.nodes[end_node]["x"]),
+            vehicle_type="ambulance",
+            priority="high",
+        )
+    )
+
+    with patch("asyncio.sleep", return_value=None):
+        # Must terminate cleanly without infinite loop
+        await simulator.run_mission_simulation(route, vehicle_id="EMS-FINISH-01")
+        # All signals along route should have been released
+        for wp in route.waypoints:
+            sig = signal_service._signals.get(wp.node_id)
+            if sig:
+                assert sig["state"] == "normal"

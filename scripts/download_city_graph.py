@@ -5,7 +5,7 @@ Extracts real driving networks via OSMnx and caches them as GraphML for zero-lat
 
 Usage:
     python scripts/download_city_graph.py --place "Manhattan, New York, USA" --output data/processed/manhattan_graph.graphml
-    python scripts/download_city_graph.py --bbox 40.7700 40.7300 -73.9700 -74.0100
+    python scripts/download_city_graph.py --bbox -74.0100 40.7300 -73.9700 40.7700
 """
 
 import argparse
@@ -31,20 +31,22 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
         print("Install it with: pip install osmnx")
         sys.exit(1)
 
-    print(f"[INFO] Initializing download using OSMnx...")
+    print(f"[INFO] Initializing download using OSMnx (version {ox.__version__})...")
 
+    # In OSMnx >= 2.0, graph_from_bbox expects bbox=(left, bottom, right, top),
+    # which corresponds strictly to (west, south, east, north) in geographical degrees.
     if bbox:
-        north, south, east, west = bbox
-        print(f"[INFO] Downloading bounding box: North={north}, South={south}, East={east}, West={west}")
-        G = ox.graph_from_bbox(bbox=(north, south, east, west), network_type="drive")
+        west, south, east, north = bbox
+        print(f"[INFO] Downloading bounding box: West={west}, South={south}, East={east}, North={north}")
+        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive")
     elif place:
         print(f"[INFO] Downloading place: '{place}' (drive network)...")
         G = ox.graph_from_place(place, network_type="drive")
     else:
-        # Default Manhattan Pilot bounding box
-        north, south, east, west = 40.7700, 40.7300, -73.9700, -74.0100
-        print(f"[INFO] Using default Manhattan BBox: [{north}, {south}, {east}, {west}]")
-        G = ox.graph_from_bbox(bbox=(north, south, east, west), network_type="drive")
+        # Default Manhattan Pilot bounding box: (west, south, east, north)
+        west, south, east, north = -74.0200, 40.7000, -73.9000, 40.8800
+        print(f"[INFO] Using default Manhattan BBox: West={west}, South={south}, East={east}, North={north}")
+        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive")
 
     node_count = G.number_of_nodes()
     edge_count = G.number_of_edges()
@@ -59,9 +61,11 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
         data["congestion_factor"] = 0.0
         data["vehicle_count"] = 0
         data["average_speed_kmh"] = 45.0
+        data["incident_multiplier"] = 1.0
+        data["corridor_multiplier"] = 1.0
         road_type = str(data.get("highway", "secondary"))
         factor = 0.85 if ("primary" in road_type or "trunk" in road_type) else 1.0
-        data["emergency_weight"] = length * factor
+        data["emergency_weight"] = round(length * factor, 3)
         for ek, ev in list(data.items()):
             if isinstance(ev, (list, tuple, set)):
                 data[ek] = ",".join(str(item) for item in ev)
@@ -82,7 +86,13 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Download and cache urban road graphs for FlowSense.")
     parser.add_argument("--place", type=str, default=None, help="City or district name (e.g. 'Manhattan, New York, USA')")
-    parser.add_argument("--bbox", nargs=4, type=float, metavar=('NORTH', 'SOUTH', 'EAST', 'WEST'), help="Bounding box coordinates")
+    parser.add_argument(
+        "--bbox",
+        nargs=4,
+        type=float,
+        metavar=('WEST', 'SOUTH', 'EAST', 'NORTH'),
+        help="Bounding box coordinates in OSMnx >= 2.0 order: (west, south, east, north) / (left, bottom, right, top)"
+    )
     parser.add_argument("--output", type=str, default="data/processed/manhattan_graph.graphml", help="Output GraphML path")
 
     args = parser.parse_args()

@@ -96,7 +96,7 @@ class VehicleDetector:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _preprocess(frame: np.ndarray) -> tuple[np.ndarray, float, float, int, int, float]:
+    def _preprocess(frame: np.ndarray) -> tuple[np.ndarray, int, int, float, int, int]:
         """
         Letterbox-resize and normalise a BGR frame for YOLOv8 input.
 
@@ -104,12 +104,12 @@ class VehicleDetector:
         -------
         blob : np.ndarray
             (1, 3, 640, 640) float32 tensor, values in [0, 1].
-        scale_x, scale_y : float
-            Ratios to map detections back to the original frame dimensions.
         pad_x, pad_y : int
             Padding offsets applied along X and Y axes.
         scale : float
             Scale factor used for letterboxing.
+        orig_w, orig_h : int
+            Original frame width and height for coordinate clamping.
         """
         h, w = frame.shape[:2]
         scale = min(_INPUT_SIZE / w, _INPUT_SIZE / h)
@@ -124,11 +124,7 @@ class VehicleDetector:
 
         blob = cv2.dnn.blobFromImage(canvas, scalefactor=1.0 / 255.0, size=(_INPUT_SIZE, _INPUT_SIZE), swapRB=True)
 
-        # Mapping factors: from padded 640×640 back to original resolution
-        scale_x = w / new_w
-        scale_y = h / new_h
-
-        return blob, scale_x, scale_y, pad_x, pad_y, scale
+        return blob, pad_x, pad_y, scale, w, h
 
     # ------------------------------------------------------------------
     # Inference
@@ -145,61 +141,97 @@ class VehicleDetector:
         return outputs[0]
 
     # ------------------------------------------------------------------
-    # Post-processing (NMS + vehicle filter)
+    # Post-processing (Vectorized NMS + vehicle filter)
     # ------------------------------------------------------------------
 
     def _postprocess(
         self,
         raw_output: np.ndarray,
-        scale_x: float,
-        scale_y: float,
-        pad_x: int,
-        pad_y: int,
-        scale: float,
+        *args,
+        orig_w: Optional[int] = None,
+        orig_h: Optional[int] = None,
+        **kwargs,
     ) -> List[Detection]:
         """
-        Applies NMS and filters detections to vehicle classes.
+        Applies vectorized NMS and filters detections to vehicle classes.
 
         YOLOv8 raw output shape: (1, 84, N) where N is the number of anchors.
         Rows 0-3: cx, cy, w, h
         Rows 4-83: class confidences (COCO 80 classes)
         """
+        # Parse arguments supporting modern (raw, pad_x, pad_y, scale)
+        # and legacy (raw, scale_x, scale_y, pad_x, pad_y, scale)
+        if len(args) == 5:
+            pad_x = int(args[2])
+            pad_y = int(args[3])
+            scale = float(args[4])
+        elif len(args) == 3:
+            pad_x = int(args[0])
+            pad_y = int(args[1])
+            scale = float(args[2])
+        else:
+            pad_x = int(kwargs.get("pad_x", args[0] if len(args) > 0 else 0))
+            pad_y = int(kwargs.get("pad_y", args[1] if len(args) > 1 else 0))
+            scale = float(kwargs.get("scale", args[2] if len(args) > 2 else 1.0))
+
+        if scale <= 0.0:
+            scale = 1.0
+
         # Squeeze batch dimension and transpose to (N, 84)
         output = raw_output.squeeze(0)
-        if output.shape[0] == 84:
+        if output.ndim == 2 and output.shape[0] == 84:
             output = output.T  # (8400, 84)
 
-        boxes = []
-        confidences = []
-        class_ids = []
-
-        for row in output:
-            cx, cy, w, h = row[0], row[1], row[2], row[3]
-            class_scores = row[4:]
-            best_class_id = int(np.argmax(class_scores))
-            best_conf = float(class_scores[best_class_id])
-
-            # Filter by confidence and vehicle class
-            if best_conf < self.confidence_threshold:
-                continue
-            if best_class_id not in VEHICLE_CLASS_IDS:
-                continue
-
-            # Convert from center-format to top-left-format and undo letterbox
-            x1 = (cx - w / 2 - pad_x) / scale
-            y1 = (cy - h / 2 - pad_y) / scale
-            bw = w / scale
-            bh = h / scale
-
-            boxes.append([int(x1), int(y1), int(bw), int(bh)])
-            confidences.append(best_conf)
-            class_ids.append(best_class_id)
-
-        if not boxes:
+        if output.ndim != 2 or len(output) == 0:
             return []
 
+        # 1. Vectorized class scores, predictions, and confidences
+        class_scores = output[:, 4:]  # (N, 80)
+        class_ids = np.argmax(class_scores, axis=1)  # (N,)
+        confidences = class_scores[np.arange(len(output)), class_ids]  # (N,)
+
+        # 2. Vectorized boolean mask for confidence and vehicle class filtering
+        vehicle_class_keys = list(VEHICLE_CLASS_IDS.keys())
+        mask = (confidences >= self.confidence_threshold) & np.isin(class_ids, vehicle_class_keys)
+
+        if not np.any(mask):
+            return []
+
+        # Filter candidates
+        cand_output = output[mask]
+        cand_conf = confidences[mask]
+        cand_class_ids = class_ids[mask]
+
+        # 3. Vectorized coordinate transformation
+        cx = cand_output[:, 0]
+        cy = cand_output[:, 1]
+        w = cand_output[:, 2]
+        h = cand_output[:, 3]
+
+        x1 = (cx - w / 2.0 - pad_x) / scale
+        y1 = (cy - h / 2.0 - pad_y) / scale
+        bw = w / scale
+        bh = h / scale
+
+        # Optional clamp to image boundaries
+        if orig_w is not None and orig_h is not None and orig_w > 0 and orig_h > 0:
+            x1 = np.clip(x1, 0, orig_w - 1)
+            y1 = np.clip(y1, 0, orig_h - 1)
+            bw = np.clip(bw, 1, orig_w - x1)
+            bh = np.clip(bh, 1, orig_h - y1)
+
+        boxes = np.column_stack([
+            np.round(x1).astype(int),
+            np.round(y1).astype(int),
+            np.round(bw).astype(int),
+            np.round(bh).astype(int),
+        ]).tolist()
+
+        conf_list = cand_conf.astype(float).tolist()
+        class_id_list = cand_class_ids.astype(int).tolist()
+
         # OpenCV NMS
-        indices = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence_threshold, self.nms_threshold)
+        indices = cv2.dnn.NMSBoxes(boxes, conf_list, self.confidence_threshold, self.nms_threshold)
 
         detections: List[Detection] = []
         if len(indices) > 0:
@@ -207,9 +239,9 @@ class VehicleDetector:
                 detections.append(
                     Detection(
                         bbox=tuple(boxes[idx]),
-                        class_id=class_ids[idx],
-                        class_name=VEHICLE_CLASS_IDS[class_ids[idx]],
-                        confidence=round(confidences[idx], 3),
+                        class_id=class_id_list[idx],
+                        class_name=VEHICLE_CLASS_IDS[class_id_list[idx]],
+                        confidence=round(conf_list[idx], 3),
                     )
                 )
 
@@ -233,11 +265,11 @@ class VehicleDetector:
         List[Detection]
             Detected vehicles with bounding boxes mapped to original frame coordinates.
         """
-        blob, scale_x, scale_y, pad_x, pad_y, scale = self._preprocess(frame)
+        blob, pad_x, pad_y, scale, orig_w, orig_h = self._preprocess(frame)
 
         if self.backend == "opencv_dnn":
             raw = self._infer_opencv(blob)
         else:
             raw = self._infer_onnxruntime(blob)
 
-        return self._postprocess(raw, scale_x, scale_y, pad_x, pad_y, scale)
+        return self._postprocess(raw, pad_x=pad_x, pad_y=pad_y, scale=scale, orig_w=orig_w, orig_h=orig_h)

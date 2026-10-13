@@ -88,11 +88,32 @@ class SignalService:
 
         # Temporarily clear congestion factor on connecting edges to simulate cars pulling over
         G = graph_service.get_graph()
-        for u, v, k, data in G.edges(keys=True, data=True):
-            if u == node_id or v == node_id:
-                # Lower congestion to free flow during active preemption
-                data["congestion_factor"] = max(0.0, float(data.get("congestion_factor", 0.0)) * 0.3)
-                data["average_speed_kmh"] = max(45.0, float(data.get("average_speed_kmh", 45.0)))
+        node_id_int = int(node_id)
+        if node_id_int in G:
+            incident_edges = list(G.in_edges(node_id_int, keys=True)) + list(G.out_edges(node_id_int, keys=True))
+            seen_edges = set()
+            for u, v, k in incident_edges:
+                edge_key = (u, v, k)
+                if edge_key in seen_edges:
+                    continue
+                seen_edges.add(edge_key)
+
+                edge_data = G[u][v][k]
+                cur_cg = float(edge_data.get("congestion_factor", 0.0))
+                cur_speed = float(edge_data.get("average_speed_kmh", 45.0))
+                cur_count = int(edge_data.get("vehicle_count", 0))
+
+                new_cg = max(0.0, cur_cg * 0.3)
+                new_speed = max(45.0, cur_speed)
+
+                graph_service.update_edge_congestion(
+                    u=u,
+                    v=v,
+                    key=k,
+                    congestion_factor=new_cg,
+                    vehicle_count=cur_count,
+                    average_speed_kmh=new_speed,
+                )
 
         state = TrafficLightState(**sig)
         await manager.broadcast(

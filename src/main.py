@@ -34,6 +34,12 @@ async def lifespan(app: FastAPI):
     yield
     logger.info("Shutting down FlowSense services...")
     simulator.stop_traffic_simulation()
+    try:
+        from src.api.routes.perception import _active_pipelines
+        for pipe in _active_pipelines.values():
+            pipe.stop()
+    except Exception as e:
+        logger.warning(f"Error stopping perception pipelines: {e}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

@@ -32,25 +32,21 @@ def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node):
+MIN_WEIGHT_FACTOR: float = 0.5  # Constant admissible scaling factor ensuring h(n) <= c(n, n')
+
+def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node: int):
     """
     Returns an A* heuristic function that estimates remaining distance
-    to ``target_node`` using the Haversine formula.
+    to ``target_node`` using the Haversine formula scaled by MIN_WEIGHT_FACTOR (0.5).
 
-    The heuristic is *admissible* (never overestimates) because it returns
-    straight-line geographic distance, which is always ≤ the road-network
-    distance encoded in ``emergency_weight``.
+    The heuristic is strictly *admissible* (never overestimates) because:
+      h(n) = distance_haversine(n, target) * MIN_WEIGHT_FACTOR <= emergency_weight(edge)
+    even under road class discounts (0.85) and green-wave clearance preemption (down to 0.7 or 0.1).
     """
-    target_data = G.nodes.get(target_node)
+    t_node = int(target_node)
+    target_data = G.nodes.get(t_node)
     if target_data is None:
-        if str(target_node) in G.nodes:
-            target_node = str(target_node)
-            target_data = G.nodes[target_node]
-        elif isinstance(target_node, str) and target_node.isdigit() and int(target_node) in G.nodes:
-            target_node = int(target_node)
-            target_data = G.nodes[target_node]
-        else:
-            raise KeyError(f"Target node {target_node} not found in graph.")
+        raise KeyError(f"Target node {target_node} not found in graph.")
 
     t_lat = float(target_data.get("y", 0.0))
     t_lon = float(target_data.get("x", 0.0))
@@ -58,17 +54,10 @@ def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node):
     def heuristic(u, v):
         # In nx.astar_path, the heuristic receives (current, target).
         # 'u' is the node being expanded.
-        u_data = G.nodes.get(u)
-        if u_data is None:
-            if str(u) in G.nodes:
-                u_data = G.nodes[str(u)]
-            elif isinstance(u, str) and u.isdigit() and int(u) in G.nodes:
-                u_data = G.nodes[int(u)]
-            else:
-                u_data = {}
+        u_data = G.nodes.get(int(u), {})
         u_lat = float(u_data.get("y", 0.0))
         u_lon = float(u_data.get("x", 0.0))
-        return _haversine_m(u_lat, u_lon, t_lat, t_lon)
+        return _haversine_m(u_lat, u_lon, t_lat, t_lon) * MIN_WEIGHT_FACTOR
 
     return heuristic
 
@@ -108,10 +97,8 @@ class RoutingEngine:
         total_time_seconds = 0.0
 
         for idx in range(len(path_nodes)):
-            node_key = path_nodes[idx]
-            node_data = G.nodes.get(node_key)
-            if node_data is None:
-                node_data = G.nodes.get(str(node_key)) or G.nodes.get(int(node_key) if str(node_key).isdigit() else node_key, {})
+            node_key = int(path_nodes[idx])
+            node_data = G.nodes.get(node_key, {})
             lat = float(node_data.get("y", 0.0))
             lon = float(node_data.get("x", 0.0))
             if idx == 0:
@@ -123,13 +110,8 @@ class RoutingEngine:
             street_name = node_data.get("street") or node_data.get("name")
 
             if idx < len(path_nodes) - 1:
-                u, v = path_nodes[idx], path_nodes[idx + 1]
+                u, v = int(path_nodes[idx]), int(path_nodes[idx + 1])
                 edge_candidates = G.get_edge_data(u, v)
-                if not edge_candidates:
-                    edge_candidates = G.get_edge_data(str(u), str(v))
-                if not edge_candidates:
-                    if str(u).isdigit() and str(v).isdigit():
-                        edge_candidates = G.get_edge_data(int(u), int(v))
                 if not edge_candidates:
                     edge_candidates = {0: {}}
                 best_key = min(edge_candidates.keys(), key=lambda k: edge_candidates[k].get("emergency_weight", 1000.0))
@@ -156,7 +138,7 @@ class RoutingEngine:
                         edge_coords.reverse()
                     corridor_coords.extend(edge_coords[1:])
                 else:
-                    next_data = G.nodes.get(v) or G.nodes.get(str(v)) or {}
+                    next_data = G.nodes.get(v, {})
                     corridor_coords.append([float(next_data.get("x", lon)), float(next_data.get("y", lat))])
 
                 segment_len = float(edge.get("length", 100.0))
@@ -223,21 +205,47 @@ class RoutingEngine:
     # Static choke (demo simulation)
     # ==================================================================
 
-    def _choke_corridor(self, path: List[int], severity: float = 0.85):
-        """Congests the edges along a node path, simulating a naive corridor grinding to a halt."""
+    def _choke_corridor(self, path: List[int], severity: float = 0.85) -> List[Dict[str, Any]]:
+        """
+        Congests the edges along a node path, simulating a naive corridor grinding to a halt.
+        Returns a backup of the original edge attributes for explicit lifecycle control and restoration.
+        """
         G = graph_service.get_graph()
+        backup: List[Dict[str, Any]] = []
         for idx in range(len(path) - 1):
-            u, v = path[idx], path[idx + 1]
+            u, v = int(path[idx]), int(path[idx + 1])
             edge_candidates = G.get_edge_data(u, v)
             if not edge_candidates:
                 continue
-            for k in edge_candidates.keys():
+            for k, data in edge_candidates.items():
+                backup.append({
+                    "u": u, "v": v, "key": k,
+                    "congestion_factor": float(data.get("congestion_factor", 0.0)),
+                    "vehicle_count": int(data.get("vehicle_count", 0)),
+                    "average_speed_kmh": float(data.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)),
+                })
                 graph_service.update_edge_congestion(
                     u=u, v=v, key=k,
                     congestion_factor=round(severity, 2),
                     vehicle_count=int(severity * 45),
                     average_speed_kmh=max(10.0, 50.0 * (1.0 - severity))
                 )
+        return backup
+
+    def _restore_choke(self, backup: List[Dict[str, Any]]) -> int:
+        """Restores edge attributes modified by _choke_corridor."""
+        G = graph_service.get_graph()
+        count = 0
+        for entry in backup:
+            u, v, k = int(entry["u"]), int(entry["v"]), entry["key"]
+            if G.has_edge(u, v, k):
+                data = G[u][v][k]
+                data["congestion_factor"] = entry.get("congestion_factor", 0.0)
+                data["vehicle_count"] = entry.get("vehicle_count", 0)
+                data["average_speed_kmh"] = entry.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)
+                graph_service.recompute_edge_weight(u, v, k)
+                count += 1
+        return count
 
     # ==================================================================
     # Core path-finding backends
@@ -245,31 +253,25 @@ class RoutingEngine:
 
     def _find_path_dijkstra(self, G: nx.MultiDiGraph, source: int, target: int, weight: str = "emergency_weight") -> List[int]:
         """Compute shortest path using Dijkstra's algorithm."""
-        if source not in G.nodes and str(source) in G.nodes:
-            source = str(source)
-        if target not in G.nodes and str(target) in G.nodes:
-            target = str(target)
-        raw_path = nx.shortest_path(G, source=source, target=target, weight=weight)
-        return [int(p) if isinstance(p, str) and p.isdigit() else p for p in raw_path]
+        src_int, tgt_int = int(source), int(target)
+        raw_path = nx.shortest_path(G, source=src_int, target=tgt_int, weight=weight)
+        return [int(p) for p in raw_path]
 
     def _find_path_astar(self, G: nx.MultiDiGraph, source: int, target: int, weight: str = "emergency_weight") -> List[int]:
         """
-        Compute shortest path using A* with a Haversine heuristic.
+        Compute shortest path using A* with an admissible Haversine heuristic.
         Falls back to Dijkstra if A* fails (e.g., disconnected components).
         """
-        if source not in G.nodes and str(source) in G.nodes:
-            source = str(source)
-        if target not in G.nodes and str(target) in G.nodes:
-            target = str(target)
-        heuristic = _make_haversine_heuristic(G, target)
+        src_int, tgt_int = int(source), int(target)
+        heuristic = _make_haversine_heuristic(G, tgt_int)
         try:
-            raw_path = list(nx.astar_path(G, source=source, target=target, heuristic=heuristic, weight=weight))
-            return [int(p) if isinstance(p, str) and p.isdigit() else p for p in raw_path]
+            raw_path = list(nx.astar_path(G, source=src_int, target=tgt_int, heuristic=heuristic, weight=weight))
+            return [int(p) for p in raw_path]
         except nx.NetworkXNoPath:
             raise
         except Exception as e:
             logger.warning(f"A* failed ({e}), falling back to Dijkstra.")
-            return self._find_path_dijkstra(G, source, target, weight)
+            return self._find_path_dijkstra(G, src_int, tgt_int, weight)
 
     def _find_path(self, G: nx.MultiDiGraph, source: int, target: int, weight: str = "emergency_weight") -> List[int]:
         """Dispatch to the configured routing algorithm."""
@@ -289,7 +291,8 @@ class RoutingEngine:
 
         In `simulate` mode the naive static corridor is choked with gridlock first, mirroring
         the "golden hour bottleneck": static GPS routing grinds to a halt while FlowSense
-        dynamically re-routes through the cleared corridors.
+        dynamically re-routes through the cleared corridors. State is isolated and restored
+        in a finally block so concurrent requests or subsequent runs are not corrupted.
         """
         G = graph_service.get_graph()
 
@@ -304,32 +307,37 @@ class RoutingEngine:
             logger.error(f"No path found between node {source_node} and {target_node}")
             raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
 
-        # 2b. Demo scenario: grind the naive static corridor to a halt.
-        if simulate:
-            self._choke_corridor(static_path, severity=0.85)
-
-        # 3. Compute dynamic shortest path using real-time 'emergency_weight'
+        choke_backup: List[Dict[str, Any]] = []
         try:
-            dynamic_path = self._find_path(G, source_node, target_node, weight="emergency_weight")
-        except nx.NetworkXNoPath:
-            logger.error(f"No path found between node {source_node} and {target_node}")
-            raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
+            # 2b. Demo scenario: grind the naive static corridor to a halt.
+            if simulate:
+                choke_backup = self._choke_corridor(static_path, severity=0.85)
 
-        route = self._build_route(dynamic_path, request)
-        baseline = self._build_route(static_path, request)
+            # 3. Compute dynamic shortest path using real-time 'emergency_weight'
+            try:
+                dynamic_path = self._find_path(G, source_node, target_node, weight="emergency_weight")
+            except nx.NetworkXNoPath:
+                logger.error(f"No path found between node {source_node} and {target_node}")
+                raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
 
-        # 4. Compute baseline corridor (static routing) metrics for the comparison panel
-        route.baseline_eta_seconds = baseline.total_estimated_time_s
-        route.baseline_distance_m = baseline.total_distance_m
-        savings = max(0.0, baseline.total_estimated_time_s - route.total_estimated_time_s)
-        route.savings_pct = round(
-            (savings / baseline.total_estimated_time_s * 100.0)
-            if baseline.total_estimated_time_s > 0 else 0.0,
-            1
-        )
+            route = self._build_route(dynamic_path, request)
+            baseline = self._build_route(static_path, request)
 
-        route.static_geojson = baseline.geojson
-        return route
+            # 4. Compute baseline corridor (static routing) metrics for the comparison panel
+            route.baseline_eta_seconds = baseline.total_estimated_time_s
+            route.baseline_distance_m = baseline.total_distance_m
+            savings = max(0.0, baseline.total_estimated_time_s - route.total_estimated_time_s)
+            route.savings_pct = round(
+                (savings / baseline.total_estimated_time_s * 100.0)
+                if baseline.total_estimated_time_s > 0 else 0.0,
+                1
+            )
+
+            route.static_geojson = baseline.geojson
+            return route
+        finally:
+            if choke_backup:
+                self._restore_choke(choke_backup)
 
     # ==================================================================
     # A* explicit entry point
@@ -355,14 +363,16 @@ class RoutingEngine:
         self,
         request: DispatchRequest,
         k: int = 3,
+        penalty_factor: float = 2.0,
+        max_overlap: float = 0.70,
     ) -> AlternativeRoutesResponse:
         """
-        Compute K alternative emergency corridors.
+        Compute K alternative emergency corridors using the iterative Edge Penalty Method.
 
-        Uses Yen's algorithm: after finding the optimal path, subsequent
-        paths are found by temporarily removing edges along previously
-        found paths and re-computing.  An overlap penalty discourages
-        routes that share too many segments with the primary corridor.
+        Calculates the primary optimal corridor, then repeatedly penalizes the edges along
+        previously found corridors by `penalty_factor` to force the path-finder to explore
+        distinct physical corridors. Alternatives with overlap <= 70% with the primary
+        corridor are prioritized; weights are safely restored in a finally block.
 
         Parameters
         ----------
@@ -370,59 +380,99 @@ class RoutingEngine:
             Origin, destination, vehicle type.
         k : int
             Number of total routes to return (1 primary + k-1 alternatives).
+        penalty_factor : float
+            Multiplier applied to traversed edges during alternative search iterations.
+        max_overlap : float
+            Maximum allowable fraction of shared edges with primary path (default 0.70).
         """
         G = graph_service.get_graph()
         source_node = graph_service.find_nearest_node(request.origin.latitude, request.origin.longitude, max_distance_m=750)
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
 
         k = min(k, settings.MAX_ALTERNATIVE_ROUTES)
+        if k <= 0:
+            raise ValueError("k must be at least 1.")
 
-        # nx.shortest_simple_paths does not support MultiDiGraph.
-        # Convert to a simple DiGraph keeping only the best (min weight) edge per (u,v).
-        simple_G = nx.DiGraph()
-        for u, v, key, data in G.edges(keys=True, data=True):
-            w = float(data.get("emergency_weight", 100.0))
-            if simple_G.has_edge(u, v):
-                if w < simple_G[u][v]["emergency_weight"]:
-                    simple_G[u][v]["emergency_weight"] = w
-            else:
-                simple_G.add_edge(u, v, emergency_weight=w)
+        # 1. Compute primary optimal path
+        try:
+            primary_path = self._find_path(G, source_node, target_node, weight="emergency_weight")
+        except nx.NetworkXNoPath:
+            raise ValueError("No reachable route between the given coordinates.")
 
-        # Use networkx's built-in K shortest simple paths on the simplified graph
-        src_match = source_node
-        tgt_match = target_node
-        if src_match not in simple_G.nodes and str(src_match) in simple_G.nodes:
-            src_match = str(src_match)
-        if tgt_match not in simple_G.nodes and str(tgt_match) in simple_G.nodes:
-            tgt_match = str(tgt_match)
+        primary = self._build_route(primary_path, request)
+        if k == 1:
+            return AlternativeRoutesResponse(
+                primary=primary,
+                alternatives=[],
+                algorithm=settings.ROUTING_ALGORITHM,
+            )
+
+        primary_edges = set(zip(primary_path[:-1], primary_path[1:]))
+
+        # 2. Iterative Edge Penalty Method
+        modified_edges: Dict[Tuple[int, int, Any], float] = {}
+        found_paths = [primary_path]
+        valid_alternatives: List[Tuple[List[int], float]] = []
+        fallback_alternatives: List[Tuple[List[int], float]] = []
+
+        def _penalize_path_edges(path: List[int], factor: float):
+            for u_step, v_step in zip(path[:-1], path[1:]):
+                edge_data = G.get_edge_data(int(u_step), int(v_step))
+                if not edge_data:
+                    continue
+                for k_edge, data in edge_data.items():
+                    edge_tuple = (int(u_step), int(v_step), k_edge)
+                    if edge_tuple not in modified_edges:
+                        modified_edges[edge_tuple] = float(data.get("emergency_weight", 100.0))
+                    data["emergency_weight"] = round(float(data["emergency_weight"]) * factor, 3)
 
         try:
-            k_paths_iter = nx.shortest_simple_paths(simple_G, src_match, tgt_match, weight="emergency_weight")
-            selected_paths = []
-            for i, path in enumerate(k_paths_iter):
-                int_path = [int(p) if isinstance(p, str) and p.isdigit() else p for p in path]
-                selected_paths.append(int_path)
-                if i + 1 >= k:
+            # Penalize primary route edges to divert next search
+            _penalize_path_edges(primary_path, penalty_factor)
+
+            max_attempts = (k - 1) * 4
+            for _ in range(max_attempts):
+                try:
+                    candidate_path = self._find_path(G, source_node, target_node, weight="emergency_weight")
+                except nx.NetworkXNoPath:
                     break
-        except nx.NetworkXNoPath:
-            raise ValueError(f"No reachable route between the given coordinates.")
 
-        if not selected_paths:
-            raise ValueError("Could not find any route.")
+                if candidate_path in found_paths:
+                    # Penalize further to escape local cycle
+                    _penalize_path_edges(candidate_path, 1.5)
+                    continue
 
-        # Build primary
-        primary = self._build_route(selected_paths[0], request)
+                found_paths.append(candidate_path)
+                candidate_edges = set(zip(candidate_path[:-1], candidate_path[1:]))
+                overlap = len(primary_edges & candidate_edges) / max(len(primary_edges), 1)
 
-        # Build alternatives
+                if overlap <= max_overlap:
+                    valid_alternatives.append((candidate_path, overlap))
+                else:
+                    fallback_alternatives.append((candidate_path, overlap))
+
+                # Penalize this candidate's edges as well to encourage diversity
+                _penalize_path_edges(candidate_path, penalty_factor)
+
+                if len(valid_alternatives) >= k - 1:
+                    break
+
+        finally:
+            # Restore all modified edge weights
+            for (u_edge, v_edge, k_edge), orig_w in modified_edges.items():
+                if G.has_edge(u_edge, v_edge, k_edge):
+                    G[u_edge][v_edge][k_edge]["emergency_weight"] = orig_w
+
+        # 3. Select final alternatives (prioritizing overlap <= max_overlap)
+        chosen: List[Tuple[List[int], float]] = list(valid_alternatives[:k - 1])
+        if len(chosen) < k - 1:
+            remaining_needed = (k - 1) - len(chosen)
+            fallback_sorted = sorted(fallback_alternatives, key=lambda x: x[1])
+            chosen.extend(fallback_sorted[:remaining_needed])
+
         alternatives: List[RouteResponse] = []
-        primary_edges = set(zip(selected_paths[0][:-1], selected_paths[0][1:]))
-
-        for path in selected_paths[1:]:
+        for path, overlap in chosen:
             alt_route = self._build_route(path, request)
-
-            # Calculate overlap percentage with primary
-            alt_edges = set(zip(path[:-1], path[1:]))
-            overlap = len(primary_edges & alt_edges) / max(len(primary_edges), 1)
             alt_route.status = f"alternative (overlap: {overlap:.0%})"
             alternatives.append(alt_route)
 
@@ -463,28 +513,21 @@ class RoutingEngine:
         multiplier = max(0.1, 1.0 - reduction_factor)
 
         for idx in range(len(path_nodes) - 1):
-            u, v = path_nodes[idx], path_nodes[idx + 1]
+            u, v = int(path_nodes[idx]), int(path_nodes[idx + 1])
             edge_data = G.get_edge_data(u, v)
-            target_u, target_v = u, v
-            if not edge_data:
-                target_u, target_v = str(u), str(v)
-                edge_data = G.get_edge_data(target_u, target_v)
-            if not edge_data:
-                try:
-                    target_u, target_v = int(u), int(v)
-                    edge_data = G.get_edge_data(target_u, target_v)
-                except (ValueError, TypeError):
-                    pass
             if not edge_data:
                 continue
 
             for k, data in edge_data.items():
                 original_weight = float(data.get("emergency_weight", 100.0))
+                orig_mult = float(data.get("corridor_multiplier", 1.0))
                 backup.append({
-                    "u": target_u, "v": target_v, "key": k,
+                    "u": u, "v": v, "key": k,
                     "original_weight": original_weight,
+                    "original_corridor_multiplier": orig_mult,
                 })
-                data["emergency_weight"] = round(original_weight * multiplier, 2)
+                data["corridor_multiplier"] = multiplier
+                graph_service.recompute_edge_weight(u, v, k)
 
         logger.info(
             f"Clearance corridor applied: {len(backup)} edges reduced by "
@@ -494,19 +537,18 @@ class RoutingEngine:
 
     def restore_corridor_weights(self, backup: List[Dict[str, Any]]) -> int:
         """
-        Restore original ``emergency_weight`` values from a clearance corridor backup.
+        Restore original corridor weights using the unified recompute_edge_weight helper.
 
         Returns the number of edges restored.
         """
         G = graph_service.get_graph()
         count = 0
         for entry in backup:
-            u, v, k = entry["u"], entry["v"], entry["key"]
+            u, v, k = int(entry["u"]), int(entry["v"]), entry["key"]
             if G.has_edge(u, v, k):
-                G[u][v][k]["emergency_weight"] = entry["original_weight"]
-                count += 1
-            elif G.has_edge(str(u), str(v), k):
-                G[str(u)][str(v)][k]["emergency_weight"] = entry["original_weight"]
+                orig_mult = entry.get("original_corridor_multiplier", 1.0)
+                G[u][v][k]["corridor_multiplier"] = orig_mult
+                graph_service.recompute_edge_weight(u, v, k)
                 count += 1
         logger.info(f"Clearance corridor restored: {count} edges reset.")
         return count

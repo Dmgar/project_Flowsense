@@ -161,39 +161,50 @@ class MockSimulator:
 
                 # Every few stops, recompute the corridor against the latest congestion.
                 # If the optimal path changed, broadcast an automatic re-route.
-                if waypoint_idx % 4 == 0 and current_wp.node_id in current_path:
-                    try:
-                        new_route = routing_engine.calculate_emergency_route(
-                            DispatchRequest(
-                                origin=Coordinates(
-                                    latitude=current_wp.latitude,
-                                    longitude=current_wp.longitude
-                                ),
-                                destination=destination,
-                                vehicle_type=vehicle_type,
-                                priority="high"
-                            )
-                        )
-                        new_route.recalculated = True
-
-                        if new_route.path_node_ids != current_path[
-                            current_path.index(current_wp.node_id):
-                        ]:
-                            current_route = new_route
-                            current_path = new_route.path_node_ids
-                            guard = list(new_route.waypoints)
-                            waypoint_idx = 0
-                            await manager.broadcast(
-                                WebSocketMessage(
-                                    event=TelemetryEventType.ROUTE_RECALCULATED,
-                                    data=new_route.model_dump()
+                if waypoint_idx < len(guard) and waypoint_idx % 4 == 0:
+                    arrived_wp = guard[waypoint_idx]
+                    if arrived_wp.node_id in current_path:
+                        try:
+                            new_route = routing_engine.calculate_emergency_route(
+                                DispatchRequest(
+                                    origin=Coordinates(
+                                        latitude=arrived_wp.latitude,
+                                        longitude=arrived_wp.longitude
+                                    ),
+                                    destination=destination,
+                                    vehicle_type=vehicle_type,
+                                    priority="high"
                                 )
                             )
-                            # Pause briefly so the dashboard visibly re-draws the corridor.
-                            await asyncio.sleep(0.8)
-                            break
-                    except Exception as e:
-                        logger.warning(f"Route recalculation skipped: {e}")
+                            new_route.recalculated = True
+
+                            remaining_old_path = current_path[
+                                current_path.index(arrived_wp.node_id):
+                            ]
+                            if new_route.path_node_ids != remaining_old_path:
+                                # Release active preempted intersections from the previous route
+                                for old_wp in current_route.waypoints:
+                                    await signal_service.release_intersection(old_wp.node_id)
+
+                                current_route = new_route
+                                current_path = new_route.path_node_ids
+                                guard = list(new_route.waypoints)
+                                waypoint_idx = 0
+                                await manager.broadcast(
+                                    WebSocketMessage(
+                                        event=TelemetryEventType.ROUTE_RECALCULATED,
+                                        data=new_route.model_dump()
+                                    )
+                                )
+                                # Pause briefly so the dashboard visibly re-draws the corridor.
+                                await asyncio.sleep(0.8)
+                                break
+                        except Exception as e:
+                            logger.warning(f"Route recalculation skipped: {e}")
+
+            # If all waypoints were traversed without a reroute, complete the mission
+            if waypoint_idx >= len(guard):
+                break
 
         # Release all remaining preemption signals upon reaching destination
         for wp in current_route.waypoints:

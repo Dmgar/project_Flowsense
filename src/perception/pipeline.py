@@ -66,6 +66,7 @@ class PerceptionPipeline:
         self._last_detection_count: int = 0
         self._last_congestion_factor: float = 0.0
         self._fps_processing: float = 0.0
+        self._telemetry_tasks: set[asyncio.Task] = set()
 
     # ------------------------------------------------------------------
     # Core processing loop
@@ -133,8 +134,10 @@ class PerceptionPipeline:
 
                 # Run detection+tracking every `skip_frames` frames
                 if frame_idx % (skip_frames + 1) == 0:
-                    detections = self.detector.detect(frame)
-                    tracked = self.tracker.update(detections, frame)
+                    # Offload model inference to a worker thread so the event loop remains responsive
+                    detections = await asyncio.to_thread(self.detector.detect, frame)
+                    frame_step = skip_frames + 1
+                    tracked = self.tracker.update(detections, frame, frame_step=frame_step)
                     detection_cycle += 1
 
                     # Estimate congestion
@@ -147,9 +150,11 @@ class PerceptionPipeline:
                     self._last_detection_count = int(metrics.vehicle_count)
                     self._last_congestion_factor = float(metrics.congestion_factor)
 
-                    # Send telemetry to backend periodically (non-blocking)
+                    # Send telemetry to backend periodically (non-blocking with task tracking)
                     if self.api_url and detection_cycle % telemetry_interval == 0:
-                        asyncio.create_task(self._send_telemetry(metrics))
+                        task = asyncio.create_task(self._send_telemetry(metrics))
+                        self._telemetry_tasks.add(task)
+                        task.add_done_callback(self._telemetry_tasks.discard)
 
                 # Visual debug window
                 if visualize:
@@ -165,6 +170,9 @@ class PerceptionPipeline:
                 frame_idx += 1
                 self._frames_processed = frame_idx
 
+                # Yield control to the event loop on each frame to keep FastAPI & WebSockets active
+                await asyncio.sleep(0)
+
         finally:
             cap.release()
             if visualize:
@@ -173,6 +181,13 @@ class PerceptionPipeline:
                 except Exception:
                     pass
             self._is_running = False
+
+            # Clean up or await remaining telemetry tasks
+            if self._telemetry_tasks:
+                try:
+                    await asyncio.gather(*list(self._telemetry_tasks), return_exceptions=True)
+                except Exception:
+                    pass
 
         elapsed = time.perf_counter() - start_time
         self._fps_processing = frame_idx / elapsed if elapsed > 0 else 0.0
@@ -282,6 +297,9 @@ class PerceptionPipeline:
     def stop(self) -> None:
         """Request the pipeline to stop at the next frame boundary."""
         self._is_running = False
+        for task in list(self._telemetry_tasks):
+            if not task.done():
+                task.cancel()
 
     def get_status(self) -> dict:
         """Return current pipeline status as a plain dict."""

@@ -211,3 +211,84 @@ class TestFleetDispatch:
         for route in routes:
             assert route.total_distance_m > 0
             assert "fleet_optimised" in route.status
+
+
+# ======================================================================
+# Verification of Audit Improvements
+# ======================================================================
+
+class TestAuditCorrections:
+    def test_astar_heuristic_admissibility(self):
+        """Verify that scaled Haversine heuristic h(u, v) <= c(u, v) across all direct edges."""
+        from src.services.routing_engine import _make_haversine_heuristic
+        G = graph_service.get_graph()
+        nodes = list(G.nodes())
+        sample_target = nodes[-1]
+        heuristic = _make_haversine_heuristic(G, sample_target)
+
+        # For every direct neighbor of target, h(neighbor, target) must be <= edge weight
+        for u, v, k, data in G.in_edges(sample_target, keys=True, data=True):
+            h_val = heuristic(u, sample_target)
+            w_e = float(data.get("emergency_weight", 100.0))
+            assert h_val <= w_e + 1e-3, f"Heuristic {h_val} overestimates edge weight {w_e}"
+
+    def test_simulation_state_isolation(self):
+        """Verify that simulate=True in calculate_emergency_route leaves no lingering choked edges."""
+        req = DispatchRequest(
+            origin=Coordinates(latitude=40.7500, longitude=-73.9900),
+            destination=Coordinates(latitude=40.7600, longitude=-73.9800),
+            vehicle_type="ambulance",
+            priority="high",
+        )
+        graph_service.reset_all_congestion()
+        G = graph_service.get_graph()
+
+        # Capture free flow weights
+        pre_weights = {
+            (u, v, k): float(data["emergency_weight"])
+            for u, v, k, data in G.edges(keys=True, data=True)
+        }
+
+        # Run simulation mode
+        route = routing_engine.calculate_emergency_route(req, simulate=True)
+        assert route.savings_pct > 0
+
+        # Verify weights were restored cleanly after calculation
+        for (u, v, k), orig_w in pre_weights.items():
+            post_w = float(G[u][v][k]["emergency_weight"])
+            assert post_w == pytest.approx(orig_w, rel=0.001)
+
+    def test_recompute_edge_weight_formula(self):
+        """Verify graph_service.recompute_edge_weight integrates incident and corridor multipliers."""
+        G = graph_service.get_graph()
+        edge = next(iter(G.edges(keys=True)))
+        u, v, k = edge
+
+        data = G[u][v][k]
+        data["congestion_factor"] = 0.5
+        data["incident_multiplier"] = 2.0
+        data["corridor_multiplier"] = 0.5
+
+        w = graph_service.recompute_edge_weight(u, v, k)
+        # Expected: length * (1 + 3 * 0.5) * road_class_factor * 2.0 * 0.5 = length * 2.5 * road_class_factor
+        raw_len = float(data["length"])
+        road_class_factor = 0.85 if ("primary" in str(data.get("highway", "")) or "trunk" in str(data.get("highway", ""))) else 1.0
+        expected = raw_len * (1.0 + 3.0 * 0.5) * road_class_factor * 2.0 * 0.5
+        assert w == pytest.approx(round(expected, 3), rel=0.001)
+
+        # Reset back
+        data["congestion_factor"] = 0.0
+        data["incident_multiplier"] = 1.0
+        data["corridor_multiplier"] = 1.0
+        graph_service.recompute_edge_weight(u, v, k)
+
+    def test_to_geojson_edge_geometry_and_int_types(self):
+        """Verify to_geojson outputs integer node IDs and valid GeoJSON geometries."""
+        geojson = graph_service.to_geojson()
+        assert geojson["type"] == "FeatureCollection"
+        assert len(geojson["features"]) > 0
+
+        feature = geojson["features"][0]
+        assert isinstance(feature["properties"]["u"], int)
+        assert isinstance(feature["properties"]["v"], int)
+        assert len(feature["geometry"]["coordinates"]) >= 2
