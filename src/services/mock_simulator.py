@@ -7,6 +7,7 @@ from src.core.config import settings
 from src.services.graph_service import graph_service
 from src.services.routing_engine import routing_engine
 from src.services.signal_service import signal_service
+from src.services.replay_service import replay_service
 from src.api.websockets.connection_manager import manager
 from src.models.schemas import RouteResponse, DispatchRequest, Coordinates
 from src.models.telemetry import (
@@ -62,11 +63,12 @@ class MockSimulator:
                             average_speed_kmh=speed
                         )
                         updates.append({
-                            "u": u,
-                            "v": v,
-                            "key": k,
-                            "congestion_factor": new_cg,
-                            "vehicle_count": count
+                            "u": int(u),
+                            "v": int(v),
+                            "key": int(k),
+                            "congestion_factor": round(float(new_cg), 2),
+                            "vehicle_count": int(count),
+                            "average_speed_kmh": round(float(speed), 1),
                         })
 
                     # Broadcast through WebSocket
@@ -112,104 +114,129 @@ class MockSimulator:
 
         guard = list(current_route.waypoints)
 
-        while guard:
-            waypoint_idx = 0
+        try:
+            while guard:
+                waypoint_idx = 0
 
-            while waypoint_idx < len(guard):
-                current_wp = guard[waypoint_idx]
-                next_wp = guard[waypoint_idx + 1] if waypoint_idx < len(guard) - 1 else None
+                while waypoint_idx < len(guard):
+                    current_wp = guard[waypoint_idx]
+                    next_wp = guard[waypoint_idx + 1] if waypoint_idx < len(guard) - 1 else None
 
-                heading = 0.0
-                if next_wp:
-                    heading = self._heading(
-                        current_wp.latitude, current_wp.longitude,
-                        next_wp.latitude, next_wp.longitude
-                    )
+                    heading = 0.0
+                    if next_wp:
+                        heading = self._heading(
+                            current_wp.latitude, current_wp.longitude,
+                            next_wp.latitude, next_wp.longitude
+                        )
 
-                telemetry = VehiclePositionEvent(
-                    vehicle_id=vehicle_id,
-                    latitude=current_wp.latitude,
-                    longitude=current_wp.longitude,
-                    heading=heading,
-                    speed_kmh=45.0,
-                    current_node=current_wp.node_id,
-                    target_node=next_wp.node_id if next_wp else current_wp.node_id,
-                    route_id=current_route.route_id,
-                    corridor_cleared_ahead_m=280.0
-                )
-
-                msg = WebSocketMessage(
-                    event=TelemetryEventType.VEHICLE_TELEMETRY,
-                    data=telemetry.model_dump()
-                )
-                await manager.broadcast(msg)
-
-                # Dynamically trigger intelligent Green Wave for intersections ahead
-                try:
-                    await signal_service.update_green_wave_corridor(
+                    telemetry = VehiclePositionEvent(
                         vehicle_id=vehicle_id,
-                        current_wp_idx=waypoint_idx,
-                        waypoints=guard,
-                        clearance_lookahead_count=3
+                        latitude=current_wp.latitude,
+                        longitude=current_wp.longitude,
+                        heading=heading,
+                        speed_kmh=45.0,
+                        current_node=current_wp.node_id,
+                        target_node=next_wp.node_id if next_wp else current_wp.node_id,
+                        route_id=current_route.route_id,
+                        corridor_cleared_ahead_m=280.0
                     )
-                except Exception as e:
-                    logger.debug(f"Signal preemption update skipped: {e}")
 
-                await asyncio.sleep(1.5)
+                    msg = WebSocketMessage(
+                        event=TelemetryEventType.VEHICLE_TELEMETRY,
+                        data=telemetry.model_dump()
+                    )
+                    await manager.broadcast(msg)
 
-                waypoint_idx += 1
+                    # Dynamically trigger intelligent Green Wave for intersections ahead
+                    try:
+                        await signal_service.update_green_wave_corridor(
+                            vehicle_id=vehicle_id,
+                            current_wp_idx=waypoint_idx,
+                            waypoints=guard,
+                            clearance_lookahead_count=3
+                        )
+                    except Exception as e:
+                        logger.debug(f"Signal preemption update skipped: {e}")
 
-                # Every few stops, recompute the corridor against the latest congestion.
-                # If the optimal path changed, broadcast an automatic re-route.
-                if waypoint_idx < len(guard) and waypoint_idx % 4 == 0:
-                    arrived_wp = guard[waypoint_idx]
-                    if arrived_wp.node_id in current_path:
-                        try:
-                            new_route = routing_engine.calculate_emergency_route(
-                                DispatchRequest(
-                                    origin=Coordinates(
-                                        latitude=arrived_wp.latitude,
-                                        longitude=arrived_wp.longitude
-                                    ),
-                                    destination=destination,
-                                    vehicle_type=vehicle_type,
-                                    priority="high"
-                                )
-                            )
-                            new_route.recalculated = True
+                    # Record frame for timeline replay
+                    try:
+                        active_edges_sample = []
+                        G = graph_service.get_graph()
+                        if current_wp.node_id in G:
+                            incident = list(G.in_edges(current_wp.node_id, keys=True)) + list(G.out_edges(current_wp.node_id, keys=True))
+                            for u_edge, v_edge, k_edge in incident[:10]:
+                                e_data = G[u_edge][v_edge][k_edge]
+                                active_edges_sample.append({
+                                    "u": int(u_edge),
+                                    "v": int(v_edge),
+                                    "key": int(k_edge),
+                                    "congestion_factor": float(e_data.get("congestion_factor", 0.0)),
+                                    "average_speed_kmh": float(e_data.get("average_speed_kmh", 45.0)),
+                                })
+                        replay_service.record_frame(
+                            vehicles=[telemetry.model_dump()],
+                            edges=active_edges_sample,
+                            alerts=[],
+                            route=current_route.model_dump()
+                        )
+                    except Exception as e:
+                        logger.debug(f"Replay frame recording skipped: {e}")
 
-                            remaining_old_path = current_path[
-                                current_path.index(arrived_wp.node_id):
-                            ]
-                            if new_route.path_node_ids != remaining_old_path:
-                                # Release active preempted intersections from the previous route
-                                for old_wp in current_route.waypoints:
-                                    await signal_service.release_intersection(old_wp.node_id)
+                    await asyncio.sleep(1.5)
 
-                                current_route = new_route
-                                current_path = new_route.path_node_ids
-                                guard = list(new_route.waypoints)
-                                waypoint_idx = 0
-                                await manager.broadcast(
-                                    WebSocketMessage(
-                                        event=TelemetryEventType.ROUTE_RECALCULATED,
-                                        data=new_route.model_dump()
+                    waypoint_idx += 1
+
+                    # Every few stops, recompute the corridor against the latest congestion.
+                    # If the optimal path changed, broadcast an automatic re-route.
+                    if waypoint_idx < len(guard) and waypoint_idx % 4 == 0:
+                        arrived_wp = guard[waypoint_idx]
+                        if arrived_wp.node_id in current_path:
+                            try:
+                                new_route = routing_engine.calculate_emergency_route(
+                                    DispatchRequest(
+                                        origin=Coordinates(
+                                            latitude=arrived_wp.latitude,
+                                            longitude=arrived_wp.longitude
+                                        ),
+                                        destination=destination,
+                                        vehicle_type=vehicle_type,
+                                        priority="high"
                                     )
                                 )
-                                # Pause briefly so the dashboard visibly re-draws the corridor.
-                                await asyncio.sleep(0.8)
-                                break
-                        except Exception as e:
-                            logger.warning(f"Route recalculation skipped: {e}")
+                                new_route.recalculated = True
 
-            # If all waypoints were traversed without a reroute, complete the mission
-            if waypoint_idx >= len(guard):
-                break
+                                remaining_old_path = current_path[
+                                    current_path.index(arrived_wp.node_id):
+                                ]
+                                if new_route.path_node_ids != remaining_old_path:
+                                    # Release active preempted intersections from the previous route
+                                    for old_wp in current_route.waypoints:
+                                        await signal_service.release_intersection(old_wp.node_id)
 
-        # Release all remaining preemption signals upon reaching destination
-        for wp in current_route.waypoints:
-            await signal_service.release_intersection(wp.node_id)
+                                    current_route = new_route
+                                    current_path = new_route.path_node_ids
+                                    guard = list(new_route.waypoints)
+                                    waypoint_idx = 0
+                                    await manager.broadcast(
+                                        WebSocketMessage(
+                                            event=TelemetryEventType.ROUTE_RECALCULATED,
+                                            data=new_route.model_dump()
+                                        )
+                                    )
+                                    # Pause briefly so the dashboard visibly re-draws the corridor.
+                                    await asyncio.sleep(0.8)
+                                    break
+                            except Exception as e:
+                                logger.warning(f"Route recalculation skipped: {e}")
 
-        logger.info(f"Emergency vehicle {vehicle_id} reached destination.")
+                # If all waypoints were traversed without a reroute, complete the mission
+                if waypoint_idx >= len(guard):
+                    break
+        finally:
+            # Release all remaining preemption signals and any active demo choke upon reaching destination
+            for wp in current_route.waypoints:
+                await signal_service.release_intersection(wp.node_id)
+            routing_engine.clear_active_choke()
+            logger.info(f"Emergency vehicle {vehicle_id} reached destination or mission concluded.")
 
 simulator = MockSimulator()

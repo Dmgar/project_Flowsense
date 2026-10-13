@@ -11,6 +11,7 @@ from src.models.schemas import (
     ClearanceCorridorRequest,
 )
 from src.services.routing_engine import routing_engine
+from src.services.graph_service import graph_service
 from src.services.mock_simulator import simulator
 from src.api.websockets.connection_manager import manager
 from src.models.telemetry import WebSocketMessage, TelemetryEventType
@@ -22,13 +23,15 @@ router = APIRouter(prefix="/dispatch", tags=["Emergency Dispatch & Dynamic Routi
 async def compute_emergency_route(
     request: DispatchRequest,
     background_tasks: BackgroundTasks,
-    simulate: bool = Query(default=False, description="Simulate vehicle dispatch and live telemetry")
+    simulate: bool = Query(default=False, description="Simulate vehicle dispatch and live telemetry"),
+    persist_choke: bool = Query(default=False, description="Keep demo bottleneck active during mission")
 ):
     """
     Computes an optimal dynamic corridor for an emergency vehicle, avoiding congestion in real time.
     """
+    should_persist = persist_choke or simulate
     try:
-        route = routing_engine.calculate_emergency_route(request, simulate=simulate)
+        route = routing_engine.calculate_emergency_route(request, simulate=simulate, persist_choke=should_persist)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -42,6 +45,32 @@ async def compute_emergency_route(
             data=route.model_dump()
         )
     )
+
+    # If simulation choke is persisted, broadcast the choked edges so the map highlights the congestion
+    if should_persist:
+        active_choke = routing_engine.get_active_choke()
+        if active_choke:
+            G = graph_service.get_graph()
+            choked_updates = []
+            for item in active_choke:
+                u, v, k = item["u"], item["v"], item["key"]
+                if G.has_edge(u, v, k):
+                    edata = G[u][v][k]
+                    choked_updates.append({
+                        "u": int(u),
+                        "v": int(v),
+                        "key": int(k),
+                        "congestion_factor": round(float(edata.get("congestion_factor", 0.85)), 2),
+                        "vehicle_count": int(edata.get("vehicle_count", 38)),
+                        "average_speed_kmh": round(float(edata.get("average_speed_kmh", 10.0)), 1),
+                    })
+            if choked_updates:
+                await manager.broadcast(
+                    WebSocketMessage(
+                        event=TelemetryEventType.TRAFFIC_UPDATE,
+                        data={"updated_edges": choked_updates}
+                    )
+                )
 
     # Optionally launch background simulation for live vehicle movement
     if simulate:

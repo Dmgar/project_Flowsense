@@ -153,15 +153,24 @@ class CameraService:
         G = graph_service.get_graph()
         updated_edges = []
 
-        for u, v, k in G.edges(keys=True):
-            if u == node_id or v == node_id:
+        node_key = int(node_id) if int(node_id) in G else str(node_id) if str(node_id) in G else node_id
+        if node_key in G:
+            incident_edges = set(list(G.in_edges(node_key, keys=True)) + list(G.out_edges(node_key, keys=True)))
+            for u, v, k in incident_edges:
                 graph_service.update_edge_congestion(
                     u=u, v=v, key=k,
                     congestion_factor=report.congestion_factor,
                     vehicle_count=report.vehicle_count,
                     average_speed_kmh=report.average_speed_kmh
                 )
-                updated_edges.append({"u": u, "v": v, "key": k})
+                updated_edges.append({
+                    "u": int(u),
+                    "v": int(v),
+                    "key": int(k),
+                    "congestion_factor": round(float(report.congestion_factor), 2),
+                    "vehicle_count": int(report.vehicle_count),
+                    "average_speed_kmh": round(float(report.average_speed_kmh), 1),
+                })
 
         # Broadcast update over WebSocket so the dashboard and heatmap update live
         await manager.broadcast(

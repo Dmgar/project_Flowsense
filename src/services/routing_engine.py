@@ -83,6 +83,19 @@ class RoutingEngine:
       - **NSGA-II (placeholder)** — Multi-objective fleet optimisation.
     """
 
+    def __init__(self):
+        self._active_choke_backup: List[Dict[str, Any]] = []
+
+    def get_active_choke(self) -> List[Dict[str, Any]]:
+        return list(self._active_choke_backup)
+
+    def clear_active_choke(self) -> int:
+        if self._active_choke_backup:
+            count = self._restore_choke(self._active_choke_backup)
+            self._active_choke_backup = []
+            return count
+        return 0
+
     # ==================================================================
     # Route building (shared)
     # ==================================================================
@@ -293,7 +306,12 @@ class RoutingEngine:
         safe_graph.remove_nodes_from(blocked)
         return safe_graph, considered, excluded
 
-    def calculate_emergency_route(self, request: DispatchRequest, simulate: bool = False) -> RouteResponse:
+    def calculate_emergency_route(
+        self,
+        request: DispatchRequest,
+        simulate: bool = False,
+        persist_choke: bool = False
+    ) -> RouteResponse:
         """
         Calculates optimal emergency corridor between origin and destination coordinates.
         Additionally computes a static (baseline) route using only physical length so the
@@ -302,7 +320,8 @@ class RoutingEngine:
         In `simulate` mode the naive static corridor is choked with gridlock first, mirroring
         the "golden hour bottleneck": static GPS routing grinds to a halt while FlowSense
         dynamically re-routes through the cleared corridors. State is isolated and restored
-        in a finally block so concurrent requests or subsequent runs are not corrupted.
+        in a finally block so concurrent requests or subsequent runs are not corrupted unless
+        `persist_choke=True` is explicitly specified for live dashboard demonstration.
         """
         G = graph_service.get_graph()
 
@@ -326,6 +345,8 @@ class RoutingEngine:
             # 2b. Demo scenario: grind the naive static corridor to a halt.
             if simulate:
                 choke_backup = self._choke_corridor(static_path, severity=0.85)
+                if persist_choke:
+                    self._active_choke_backup = list(choke_backup)
 
             # 3. Compute dynamic shortest path using real-time 'emergency_weight'
             try:
@@ -350,7 +371,7 @@ class RoutingEngine:
             route.static_geojson = baseline.geojson
             return route
         finally:
-            if choke_backup:
+            if choke_backup and not persist_choke:
                 self._restore_choke(choke_backup)
 
     # ==================================================================

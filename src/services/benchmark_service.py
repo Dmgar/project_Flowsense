@@ -5,6 +5,7 @@ import networkx as nx
 
 from src.core.config import settings
 from src.services.graph_service import graph_service
+from src.services.routing_engine import routing_engine
 from src.models.schemas import BenchmarkMetric, BenchmarkSummaryResponse
 
 logger = logging.getLogger("flowsense.benchmark")
@@ -37,21 +38,26 @@ class BenchmarkService:
         flowsense_blocked_count: List[int] = []
         successful_trips = 0
 
-        # Temporarily inject realistic peak-hour congestion on 25% of the network
+        # Scale congestion injection using clamped congestion_intensity
+        ci = max(0.1, min(1.0, float(congestion_intensity)))
         edges = list(G.edges(keys=True))
-        congested_edges = rng.sample(edges, k=max(1, int(len(edges) * 0.25)))
+        congested_fraction = min(0.8, 0.15 + 0.30 * ci)
+        congested_count = max(1, int(len(edges) * congested_fraction))
+        congested_edges = rng.sample(edges, k=congested_count)
         original_weights: Dict[tuple, Dict[str, Any]] = {}
 
         for u, v, k in congested_edges:
             data = G[u][v][k]
             original_weights[(u, v, k)] = {
                 "congestion_factor": data.get("congestion_factor", 0.0),
-                "emergency_weight": data.get("emergency_weight", 100.0)
+                "vehicle_count": data.get("vehicle_count", 0),
+                "average_speed_kmh": data.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH),
             }
-            cg = rng.uniform(0.70, 0.95)
-            length = float(data.get("length", 100.0))
-            data["congestion_factor"] = cg
-            data["emergency_weight"] = length * (1.0 + settings.CONGESTION_ALPHA * cg)
+            cg = rng.uniform(max(0.2, ci - 0.15), min(1.0, ci + 0.1))
+            data["congestion_factor"] = round(cg, 2)
+            data["vehicle_count"] = int(cg * 40)
+            data["average_speed_kmh"] = max(10.0, 50.0 * (1.0 - cg))
+            graph_service.recompute_edge_weight(u, v, k)
 
         try:
             trips_evaluated = 0
@@ -68,8 +74,8 @@ class BenchmarkService:
                 try:
                     # 1. Traditional shortest path (physical length only)
                     static_path = nx.shortest_path(G, source=src, target=dst, weight="length")
-                    # 2. FlowSense dynamic path (emergency_weight evading congestion)
-                    flowsense_path = nx.shortest_path(G, source=src, target=dst, weight="emergency_weight")
+                    # 2. FlowSense dynamic path using the configured algorithm (A* or Dijkstra)
+                    flowsense_path = routing_engine._find_path(G, src, dst, weight="emergency_weight")
                 except (nx.NetworkXNoPath, nx.NodeNotFound):
                     continue
 
@@ -94,11 +100,13 @@ class BenchmarkService:
                 trips_evaluated += 1
 
         finally:
-            # Restore original edge weights
+            # Restore original edge attributes and recompute weights
             for (u, v, k), saved in original_weights.items():
                 if G.has_edge(u, v, k):
                     G[u][v][k]["congestion_factor"] = saved["congestion_factor"]
-                    G[u][v][k]["emergency_weight"] = saved["emergency_weight"]
+                    G[u][v][k]["vehicle_count"] = saved["vehicle_count"]
+                    G[u][v][k]["average_speed_kmh"] = saved["average_speed_kmh"]
+                    graph_service.recompute_edge_weight(u, v, k)
 
         if not static_times:
             raise RuntimeError("Could not evaluate trips in graph.")
@@ -110,8 +118,9 @@ class BenchmarkService:
         avg_stat_blocked = sum(static_blocked_count) / len(static_blocked_count)
         avg_fs_blocked = sum(flowsense_blocked_count) / len(flowsense_blocked_count)
 
-        time_saved = max(0.0, avg_static_time - avg_fs_time)
-        savings_pct = round((time_saved / avg_static_time * 100.0) if avg_static_time > 0 else 0.0, 1)
+        time_saved_avg = max(0.0, avg_static_time - avg_fs_time)
+        total_seconds_saved = round(sum(max(0.0, s - f) for s, f in zip(static_times, flowsense_times)), 1)
+        savings_pct = round((time_saved_avg / avg_static_time * 100.0) if avg_static_time > 0 else 0.0, 1)
         success_rate = round((successful_trips / len(static_times) * 100.0), 1)
 
         metrics = [
@@ -138,14 +147,14 @@ class BenchmarkService:
             BenchmarkMetric(
                 metric="Segundos Salvados",
                 static=0.0,
-                flowsense=round(time_saved, 1)
+                flowsense=round(time_saved_avg, 1)
             ),
         ]
 
         summary = BenchmarkSummaryResponse(
             num_trips_evaluated=len(static_times),
             average_time_savings_pct=savings_pct,
-            total_seconds_saved=round(time_saved, 1),
+            total_seconds_saved=total_seconds_saved,
             success_rate_pct=success_rate,
             metrics=metrics
         )
