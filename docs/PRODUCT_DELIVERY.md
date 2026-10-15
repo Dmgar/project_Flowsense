@@ -1,6 +1,12 @@
 # FlowSense · producto implementado
 
-**Ampliación actual:** 69 cámaras en siete zonas, 44 imágenes comprobadas y red
+**Etapa vigente:** 86 cámaras registradas y 61 imágenes distintas comprobadas en
+la revisión más reciente. Incluye explorador de calles, mesa de observación y
+recuperación de video. Consulta [EXPLORER_AND_OBSERVATION_DESK.md](EXPLORER_AND_OBSERVATION_DESK.md).
+Los recuentos anteriores de 69 u ocho fuentes se conservan como registro de las
+entregas previas. La disponibilidad de video se distingue de la de imagen.
+
+**Expansión anterior:** 69 cámaras en siete zonas, 44 imágenes comprobadas y red
 regional real de 18.946 nodos / 40.529 tramos. El detalle vigente está en
 [REGIONAL_EXPANSION_PLAN.md](REGIONAL_EXPANSION_PLAN.md); los datos de ocho
 cámaras y del grafo pequeño que aparecen más abajo describen la entrega inicial.

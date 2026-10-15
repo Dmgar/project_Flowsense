@@ -1,5 +1,11 @@
 # Expansión de FlowSense al Gran Los Angeles
 
+**Etapa vigente:** 86 cámaras registradas y 61 imágenes distintas comprobadas en
+la revisión más reciente. Incluye explorador de calles, mesa de observación y
+recuperación de video. Consulta [EXPLORER_AND_OBSERVATION_DESK.md](EXPLORER_AND_OBSERVATION_DESK.md).
+Los recuentos anteriores de 69 u ocho fuentes se conservan como registro de las
+entregas previas. La disponibilidad de video se distingue de la de imagen.
+
 Entrega local: 15 de octubre de 2026. El objetivo era superar 40 cámaras y
 permitir explorar Santa Monica, Burbank, El Monte, West Covina, Norwalk y
 Long Beach, además de Los Angeles. La expansión se implementó conservando la
@@ -163,4 +169,6 @@ npm run lint
 ```
 
 Las cachés grandes, capturas y salidas de comprobación permanecen locales y
-están excluidas de Git. No se publicó ni se envió un commit a GitHub.
+están excluidas de Git. La entrega regional inicial se publicó en main con el commit 83ef656.
+Las mejoras posteriores de continuidad se describen en
+[OPERATOR_WORKFLOW_IMPROVEMENTS.md](OPERATOR_WORKFLOW_IMPROVEMENTS.md).

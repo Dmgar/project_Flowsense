@@ -42,11 +42,18 @@ class MobilityService:
                 self.cameras[item["id"]] = item
 
     def list_cameras(self):
-        return [{**item, "image_url": f"/api/v1/mobility/cameras/{item['id']}/snapshot",
-                 "status": "online" if item["id"] in self._frames and not self._frames[item["id"]].get("possible_placeholder") else "unverified",
-                 "last_observed_at": self._frames.get(item["id"], {}).get("observed_at"),
-                 "data_origin": "public_camera" if item.get("provider") == "Caltrans" else "connected_camera"}
-                for item in self.cameras.values()]
+        result = []
+        for item in list(self.cameras.values()):
+            captured = self._frames.get(item["id"])
+            age = max(0, time.monotonic() - captured["fetched_at"]) if captured else None
+            recent = age is not None and age <= item.get("refresh_seconds", 120) + 30
+            status = ("provider_notice" if captured.get("possible_placeholder") else "online") if recent else "stale" if captured else "unverified"
+            result.append({**item, "image_url": f"/api/v1/mobility/cameras/{item['id']}/snapshot",
+                           "status": status, "last_observed_at": captured.get("observed_at") if captured else None,
+                           "last_source_status": ("provider_notice" if captured.get("possible_placeholder") else "image") if captured else None,
+                           "observation_age_seconds": round(age) if age is not None else None,
+                           "data_origin": "public_camera" if item.get("provider") == "Caltrans" else "connected_camera"})
+        return result
 
     def connect(self, payload):
         source = payload["source"]

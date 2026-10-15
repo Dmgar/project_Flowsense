@@ -4,7 +4,10 @@ export interface Camera {
   id: string; name: string; district: string; lat: number; lng: number;
   verification?: string; verified_at?: string; provider_in_service?: boolean; nearby_place?: string; route?: string;
   image_url: string; stream_url: string; source_url: string; provider: string;
-  status: 'online' | 'unverified'; refresh_seconds: number; last_observed_at: string | null;
+  status: 'online' | 'provider_notice' | 'stale' | 'unverified'; refresh_seconds: number; last_observed_at: string | null;
+  observation_age_seconds?: number | null;
+  hls_status?: number | string;
+  last_source_status?: 'provider_notice' | 'image' | null;
 }
 export interface Detection { className: string; confidence: number; bbox: { x: number; y: number; width: number; height: number } }
 export interface Observation {

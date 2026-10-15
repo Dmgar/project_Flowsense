@@ -5,13 +5,18 @@
 
 FlowSense connects public camera evidence, aggregate movement observations, corridor
 analytics, pedestrian context, prioritized review and emergency route support in one
-navigable operations interface. The regional expansion includes 69 public Caltrans sources across seven zones, with 44 distinct images checked during implementation. See [the regional expansion plan](docs/REGIONAL_EXPANSION_PLAN.md) for coverage, availability, validation, and limitations. The current local product covers Greater Los Angeles, California,
-with eight free public Caltrans camera sources and a real OpenStreetMap road graph.
+navigable operations interface. The current catalog includes 86 official Caltrans
+sources across seven Greater Los Angeles zones, with 61 distinct images checked
+in the latest review and a real OpenStreetMap road graph. Explore streets and
+nearby cameras, then compare up to four independent observations in the observation
+desk. Official video URLs are retained for retry; their availability varies.
+See [the explorer and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
+and [the regional plan](docs/REGIONAL_EXPANSION_PLAN.md) for verification and limits.
 Historical indicators used for presentation are explicitly separated from observations.
 
 ## Run the product on Windows
 
-Requires Python 3.13+ and Node.js with npm:
+Requires Python 3.13+ and Node.js 24 with npm:
 
 ```powershell
 .\scripts\run_flowsense.ps1 -Setup
@@ -23,13 +28,15 @@ Open `http://127.0.0.1:3001/overview`. The API uses port 8002. Camera images req
 internet access; no Caltrans account, payment or API key is required. Sources may be
 interrupted. The launcher downloads the LA graph and ONNX model when absent.
 
+- [Frontend V3: complete change log and verification](docs/FLOWSENSE_FRONTEND_V3.md)
+- [Street explorer, video recovery and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
 - [Detailed implementation plan](docs/PRODUCT_IMPLEMENTATION_PLAN.md)
 - [Product delivery, verification and data boundaries](docs/PRODUCT_DELIVERY.md)
 - [Verified public camera sources](docs/PUBLIC_CAMERAS.md)
 - [Original frontend handoff](docs/product-reference/README.md)
 
 Checks: `python -m pytest -q`, `python -m scripts.verify_los_angeles_integration`,
-and, in `frontend/`, `npm run build` and `npm run lint`. The legacy test fixtures
+and, in `frontend/`, `npm test`, `npm run build` and `npm run lint`. The legacy test fixtures
 pin Manhattan independently of the profile selected by the local launcher.
 
 ---

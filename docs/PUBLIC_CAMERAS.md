@@ -1,6 +1,12 @@
 # Cámaras públicas para FlowSense
 
-**Cobertura actual:** 69 fuentes en siete zonas del Gran Los Angeles; 44 imágenes
+**Etapa vigente:** 86 cámaras registradas y 61 imágenes distintas comprobadas en
+la revisión más reciente. Incluye explorador de calles, mesa de observación y
+recuperación de video. Consulta [EXPLORER_AND_OBSERVATION_DESK.md](EXPLORER_AND_OBSERVATION_DESK.md).
+Los recuentos anteriores de 69 u ocho fuentes se conservan como registro de las
+entregas previas. La disponibilidad de video se distingue de la de imagen.
+
+**Expansión anterior:** 69 fuentes en siete zonas del Gran Los Angeles; 44 imágenes
 comprobadas y 40 listas HLS válidas durante la ampliación del 15 de octubre de
 2026. Consulta el [plan de expansión regional](REGIONAL_EXPANSION_PLAN.md) para
 los recuentos, estados y método de verificación actuales. La sección siguiente

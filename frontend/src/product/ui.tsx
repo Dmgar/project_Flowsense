@@ -4,6 +4,7 @@ import { severityLabels, statusLabels } from './data';
 import type { Severity } from './types';
 
 const paths: Record<string, string> = {
+  star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',
   grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   map: 'M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2z M9 3v16 M15 5v16',
   camera: 'M3 7h13v12H3z M16 10l5-3v12l-5-3 M6 7l2-3h5l2 3',

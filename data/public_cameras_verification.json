@@ -1,17 +1,17 @@
 {
   "source": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
-  "checked_at": "2026-10-15T17:22:56.088975+00:00",
+  "checked_at": "2026-10-15T07:46:38.992976+00:00",
   "candidate_count": 147,
-  "selected_count": 69,
-  "usable_count": 44,
+  "selected_count": 86,
+  "usable_count": 61,
   "by_region": {
-    "Los Angeles": 21,
+    "Los Angeles": 32,
     "Santa Monica": 8,
     "Burbank": 10,
     "El Monte": 6,
     "West Covina": 5,
     "Norwalk": 9,
-    "Long Beach": 10
+    "Long Beach": 16
   },
   "checks": [
     {
@@ -38,15 +38,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "3b09bd24318ad97283970a7395aff1153816754df1524443a00c03910e93bec7",
+      "frame_sha256": "9f1000d85dc6d90ed6f40bb98095ab5deaa98fc91ffc4e314ce0d23c69c8cb12",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:12.301819+00:00",
+      "verified_at": "2026-10-15T07:37:45.646923+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-2",
@@ -58,7 +58,7 @@
       "lat": 33.97857,
       "lng": -118.12791,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i52slausonave/i52slausonave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-2.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -72,13 +72,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "d3922f660ad65446f85291bd865dd305a97b879a16be4f29523a0ba9639180f8",
+      "frame_sha256": "3e8136bd8d42f21182dca4486ec1391fd7a0de7cac8f34d7b69478ffded0b1c2",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:15.301830+00:00",
+      "verified_at": "2026-10-15T07:37:45.437533+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -92,7 +92,7 @@
       "lat": 34.01224,
       "lng": -118.16267,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i57triggsst/i57triggsst.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-007.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -106,13 +106,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7603d4c4c23f655ee9133bc8c0bbada338813ac6e850114c6072c91ad7fb1adf",
+      "frame_sha256": "4430c0064a91f68a35f47adc8fa4aa5614949375f0e32812cbfb0960cfc8d12d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:12.045462+00:00",
+      "verified_at": "2026-10-15T07:37:45.429930+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -140,15 +140,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "b1e59da15b82e53f0d5aa9676c95d6bb8345f0df5ec7c886167d19c083f94c3a",
+      "frame_sha256": "996dd61ae47b41ab0ccef712e405eae663ef33f003a1a569a9e196eb3a509654",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:12.173035+00:00",
+      "verified_at": "2026-10-15T07:37:45.514582+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-25",
@@ -174,15 +174,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8b6a42a33915f0c092dd7a8392fd4f934e8a166e015890b5f6825d341cb277f8",
+      "frame_sha256": "b97a2262beedc716e8d202ab8d722c380e39fbd3ea87b6453fe3a7141857de00",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:12.147552+00:00",
+      "verified_at": "2026-10-15T07:37:45.572862+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-27",
@@ -194,7 +194,7 @@
       "lat": 34.10472,
       "lng": -118.25247,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i527northofsr2/i527northofsr2.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-27.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -208,13 +208,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4693d9ab68fc3546932dfa5896b4276d34e402c75f431a009823563e8afca4ed",
+      "frame_sha256": "43d4e596cb4764d6ee4efa5e97417989ccdc65ef20cb78072d798ea903162fd0",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:12.045033+00:00",
+      "verified_at": "2026-10-15T07:37:45.429711+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -242,15 +242,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ad627e58c030ea1be0d423e6f11d39584dbfb70dc02ba5ef9b49276e32ea8cc0",
+      "frame_sha256": "f377e078379c1faa2fdad9849e88326cdcc886c6aedf12f0ef4c3595ebf2246d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:13.451410+00:00",
+      "verified_at": "2026-10-15T07:38:18.094706+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-37",
@@ -276,15 +276,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "2acf4232df8769dd3cb382438f28ab571084c2bbb4903a179735586d4ddeb086",
+      "frame_sha256": "80a633d4ac8e0b93435c593320fc8d992196277d6b6096ff9aada0b96677e961",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:13.325970+00:00",
+      "verified_at": "2026-10-15T07:38:17.976613+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-40",
@@ -310,15 +310,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ad1dcec87c2e05a0bb401cb03e471e82b848c740dd660c854decf3c7520cadb3",
+      "frame_sha256": "fe3fdbf6fa7118bf8465babbf8ec0f9f218101c919a20e8afbe0b816df01b52e",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:13.445899+00:00",
+      "verified_at": "2026-10-15T07:38:17.960867+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-41",
@@ -344,15 +344,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "940ff03ee592ec7e52ceaa6a19f10d9ba0924f393d69d5a688e892d9a543fc25",
+      "frame_sha256": "f437f9b4769f312a1d0517fe692df19134c9121068fa536bd38585cf2cb2e7f7",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:14.606609+00:00",
+      "verified_at": "2026-10-15T07:38:18.034890+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-42",
@@ -364,7 +364,7 @@
       "lat": 34.20061,
       "lng": -118.33959,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i542buenavista/i542buenavista.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-42.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -378,13 +378,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "bb6683b0dc73e7d2e9ba9a2e69980c24b9e3401cb74de3c1459f610f07fb38a8",
+      "frame_sha256": "0958527e50fdd286f9a0d305d7d496cf954327031ddfd72afb04f2e43260d619",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:14.579560+00:00",
+      "verified_at": "2026-10-15T07:38:18.079771+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -412,15 +412,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "79ed15117545e8e85ca9ce7b83457e264dced446a67857d6279347550289026a",
+      "frame_sha256": "039042d30e60025b574af743ed7188b447637462075d9ed8d62ba8d85572e423",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:14.729265+00:00",
+      "verified_at": "2026-10-15T07:38:18.280608+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-102",
@@ -432,7 +432,7 @@
       "lat": 34.01136,
       "lng": -118.49424,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i10102mcclureeast/i10102mcclureeast.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-102.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -446,13 +446,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "1e4b804dcdd30b97b9eb6e87765b229ff3b4e25852dd7cbd5d7a08a322fe151a",
+      "frame_sha256": "fc709d82b844887f2196a02c8c4bd60cb27bfb9a253cf7aa91d93c4792236465",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:15.874949+00:00",
+      "verified_at": "2026-10-15T07:38:50.466728+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -480,13 +480,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "dc7d7b2865e8df6db5572fba2a52964fafa44f60a6f2ca19f054dd7b25a6c2db",
+      "frame_sha256": "d5365850a8db3a8a33777e60a1249bc9503a8436cdbffe561181077f87ef67d8",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:15.851961+00:00",
+      "verified_at": "2026-10-15T07:38:50.474951+00:00",
       "verification": "placeholder"
     },
     {
@@ -513,13 +513,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "089941b3be86945f4b670cf01e70ba28384f1d2c2f75e4b6bab5c69f6c1a20b4",
+      "frame_sha256": "d5837ebdb4491bfe687c20c39e10402961fc963b81b2f7d3a47567edaf607efb",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:16.357775+00:00",
+      "verified_at": "2026-10-15T07:38:50.543977+00:00",
       "verification": "placeholder"
     },
     {
@@ -546,13 +546,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "df0f75e3b1e9bf49d696f7d3d0f1748f941c149107438443b69ff0920299b983",
+      "frame_sha256": "dc670565a5e2681d80483678fde3f299fde4b16bb9cafa2502222eb65ff2c451",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:16.883249+00:00",
+      "verified_at": "2026-10-15T07:38:50.588457+00:00",
       "verification": "placeholder"
     },
     {
@@ -579,13 +579,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f53438c09c1461cb03edb53a05d41ace7ce4c84ead81b8cca911275aa8ae025e",
+      "frame_sha256": "674e5b77f2ff894e3d3b4ee41bc453d96a55a93738101ed9e8909aebb2cddcb4",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:17.363133+00:00",
+      "verified_at": "2026-10-15T07:38:50.610089+00:00",
       "verification": "placeholder"
     },
     {
@@ -612,13 +612,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "0526246d71780ee10fb79ee687e19cd86a36e4dca9d31479bbebf6c9a892e8b4",
+      "frame_sha256": "2bea681fd2950181ff07faac9078f80c2287ae8926ee7e9d621c4d6434ee5d95",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:17.842807+00:00",
+      "verified_at": "2026-10-15T07:38:50.793328+00:00",
       "verification": "placeholder"
     },
     {
@@ -645,13 +645,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "6f190a57d02ea4b6ab77b26937cfd04e6fc3a4259c2cd8751c6d53e10a2d97e9",
+      "frame_sha256": "a60789810f41f072298c2d21ce8c4fa240ee0752996fda57629313e0a403d1d6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:21.887657+00:00",
+      "verified_at": "2026-10-15T07:38:50.995140+00:00",
       "verification": "placeholder"
     },
     {
@@ -678,13 +678,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "730713199ccdfa68a8809dfad17e99cd88cf6b945ada39685798968fc47989c4",
+      "frame_sha256": "ec2307dbcd0696e1072888b23c24960765f6ed37526291030d1e1d3c78a12396",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:20.934204+00:00",
+      "verified_at": "2026-10-15T07:38:51.028613+00:00",
       "verification": "placeholder"
     },
     {
@@ -711,13 +711,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7063d3e6fae57a92e1f6cdc278b5539786c5e1245de60dd274ddd87a6694b9bb",
+      "frame_sha256": "1287792e3c6d878109c6ecb2b1c2ecc88a2b71340796fdcede9f04701f4b1084",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:20.974192+00:00",
+      "verified_at": "2026-10-15T07:38:51.051090+00:00",
       "verification": "placeholder"
     },
     {
@@ -744,13 +744,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ba90f6395c43fb2c962d06c8423f7762730f4d5077f07925e51dd80f1b849958",
+      "frame_sha256": "b8050c41ec7d6e330d18c4176336d67c96829d0e750a14aa9ed4f6154a4e775b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:21.442379+00:00",
+      "verified_at": "2026-10-15T07:38:51.098015+00:00",
       "verification": "placeholder"
     },
     {
@@ -777,13 +777,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "afd93dd96b462bed5c44b54d70a16be8a8b523672127b906a973b3ca08afd325",
+      "frame_sha256": "46f87a8d4e8274b499d2077d90aa04aced193bf720c2ab36fd36efe25dbf90c7",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:21.469033+00:00",
+      "verified_at": "2026-10-15T07:38:51.283872+00:00",
       "verification": "placeholder"
     },
     {
@@ -810,15 +810,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "06a148ce003adf212931823ffa27707163a569be4c35ef39872bc5691a2c78cd",
+      "frame_sha256": "77eeef592970228d4078cb6bc81ca2b903883e33f8194349d534d2beacc3644d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:22.029410+00:00",
+      "verified_at": "2026-10-15T07:38:51.627146+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-150",
@@ -830,7 +830,7 @@
       "lat": 34.04083,
       "lng": -118.05636,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr60150westofsantaanita/sr60150westofsantaanita.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-150.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -844,13 +844,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4bb2a353151302f4dcec499e74e5b099473cc0de5e8e6f2fc1f895912e1d8ed0",
+      "frame_sha256": "3a585731a229bd7f4bedf6596f01969f7dab7e99f739d8d7f17ccd0b32900a71",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:21.979762+00:00",
+      "verified_at": "2026-10-15T07:38:51.555522+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -878,13 +878,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e1954dbf8e5eebc1ea4296b52516026043494662acc6b891e920609732d37a69",
+      "frame_sha256": "256ad007225b11e2d06597cbe94e51a8e7c806c307a534d9ecf18cdd2664785e",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:22.398582+00:00",
+      "verified_at": "2026-10-15T07:38:51.604024+00:00",
       "verification": "placeholder"
     },
     {
@@ -911,13 +911,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "06024123ccc6b544164e05d54e18af1a228cbf5ee43f55011257f70ffe4193c2",
+      "frame_sha256": "90d3dec167936a5d4f7e319824b699a7a1b1fa7bee744118b5bfe966ce54bb40",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:22.990381+00:00",
+      "verified_at": "2026-10-15T07:38:51.605597+00:00",
       "verification": "placeholder"
     },
     {
@@ -930,7 +930,7 @@
       "lat": 34.04312,
       "lng": -118.22135,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101156eastfourthst/us101156eastfourthst.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-156.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -944,13 +944,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e5e3646eaad1a4f39fe759e874921477293eb7881a444f437f70663722827190",
+      "frame_sha256": "edc65aa372dea75ce8cdb461ac50153b2303c2d5122881c4252224fbefcd7ac1",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:23.070733+00:00",
+      "verified_at": "2026-10-15T07:38:51.827274+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -978,13 +978,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "b9ea197cd8cd5dcfefa571febb3978847c524479dbcf8e1d2df0d3809060c58a",
+      "frame_sha256": "f0b59237ba24c65137ffb8bb93026d7977484c1e4f825c285d8997dfbc034783",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:23.443001+00:00",
+      "verified_at": "2026-10-15T07:38:52.111895+00:00",
       "verification": "placeholder"
     },
     {
@@ -997,7 +997,7 @@
       "lat": 34.02016,
       "lng": -118.50676,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr1229californiaincline/sr1229californiaincline.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-229.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1011,13 +1011,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "1292a6ac610b76e8a58a0e16182f42465e5e784ad7c5dc8ac39eb32542a3e4f2",
+      "frame_sha256": "82058c126857a2c31f001e12fa4336412ecfe8a0518d95e8d8750ce4f2a92b5f",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:23.478700+00:00",
+      "verified_at": "2026-10-15T07:38:52.172048+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1031,7 +1031,7 @@
       "lat": 34.02422,
       "lng": -118.51218,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr1235beachhouse/sr1235beachhouse.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-235.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1045,13 +1045,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "d3e01ea561fedbde335f2b9af77c2ad045154f25b10e42b77de8a9e3d74b95f9",
+      "frame_sha256": "2ad58ddca500e9e63afce466f79aaa0d26c8e728c7c6676d8096d497c7229f88",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:23.950431+00:00",
+      "verified_at": "2026-10-15T07:38:52.624262+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1065,7 +1065,7 @@
       "lat": 33.87578,
       "lng": -118.16403,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr91258paramount/sr91258paramount.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-258.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1079,13 +1079,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a4392ca0bdcc08ecf439bf2c3b75b9bd4d0950bd07d5e6644219b7090bccd629",
+      "frame_sha256": "1d85b9ca00906e5dd4309a3b831d1fac67c9a2eed00fa622a5aa9f326b09bde0",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:24.227309+00:00",
+      "verified_at": "2026-10-15T07:39:22.985295+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1113,15 +1113,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "750aeff99e622e878df8df5af28c3b64d19433220b7a25678361e4b26c3ae034",
+      "frame_sha256": "a40cf080eb6891154b6345fda6551ad60b32b303a340b431efa7fc37462cf6e6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:24.795035+00:00",
+      "verified_at": "2026-10-15T07:39:24.084311+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-263",
@@ -1147,15 +1147,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "3dfcedb0df0951182fab1878e79f1c05fe398e4b22db4d9651547bfda15c1ac4",
+      "frame_sha256": "61e41e54bb47f506a299d0207af6863be2ca7c83717dfe91e24553ddddfe6fae",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:25.982739+00:00",
+      "verified_at": "2026-10-15T07:39:24.132829+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-264",
@@ -1181,15 +1181,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "acaa73f7af30d5efabb24bd6cf93c79db3a92afcf7fbd6f97772d1310daa9438",
+      "frame_sha256": "f2c74d0f2591b3b1f6866e5b53d38b3744cf21d8f83ef6d235556fc98dd46af8",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:27.241813+00:00",
+      "verified_at": "2026-10-15T07:39:24.363522+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-265",
@@ -1215,13 +1215,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "6eb579d9a27094961983af25351c47784edba524f32f17911b55e69ee4fdcb06",
+      "frame_sha256": "55e9e8e83556f8dea0173012cf3bce99ab917ab42730792191b0cc54440d1289",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:28.446360+00:00",
+      "verified_at": "2026-10-15T07:39:24.702349+00:00",
       "verification": "placeholder"
     },
     {
@@ -1248,15 +1248,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7ad47de67c6708e06ded0ccbaa961e17b71946d4036d8362a7cc2c06db7b458e",
+      "frame_sha256": "6430cb004c5f06b7ed83c35baf2395f7738cdfca6f03ab6c4b4654264d1b5f43",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:29.061786+00:00",
+      "verified_at": "2026-10-15T07:39:25.259264+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-269",
@@ -1282,15 +1282,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "171ab2e13d73c92e7879cf77383939cf240e9a6edc60fb07447131410778bc52",
+      "frame_sha256": "a7ae261f8c3d36f31d47a3dd5ca2c73f5b3d301088a94ca44b59c73ea61a1c69",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:30.558157+00:00",
+      "verified_at": "2026-10-15T07:39:25.334564+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-270",
@@ -1316,13 +1316,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "0e0cd122c7d1f5b02cd1b7daa8db63742b342be5e928c64411db9be7afc34c58",
+      "frame_sha256": "61453a3118aea1dfdde6dfe92e1fc707ee737247472ff3a3119bd8c40df78b42",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:30.883499+00:00",
+      "verified_at": "2026-10-15T07:39:55.506775+00:00",
       "verification": "placeholder"
     },
     {
@@ -1335,7 +1335,7 @@
       "lat": 34.00543,
       "lng": -118.17246,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i710282washingtonblvd/i710282washingtonblvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-282.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1349,13 +1349,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "84ad5801e0b84461987b26db03538d6e770e079b4ceb0409e3471e5103fb1349",
+      "frame_sha256": "50e0f8b568a820cbedb9da06968370d3317bfb6ac76a8dd1bc8e10e442520ae3",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:31.383854+00:00",
+      "verified_at": "2026-10-15T07:39:55.989448+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1369,7 +1369,7 @@
       "lat": 34.01393,
       "lng": -118.17274,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i710283southofi5/i710283southofi5.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-283.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1383,13 +1383,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8ea0ededbcc8eeeb69ee07d1e62f23abdb6eff2f19042874eacafc0e026a37af",
+      "frame_sha256": "feb6067f23449c7fd1bcb6489857e1146209b879b23597dadb560966b7d804ca",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:31.713319+00:00",
+      "verified_at": "2026-10-15T07:39:56.595213+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1403,7 +1403,7 @@
       "lat": 34.02283,
       "lng": -118.17257,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i710284northofi5/i710284northofi5.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-284.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1417,13 +1417,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ff7539caceef0d59296864a8b52be5520d10e6ef0084e27773027de6bc2bd53a",
+      "frame_sha256": "3cdc5fa187b7cce339357c2e589e0a586dac5a6ad270567bc6521c54e5a38315",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:32.004246+00:00",
+      "verified_at": "2026-10-15T07:39:56.642738+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1451,15 +1451,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "498d9135fd317847e0dedc7528638075d4b62a298db65cd8c71a6af7ba22e1ac",
+      "frame_sha256": "fff6c5384dd4a3aa9ed050c5e94a483de026f8e89c556a48d4ec3102754df981",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:32.702600+00:00",
+      "verified_at": "2026-10-15T07:39:57.186223+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-301",
@@ -1471,7 +1471,7 @@
       "lat": 33.93146,
       "lng": -118.39582,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i105301sepulveda/i105301sepulveda.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-301.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1485,13 +1485,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "d06f61088efcfee04664bf0d95a3128e17317ceb7c63512497a6c5a8ee195e2a",
+      "frame_sha256": "e642a7d0c6c83b43087baae3731243193ac78ab78db63e623957b32abb9ebda4",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:32.972282+00:00",
+      "verified_at": "2026-10-15T07:39:57.870032+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1505,7 +1505,7 @@
       "lat": 33.92939,
       "lng": -118.29172,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i105309vermontaveonramp/i105309vermontaveonramp.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-309.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1519,13 +1519,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "c7c7bd3a67fc9d8d223cd2b0994393958daa414950c3940df8a09030948074e0",
+      "frame_sha256": "85f509641de61c8266d49433eca57d3c24eee0e1aa9d41d09b72212ed7ae4729",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:33.281025+00:00",
+      "verified_at": "2026-10-15T07:39:57.994558+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1539,7 +1539,7 @@
       "lat": 33.92809,
       "lng": -118.27196,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i105310prairieavehawthorne/i105310prairieavehawthorne.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-310.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1553,13 +1553,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "eab3804ab78708e890dd4335dd75300c7eaf5e2f00c92314f174bdbfb1cee12c",
+      "frame_sha256": "e2c1e940aa9e4b30a620f72a9e9d3e53a6f9f8429da892ce96d814af0e6e1676",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:33.855085+00:00",
+      "verified_at": "2026-10-15T07:40:28.523654+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1573,7 +1573,7 @@
       "lat": 33.92808,
       "lng": -118.23968,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i105312wilmingtonave/i105312wilmingtonave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-312.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1587,13 +1587,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "d73cab4115fbe82ca514b5cbedda80e4fc7a20648f6978d9f3c1873dd91a63a6",
+      "frame_sha256": "28599713d3962cee034eb989c799b35daefd7edb02a650f3c793db7f4b1d6e95",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:40.406169+00:00",
+      "verified_at": "2026-10-15T07:40:29.213098+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1607,7 +1607,7 @@
       "lat": 33.9137,
       "lng": -118.1046,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i105320i605/i105320i605.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-320.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1621,13 +1621,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "d156eec5641301730b24fafe84af013ab95128e779d28b20d1d13a3773d26759",
+      "frame_sha256": "18aa42141f88889ed45ba60414b85239c32ebbb4b18b74316168c3713a37cd70",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:40.768425+00:00",
+      "verified_at": "2026-10-15T07:40:29.243944+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1655,15 +1655,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e0cf5c817208cf081247cd232be0f6bfb3b55f06dfe68b721d8283e682b689b0",
+      "frame_sha256": "372a29722f0233718edbb3e850268656ba094741981a7dd0e7db63198c3d8205",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:40.920029+00:00",
+      "verified_at": "2026-10-15T07:40:29.693185+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-324",
@@ -1675,7 +1675,7 @@
       "lat": 33.79649,
       "lng": -118.10694,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405324paloverdeave/i405324paloverdeave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-324.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1689,13 +1689,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "1d1d91f6ecde8106c3c22ff90b32c6d60bbb6c9b177693335f682c22323969a3",
+      "frame_sha256": "b1817a4ff7caccb4eca0c2c77cc958d1f40bc47abea1be14d391bcb793a21aa6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:41.917376+00:00",
+      "verified_at": "2026-10-15T07:40:30.370764+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1709,7 +1709,7 @@
       "lat": 33.80242,
       "lng": -118.12763,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405325bellflowerblvd/i405325bellflowerblvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-325.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1723,13 +1723,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "247bc08297189b1e09874aac03fb58415c39144e631f504a27c0ee79aedd2ab9",
+      "frame_sha256": "e13b7db55433b3851e23eb5b4a640562c6410a8f6f5c494306d23f32a3e8664a",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:42.106498+00:00",
+      "verified_at": "2026-10-15T07:40:30.506884+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1757,15 +1757,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "bd7120384773df7f342bff266a0b8bb3aa4054d4e0403d5d734b69c219ef12f2",
+      "frame_sha256": "c6a7ffecd6b3a18ca51f416186bc433be3528a9ff2bcec38427b847b7557b56b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:42.320878+00:00",
+      "verified_at": "2026-10-15T07:41:01.201225+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-332",
@@ -1777,7 +1777,7 @@
       "lat": 33.82570449,
       "lng": -118.2041312,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405332westofpacificplace/i405332westofpacificplace.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-332.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1791,13 +1791,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "de18edf3567e6fa6f9e80256a08454d36171c817aeaeafbda5e05dfeb7770a8f",
+      "frame_sha256": "a89a6666db2ce996a1ace18edbef179a259dd7584c3e4cbdb05837ab8e25b915",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:42.772018+00:00",
+      "verified_at": "2026-10-15T07:41:01.740185+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -1811,7 +1811,7 @@
       "lat": 33.82529,
       "lng": -118.21538,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405333santefeave/i405333santefeave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-333.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -1825,13 +1825,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "62913798507b1a4018d09765d49956ce23b598a91e5f16ecf2feafbb484f8dc5",
+      "frame_sha256": "fd292d58413c8340b971bc896572b05a0f93c51831c89df01703b76eb0f88e48",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:43.453063+00:00",
+      "verified_at": "2026-10-15T07:41:01.784898+00:00",
       "verification": "decodable_image",
       "hls_status": "unavailable"
     },
@@ -1859,15 +1859,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f505fd107114f18a0608f2dd92f81b6d65f2acff39278377d2b90287057e3d99",
+      "frame_sha256": "052eab5e0873da3a901dc4ae38c8be9968a5133d0d82ff69388174e4cae18279",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:49.311040+00:00",
+      "verified_at": "2026-10-15T07:41:02.251762+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-359",
@@ -1893,15 +1893,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "05dcdb36f02119a1bc9538edba4a4f41cfb4e2cc357b03470b7ad55870fee31c",
+      "frame_sha256": "869ec63beae15b5bd6da3e4ac2931817c5ea0dd779484255713e6767698d3bad",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:49.807040+00:00",
+      "verified_at": "2026-10-15T07:41:03.032690+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-360",
@@ -1927,13 +1927,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "79bcd6dc3aed8709e9b68eb13c2d0038d198a51069b776a54a63c1399fcc76f1",
+      "frame_sha256": "ee5e96187f21db297e75b94e6921fcc5e99d9c7cf88689ec9dbe8c02580dc06b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:50.511810+00:00",
+      "verified_at": "2026-10-15T07:41:03.085600+00:00",
       "verification": "placeholder"
     },
     {
@@ -1960,13 +1960,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ba3201051a50621be90e136588ec661c13f615d3539846a4037d489285cc913b",
+      "frame_sha256": "4c817424b7abfea6b54f142ca5d31439da9841e761d94c06a9e35736d4164fdd",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:50.806912+00:00",
+      "verified_at": "2026-10-15T07:41:03.558196+00:00",
       "verification": "placeholder"
     },
     {
@@ -1993,13 +1993,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "cb692976deb542cd1a202f0e0b1bd95046cd24b553eae61d1cf7a1a25310f7a4",
+      "frame_sha256": "a71925144a2c21609a7908bb912c81d181d2dd65e36b73659b095657a44817ce",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:51.000702+00:00",
+      "verified_at": "2026-10-15T07:41:04.039609+00:00",
       "verification": "placeholder"
     },
     {
@@ -2026,13 +2026,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f4aab3fd1c611da143ba3db43b4c35ae3c47a5dfecc527db46b87d56a3f8d903",
+      "frame_sha256": "35dfbd92fdad4cfbd822d748b4e5a85fa251636fccf42e19cb42c6c309aacf23",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:51.053412+00:00",
+      "verified_at": "2026-10-15T07:41:04.550879+00:00",
       "verification": "placeholder"
     },
     {
@@ -2059,13 +2059,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4092f6b00ea9b68d32af5a721b5ff332dd91e9e032f2cbbbbb9cdce7ad6719d9",
+      "frame_sha256": "ec3a8218780d02eeb7c4a0fae3b7d925a00c73e8ab5ae4fc3bdbc9f466628f1a",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:51.088422+00:00",
+      "verified_at": "2026-10-15T07:41:05.056227+00:00",
       "verification": "placeholder"
     },
     {
@@ -2078,7 +2078,7 @@
       "lat": 34.06447,
       "lng": -118.01249,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i10411durfeeave/i10411durfeeave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-411.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2092,13 +2092,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4109c3a12072a7f5d5f1d35691b21572dd19d7eb3b2dfa51aa81b37fd1e3c805",
+      "frame_sha256": "fc9585c3b732c3491d1769645312cfc59aeb537afd82aef210b03890ad0af1bc",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:51.292982+00:00",
+      "verified_at": "2026-10-15T07:41:05.564102+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2126,15 +2126,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "79b30700c31946f9f07640479158bc91203d5f0c17f0b4b60efe1be11feb4951",
+      "frame_sha256": "b343e25742594442a77efc15fa678a61332732ed9e4b54279e54ebe0886a7ebc",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:51.620343+00:00",
+      "verified_at": "2026-10-15T07:41:33.827355+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-417",
@@ -2160,15 +2160,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "66eff5825aef3bedbf007d7eaeb21012317dfeb077464310b7b4792a2a29263b",
+      "frame_sha256": "0eed6beca0483d499859433b8c5cf43cbc3b1bf2c6a489c7a567a882cbe381da",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:51.660575+00:00",
+      "verified_at": "2026-10-15T07:41:34.388331+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-418",
@@ -2194,15 +2194,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "0daaea79c7b36f838e72b12dab6d62aecfbf3003839497007fa2cb3cbb3748a9",
+      "frame_sha256": "6cb2cf0a1ddf0605a60cb0e596da8d47ed9c01f13d9f9da88891bc7eea248b20",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:51.699698+00:00",
+      "verified_at": "2026-10-15T07:41:34.455104+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-419",
@@ -2228,15 +2228,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f4e774cb4fe00673c8e9be28d4666a0f43c11be925765ce0402244bb21321237",
+      "frame_sha256": "632f1e562185962b43fffe11bde4ce57c328e1b98c648a65a2fadaa1995c5fb1",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:51.829350+00:00",
+      "verified_at": "2026-10-15T07:41:35.029526+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-420",
@@ -2262,15 +2262,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4d508690363a23e9cb00c2c2ee6f2f317ddfc20f82cff98046ef358a4493d487",
+      "frame_sha256": "e6dd851fc470ee5b3de9eb9c4c3295a7e592421197e00a0e82942ffb2d30773d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:21:52.606591+00:00",
+      "verified_at": "2026-10-15T07:41:35.823544+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-502",
@@ -2282,7 +2282,7 @@
       "lat": 33.81063,
       "lng": -118.08115,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i605502springst/i605502springst.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-502.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2296,13 +2296,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "af50748bf0040eed6a568aad8d15256810cf4e6d0bba25e77cce9e6e1474bd54",
+      "frame_sha256": "8135c99ae85de406a5a1e90825d12e50a480549aebc819499a553bc20ef61603",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:52.792963+00:00",
+      "verified_at": "2026-10-15T07:41:38.101817+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2316,7 +2316,7 @@
       "lat": 33.82202,
       "lng": -118.08116,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i605503wardlowst/i605503wardlowst.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-503.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2330,13 +2330,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "cdc711cfd639af0f9389b446c6f7952077f21e6976310011dff4c61a69b780bd",
+      "frame_sha256": "99cb213c94795aac7cd0140717466c6cb8f504998c0b705be848a1803d03c2a8",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:52.889068+00:00",
+      "verified_at": "2026-10-15T07:42:06.353178+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2350,7 +2350,7 @@
       "lat": 33.83018,
       "lng": -118.08318,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i605504carsonstofframp/i605504carsonstofframp.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-504.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2364,13 +2364,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a8b68e052dd4deea325f3cf27321971389f41fa09dfcaa4bf17c165c873b388b",
+      "frame_sha256": "15996b2c834c2f5fdaaa7ed2161be147ba97a577baa1f6632a97f374be5c49da",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:52.963064+00:00",
+      "verified_at": "2026-10-15T07:42:06.918835+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2384,7 +2384,7 @@
       "lat": 33.88996,
       "lng": -118.10418,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i605510alondrablvdonramp/i605510alondrablvdonramp.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-510.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2398,13 +2398,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "99132a90d8770d08c2f897fadd05635f75f3bf6d83945eea8d1398c14e763c1b",
+      "frame_sha256": "279da07ffd30e9092a7ed9e30577d4b951209465b770befbf069f370d95e05a1",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:53.043930+00:00",
+      "verified_at": "2026-10-15T07:42:06.989782+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2418,7 +2418,7 @@
       "lat": 33.90259,
       "lng": -118.10497,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i605511rosecransave/i605511rosecransave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-511.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2432,13 +2432,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7451ba539b9edeb9da7b1ea33b60dbad8305f195f4e057816e8733f82ee49266",
+      "frame_sha256": "a3aaaa7d0cad0106202679d1c57508ecbdad6af7b8f79b08ceed0ee9ec025a74",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:21:53.768524+00:00",
+      "verified_at": "2026-10-15T07:42:07.611110+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2466,15 +2466,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e78ccc5b7dea0f6b447ca839ab3d4f72671a436cda1ebd0f51b67f9726b08a8a",
+      "frame_sha256": "663852edb617fdd8ef488de741ff2bdf22fdd59e87de873f9cd9e2f726fd9389",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:00.253725+00:00",
+      "verified_at": "2026-10-15T07:42:08.395307+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-514",
@@ -2500,13 +2500,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e884560a9f79d1093babcd4685c5040195f1dbcc5ca632d4b989724fee5d0906",
+      "frame_sha256": "b2ff696b09837fc0adfd34740643ce1bb27863b141cb0bf485edb267ebc1cdc3",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:01.562984+00:00",
+      "verified_at": "2026-10-15T07:42:10.650620+00:00",
       "verification": "placeholder"
     },
     {
@@ -2519,7 +2519,7 @@
       "lat": 34.11808,
       "lng": -118.2349,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr2583ave36westofverdugo/sr2583ave36westofverdugo.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-583.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2533,13 +2533,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "710321790972631e1cbbce2795c36dab41c548b7d0329c756a48dcef7392be7e",
+      "frame_sha256": "467edda73736890fda805b5592b3a184e63689103f49ac755cfab186f1017b48",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:01.740685+00:00",
+      "verified_at": "2026-10-15T07:42:11.138286+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2567,15 +2567,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "2dc90b588d122c2b4cb2010af10c164c867bb7b628253923ad6c889a43bcc21f",
+      "frame_sha256": "bd134b743e37fbc36e86c41f8a005bbc5adfd7bdab30e8755e00ea63125cfbd2",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:02.021353+00:00",
+      "verified_at": "2026-10-15T07:42:38.999346+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-595",
@@ -2587,7 +2587,7 @@
       "lat": 34.06374,
       "lng": -118.24893,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101595northofi110/us101595northofi110.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-595.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2601,13 +2601,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "584c8133f59eca79556f2340f7a0451d55fb96f7a368810a6c4f98cf9e40ff97",
+      "frame_sha256": "3f4cabe117c45c2746d434e3449c3937959b152802a1f319fad11635f48f039e",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:01.884954+00:00",
+      "verified_at": "2026-10-15T07:42:39.460577+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2635,13 +2635,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "29a82ce4113ed218a797e99695b3ddf7f6af7c2f9bb534a2cb3ec4b1aace5633",
+      "frame_sha256": "369edfe01af58b73c9f9298ed63d86985d03d86c413febac046300fd46e01cdb",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:01.959330+00:00",
+      "verified_at": "2026-10-15T07:42:39.507046+00:00",
       "verification": "placeholder"
     },
     {
@@ -2654,7 +2654,7 @@
       "lat": 34.07121,
       "lng": -118.26424,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101597bonniebraest/us101597bonniebraest.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-597.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2668,13 +2668,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "110991a926c2b3d02759357b316ace5fa1191635853934f2aad5f981e8d5d310",
+      "frame_sha256": "e45a8a4a8316595381f9b0c5d5ac11051ffd95095ce9af1fbc6031f222a08976",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:02.038743+00:00",
+      "verified_at": "2026-10-15T07:42:40.011280+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2688,7 +2688,7 @@
       "lat": 34.07539,
       "lng": -118.27435,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101598bentonway/us101598bentonway.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-598.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2702,13 +2702,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f020e5e7fb4cc1fc96a14ae366d6d918efbabae463695902a9bdc15ac13e325a",
+      "frame_sha256": "891a60c61526e57d75e311b9205b7c13c1757bf904ae247ee8c8d0ca7f0c3479",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:02.450468+00:00",
+      "verified_at": "2026-10-15T07:42:40.137194+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2736,13 +2736,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "fb9576ccddde303f92a52a29daffd9fecd2f1d43dc856285ede650e4b3502634",
+      "frame_sha256": "76d8a904e2c5e493d9e5245b5969adb07b97bfdeda8b6018bc3c82307da518fd",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:02.734481+00:00",
+      "verified_at": "2026-10-15T07:42:40.918922+00:00",
       "verification": "placeholder"
     },
     {
@@ -2769,13 +2769,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "46861ea68284773e9be16ea99dda5f5f30777a5ffd4612f98a0844537e8b087a",
+      "frame_sha256": "ed62c97d1d051ea352719edee230b31aa10a91400b8f135ce7d1447ce57e8870",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:03.172431+00:00",
+      "verified_at": "2026-10-15T07:42:41.421873+00:00",
       "verification": "placeholder"
     },
     {
@@ -2788,7 +2788,7 @@
       "lat": 34.08275,
       "lng": -118.29791,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101602southofmelroseave/us101602southofmelroseave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-602.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2802,13 +2802,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "0b2bb678e40f6f4632c49ff7a045dbce6d84b3694ece8b17088b4e6d33606b5d",
+      "frame_sha256": "53d5dd2b8134f5ce862e649cd4252e83d45b9acd4fb04d5a1bd0540e36be77d7",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:03.209607+00:00",
+      "verified_at": "2026-10-15T07:42:41.924031+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2836,13 +2836,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8ca7be5570c848f9b294bd6d1ea8455a4197991c0345653afb6ec49f50141295",
+      "frame_sha256": "f21eec1b588deb523af01d7124964a56e6f631d2fc558a5e6f74bd4de57283cf",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:03.678249+00:00",
+      "verified_at": "2026-10-15T07:42:43.663129+00:00",
       "verification": "placeholder"
     },
     {
@@ -2855,7 +2855,7 @@
       "lat": 34.08673,
       "lng": -118.30356,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101604northofnormandieave/us101604northofnormandieave.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-604.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2869,13 +2869,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ba41448174a2a27cb3be71212e726ae2efda33efdcb0c1bfe79fe4a8a6b2c626",
+      "frame_sha256": "95a899fe41ee235ef39c085595931dcc5fa6daa225ecdc1704ed9fd8809720f2",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:04.151946+00:00",
+      "verified_at": "2026-10-15T07:42:44.162155+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2889,7 +2889,7 @@
       "lat": 34.09105,
       "lng": -118.30639,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101605santamonicablvd/us101605santamonicablvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-605.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -2903,13 +2903,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "215580920430cf979ee92d1dfbc784ca308384f2e23db7d703022d219d95e368",
+      "frame_sha256": "f941aff193f637f6f114c06fd867099ff3c31b70048a4407cc9509e74daa79df",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:10.668221+00:00",
+      "verified_at": "2026-10-15T07:43:11.545227+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -2937,15 +2937,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ba6c4aa1ac195573ae47eaf9e8bed7ac8a87374cf2d69cd6bc202ff00f447a76",
+      "frame_sha256": "0c0b95c31b9e98d1d74823e3dade7ff002dbde2b0d4dc86073c3bd59fcdd6d75",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:10.934470+00:00",
+      "verified_at": "2026-10-15T07:43:12.092498+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-607",
@@ -2971,15 +2971,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7fefc5a1d4fb4d2f98ae54ef4bb52a8c35da728b218619212f011c3c85a591ba",
+      "frame_sha256": "767515aeaa0cd81ab1a26be885cf12797aecb23bc9c7718360ae6c1c8b5f674c",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:11.065540+00:00",
+      "verified_at": "2026-10-15T07:43:12.668266+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-608",
@@ -3005,13 +3005,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "de5bc60e7af53b691870ab2b334c20ccb239cd38537bac98af4be0e40508e178",
+      "frame_sha256": "2332e73e0dfd5980cc69e070d0865524af233c40f6e62d165018b68f7f505cf0",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:11.383059+00:00",
+      "verified_at": "2026-10-15T07:43:12.678337+00:00",
       "verification": "placeholder"
     },
     {
@@ -3024,7 +3024,7 @@
       "lat": 34.1053,
       "lng": -118.3265,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101609vinest/us101609vinest.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-609.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3038,13 +3038,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "72c8fd291ecc2c9f9dda3049a652da19526a7a438af0d5b05cdf328bd0567f42",
+      "frame_sha256": "3e27e9ad443c3f15cdca21596a09ad58d31469000ac7cbed09f74d0e06662f2a",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:11.886199+00:00",
+      "verified_at": "2026-10-15T07:43:13.218657+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3058,7 +3058,7 @@
       "lat": 34.11865,
       "lng": -118.33751,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101613southofmulhollanddr/us101613southofmulhollanddr.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-613.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3072,13 +3072,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a6e20056ee7d456e8649856959e3acb51fbae808c845b0758e4136f9d7db7beb",
+      "frame_sha256": "3b1a54fb156791feead607eae20e8b173d3b2421687a9540a8a3e10936f4d90e",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:12.067762+00:00",
+      "verified_at": "2026-10-15T07:43:14.445144+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3106,13 +3106,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "c3c9bb23dac3a051f5c9e02273ea57e51cba68727ff43516276c78c793c10900",
+      "frame_sha256": "7807755a2895aacff12061d8b01bd621cd0b73a12af2ff089c0424064da1d81b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:12.145818+00:00",
+      "verified_at": "2026-10-15T07:43:16.685762+00:00",
       "verification": "placeholder"
     },
     {
@@ -3125,7 +3125,7 @@
       "lat": 34.13342,
       "lng": -118.35406,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/us101615universalstudiosblvd/us101615universalstudiosblvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-615.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3139,13 +3139,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4200e338395144188ddab59655fb9f40363ddf282894766da02024196f0238ce",
+      "frame_sha256": "c4d011cc39fd1154254f9b66e770da13d6d96aed382b08a242fcc65d0cb1a5cc",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:12.379607+00:00",
+      "verified_at": "2026-10-15T07:43:17.176161+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3159,7 +3159,7 @@
       "lat": 34.15405,
       "lng": -118.34012,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134652hollywoodway/sr134652hollywoodway.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-652.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3173,13 +3173,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "298572777a7c5d25cfdd93272b89908d09550f5c21e86a5e36122dce198902d8",
+      "frame_sha256": "2abce22eb4964db67d770d2a99ec21a2a4bc699da90fdf298363f5fa144fb64c",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:12.674740+00:00",
+      "verified_at": "2026-10-15T07:43:44.054307+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3193,7 +3193,7 @@
       "lat": 34.14651,
       "lng": -118.22477,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134664eastofsr2/sr134664eastofsr2.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-664.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3207,13 +3207,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "bee434f3d3b4de12c861b553e93c105c151537033bf68223fa0b2980c8d56d49",
+      "frame_sha256": "5c5ef051c5378bb2edd54b746acfb516d6be454f305af75cde1322e77cf6265c",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:13.110307+00:00",
+      "verified_at": "2026-10-15T07:43:44.631304+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3241,13 +3241,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "152478006b199846e885cc48a83115870e2d71862f3dca1f01998b478a52c8ca",
+      "frame_sha256": "0368fef40d127625be1a3de9b96118aa393287fd752e485d4d66eb96127d98d9",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:19.592500+00:00",
+      "verified_at": "2026-10-15T07:43:45.189954+00:00",
       "verification": "placeholder"
     },
     {
@@ -3274,15 +3274,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7a4c07fd9b6fd588cb200912c7b5f468af35f0059f2868ab595808941619cb0b",
+      "frame_sha256": "f9103f71e57392eae373abc82d65eaa343610b55b138816321d4422f72ac25f1",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:20.214137+00:00",
+      "verified_at": "2026-10-15T07:43:45.940106+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-955",
@@ -3308,15 +3308,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f3c1259c0827f860b674b10645a23435acb274899697cf0467ed81a7274ee0d3",
+      "frame_sha256": "1296b9ea35f7558bf97e4ecb256579e5ed1252a4d9e32f632747bd71aba94deb",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:20.927485+00:00",
+      "verified_at": "2026-10-15T07:43:45.869309+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-956",
@@ -3328,7 +3328,7 @@
       "lat": 33.78285,
       "lng": -118.20793,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i710956southofanaheimst/i710956southofanaheimst.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-956.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3342,13 +3342,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "acefb0f671359acc4e0760beef7d80cdd3ee425bc8cf19915abd024773ad8b70",
+      "frame_sha256": "1799c0e14472c8b7d786fdaf580a3cf74187e614469ff92ba31b7736c859b55a",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:21.026867+00:00",
+      "verified_at": "2026-10-15T07:43:46.968922+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3376,15 +3376,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a257334a53bbeb85b99915aa29ca8ff32171d70b696e63c3aaef55e0b5a48bb9",
+      "frame_sha256": "3d9b49ddad0bcdc5e5039a143e3aa8970c819e7de2741493c3877f9378cbfabf",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:21.425447+00:00",
+      "verified_at": "2026-10-15T07:43:49.827875+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-961",
@@ -3410,15 +3410,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8edd889f2b0e861e683ad2048153ddacff485bd25fcd9701112dbd51cf248bf0",
+      "frame_sha256": "903b5ed4ab7b7027367c3718101472ae0421c30dfcc96b3cd3dacddb0ce8ecec",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:21.503539+00:00",
+      "verified_at": "2026-10-15T07:44:16.702286+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-962",
@@ -3444,15 +3444,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "66354f3be723ee85b85c9414e4291338509fcb93c0a20c281b7a4694397199af",
+      "frame_sha256": "63a0951837d7f20a671cd83680eb6d037fd048d75a0758fd50fcd0355797564b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:21.861094+00:00",
+      "verified_at": "2026-10-15T07:44:17.429271+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-963",
@@ -3464,7 +3464,7 @@
       "lat": 34.1531,
       "lng": -118.326,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134653buenavista/sr134653buenavista.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-653.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3478,13 +3478,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f064277db5be1c35474d75c08ddc67b1495feb488599c0bedf7400c0b611a66e",
+      "frame_sha256": "29777d396aa1eb12c5807865ead4c8345a47930d2b36e5ada25d1ce14216adef",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:22.005749+00:00",
+      "verified_at": "2026-10-15T07:44:18.455288+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3498,7 +3498,7 @@
       "lat": 34.154,
       "lng": -118.3143,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134654westofforestlawn/sr134654westofforestlawn.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-654.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3512,13 +3512,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "05ea4a02d51019edfc72d7ec40d276b9b9a9b8d88a3db72d93054823ca066ff8",
+      "frame_sha256": "148d295e8f1ba0e275d3e0621aec7af3d5932e2e0011d6d993b8eb2ad029ccff",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:22.122500+00:00",
+      "verified_at": "2026-10-15T07:44:18.794186+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3532,7 +3532,7 @@
       "lat": 34.15595,
       "lng": -118.29736,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134656westofriversidedr/sr134656westofriversidedr.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-656.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3546,13 +3546,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "686800c614875bac98fdaf91dfd6f0dd5dcd3603cf9999bb829bd9ce8e3afb29",
+      "frame_sha256": "1c9c7a852d06d4a971cbfcbd1e050db2456ab4fcf0fc7f32709082febbe77ba7",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:22.580023+00:00",
+      "verified_at": "2026-10-15T07:44:19.491952+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3566,7 +3566,7 @@
       "lat": 34.154213,
       "lng": -118.285144,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/sr134657eastofroute5/sr134657eastofroute5.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-657.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3580,13 +3580,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "dbec120926c02ee9613fbba0213f77f186290be4390a6bba247ff84d3dd070e3",
+      "frame_sha256": "467169274c573459d8232b1d2194b5649af9384eb44c5b570f9a38bfea1c30e8",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:22.852922+00:00",
+      "verified_at": "2026-10-15T07:44:22.355373+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3614,13 +3614,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "cd6a3b8be292d6eb18355a504f63c6e4c5a0ecb4eb0a98013f4a1b3b3d4022c0",
+      "frame_sha256": "0a7509d2f45dd7e6efb27852c169392ca0c9bad1692d0096067d451107bb9bfa",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:23.009824+00:00",
+      "verified_at": "2026-10-15T07:44:49.213960+00:00",
       "verification": "placeholder"
     },
     {
@@ -3647,15 +3647,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ada94a4b758d09c6bbc0335d589ccccbe4b58e3057efb203623385b9b5a0daad",
+      "frame_sha256": "ed2426048c3e1d5abc1ec6a77c735b46fee105647d2e551cabb34de57a076378",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:23.502153+00:00",
+      "verified_at": "2026-10-15T07:44:49.705851+00:00",
       "verification": "placeholder",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-984",
@@ -3681,15 +3681,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8b04e02bdc08f049b34877e54a15c5d194036a963c6c60da00728d2878a81a2d",
+      "frame_sha256": "f3f3a51140c6b3db671e48324d952f861bba71459efae631020403a0168c0262",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:24.786100+00:00",
+      "verified_at": "2026-10-15T07:44:50.097231+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-985",
@@ -3715,15 +3715,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "c12d3dc290707d2b895d7043ce434eba2abe745f36c81210f9bc5d16d525ae6f",
+      "frame_sha256": "0462b2706499547e3716a8fe556b62f7a49f99f68fccc8ee77ec2e70e90691ba",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:26.056965+00:00",
+      "verified_at": "2026-10-15T07:44:51.113729+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-995",
@@ -3749,15 +3749,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "b1b3b019223c3a7acef466b95ad68db667fbef521b629e4584345bd97fcc22d3",
+      "frame_sha256": "248e078020c60e8e07a41667aa5995d81a4f38f621d1e4343315b9ed23ed8305",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:27.372995+00:00",
+      "verified_at": "2026-10-15T07:44:51.463317+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-996",
@@ -3783,15 +3783,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "6239219e0e839d51ae1b01a56faf0ebe45b176aa0de3fad4af6d05793c974f7d",
+      "frame_sha256": "679430e641af6b8cccb589eb2981c94f005bc98771b763326277cf99bef30cb9",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:28.875773+00:00",
+      "verified_at": "2026-10-15T07:44:52.133293+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-999",
@@ -3817,13 +3817,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "e427026b52a3fce018fcd4f77e546ece0bbcad74d3a51863471727f115844cfe",
+      "frame_sha256": "a7c8eadfe60e3f1d85153e7ba3a2f0017be7b7e5158516eb79b5aad6ae320688",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:30.204516+00:00",
+      "verified_at": "2026-10-15T07:44:55.005393+00:00",
       "verification": "decodable_image"
     },
     {
@@ -3850,15 +3850,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a01a5dd44eb55150747dc8058968b319f060b7ee60984feffbfa90d11ae72462",
+      "frame_sha256": "8752675c97cafbdf5e3d1ba9d9c74df171b5a8c30431dd55ce320c20e692d294",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:30.408927+00:00",
+      "verified_at": "2026-10-15T07:44:55.641623+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1008",
@@ -3884,15 +3884,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f823beecf1278308af794a1af96997eb5c8999c7d482bce2027a7dd38d5eb5c7",
+      "frame_sha256": "35ecde0354499925638bb1bbbbfe4012fb5becf4fa57fed48622e14bab73eb64",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:30.826360+00:00",
+      "verified_at": "2026-10-15T07:45:22.348087+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1012",
@@ -3904,7 +3904,7 @@
       "lat": 34.0814,
       "lng": -118.2244,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i110195route5interchange/i110195route5interchange.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-195.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3918,13 +3918,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "53a2d223b0147bb3c4acf56bf4fea5d5ad64011fceeba7dbe80573d0a61dfc71",
+      "frame_sha256": "f8f9c2622065c2124efe11f1fccc2c603ef3a5dd0e2368d3ef547f5627200cfc",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:30.924817+00:00",
+      "verified_at": "2026-10-15T07:45:22.620246+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -3952,13 +3952,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "2702340c319920d0928d7e42b89f39fd31f125eeea3367b44ec4ecc97474d03b",
+      "frame_sha256": "3e81ddac9c184212e750569949e035ce0fbcf0e376e848586c6fb46d5ccec101",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:31.019416+00:00",
+      "verified_at": "2026-10-15T07:45:23.717629+00:00",
       "verification": "placeholder"
     },
     {
@@ -3971,7 +3971,7 @@
       "lat": 33.9071719,
       "lng": -118.1815296,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i710274sorte105/i710274sorte105.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-274.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -3985,13 +3985,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8f8c0cb24c90672b2f56bc1371e2f9ce8ec634ee119c1e88e1b0486243626075",
+      "frame_sha256": "bdb32debe8126b23c7fa710043899dab51dd4eca214dab7577aeede2416517d2",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:31.519739+00:00",
+      "verified_at": "2026-10-15T07:45:25.306836+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4019,15 +4019,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "78752a645afa94129206e5d5ed3aefe670d4b33015cd7c58e9b8ac7115cf1afd",
+      "frame_sha256": "2cd8f4a7d860c05793d4513ec405ccae6debc8a6cf89a79502d15e40671a4533",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:31.497528+00:00",
+      "verified_at": "2026-10-15T07:45:25.446897+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1026",
@@ -4053,15 +4053,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "7876d70c02163286de68b5a8d8eb9ced7dde49031c78d4a1217d056ae932a5a1",
+      "frame_sha256": "51b0aaaee6cf7bfb09f5ec413f8099715ee10b6461c238bb87ddbc63f70e695a",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:31.807220+00:00",
+      "verified_at": "2026-10-15T07:45:25.679908+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1027",
@@ -4087,13 +4087,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a764a8a5054ee95e348e9bf35cbcba2e532f0f21d5ac1b6b5bbfa6192a3a30b3",
+      "frame_sha256": "9ace5c8873014ba8441ce7faafdb5ca8adc0b6806191f5a56706f81271c85a9f",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:31.889034+00:00",
+      "verified_at": "2026-10-15T07:45:28.521216+00:00",
       "verification": "decodable_image",
       "hls_status": 200
     },
@@ -4107,7 +4107,7 @@
       "lat": 34.0278,
       "lng": -118.4549,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i1095centinelaaveonramp/i1095centinelaaveonramp.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-95.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4121,13 +4121,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "39443dc6936c9c30d95ef80201220679475a79bacf9c66c503b794910e900027",
+      "frame_sha256": "069357afe6f7d79540d93bb9506c70274d99466da5d9ed1d7f3004656d9b43a0",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:32.109341+00:00",
+      "verified_at": "2026-10-15T07:45:39.736085+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4155,13 +4155,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "390a58c7e3883185e2cf93f7587ff5fbe500b6810e19470d01b8f17e1a01d30f",
+      "frame_sha256": "3ce98e07b491c40aaa172242102545cbce854c8745ed36e775ecfa6860515265",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:32.753211+00:00",
+      "verified_at": "2026-10-15T07:45:47.311938+00:00",
       "verification": "decodable_image",
       "hls_status": 200
     },
@@ -4189,15 +4189,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4c132e32bc22a6a4d4fd1e2d6e0cd6dadae4cd7aea97037c639e1cf9f3927c4b",
+      "frame_sha256": "5cc3b78aca0356c65307eec5232e569c1ee8ddf0ed08f0ceeb8080d88fc0d769",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:33.095357+00:00",
+      "verified_at": "2026-10-15T07:45:54.374989+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-1053",
@@ -4223,13 +4223,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8a225b4afc8d23916d6c3a030c3756bce7a03b78ec78874c9b65d8174c7043a1",
+      "frame_sha256": "6c6cda86c1f97e258ca36aee22ff7afae16cb3be6bfca9fc481632f5cefa9eae",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:33.316377+00:00",
+      "verified_at": "2026-10-15T07:45:54.660011+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4256,13 +4256,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "3ca12fa599df09c1f3bf48a23dcb1d32d0ad24481dd883e43d442799933946b8",
+      "frame_sha256": "c8b4ee82e5d5870275a78864149334327f6381ef0f855b729547392592202006",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:34.192087+00:00",
+      "verified_at": "2026-10-15T07:45:54.872784+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4289,13 +4289,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "b22548a1eaefb6722e7224ff7ffb73090e9051777961be27e9e0ef7c3875865f",
+      "frame_sha256": "abc27bfc13f2487c9b5f70d2a2b1e280cc4a0a0666cd8388cd2b49c3fbd003ae",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:34.185549+00:00",
+      "verified_at": "2026-10-15T07:45:54.791669+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4322,13 +4322,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "30d1d3104560e47bcf1951893acac2dcf7ef94d7f8c157baf17e9da26232e493",
+      "frame_sha256": "da25d3c9f03794c748c2d884f23852d05a308907cfe48f3d2cf2638e94be02ae",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:34.487772+00:00",
+      "verified_at": "2026-10-15T07:45:55.266045+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4355,13 +4355,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "2512efc6de45c6c2279583c5b1c9f64d97cb20522cb6ee3d6943edd637b4ab10",
+      "frame_sha256": "dea82e67bf35676e65ddeb97a16fb8f800798efa1494f61aa6639977a8f868d6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:34.901825+00:00",
+      "verified_at": "2026-10-15T07:45:55.398303+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4388,13 +4388,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "6c0ba9b2eaa8075f2fcbee9e5e8a1b1a54f1648867bd5e3d02ccc9afd0676d8b",
+      "frame_sha256": "4367d02f6c66e460c664991df7ce47c03d087a7bb8ae3331ac60fd6a7c6ac136",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:34.927872+00:00",
+      "verified_at": "2026-10-15T07:45:55.501811+00:00",
       "verification": "decodable_image"
     },
     {
@@ -4421,15 +4421,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "dcf7c75747d94044c5fd94806bdfb62dffc785310a3493b9b16c6bc3bab51e22",
+      "frame_sha256": "13e6cd84c29488ef691d25ca4f622d9ebefc4059e879288351061a5e4e6bb3ab",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:35.099606+00:00",
+      "verified_at": "2026-10-15T07:45:55.877017+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1114",
@@ -4441,7 +4441,7 @@
       "lat": 33.901159,
       "lng": -118.061483,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i5571rosecrans/i5571rosecrans.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-571.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4455,13 +4455,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "67f0fd4620d9bbfea4bafffad68054447c2fb2db20a021e617b4c2c51a0c4427",
+      "frame_sha256": "45f41f0e7eec41e354b2b4412a1a52a53b65818935bd0ba4d0a296f9f7c94d53",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:35.370833+00:00",
+      "verified_at": "2026-10-15T07:45:55.885030+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4475,7 +4475,7 @@
       "lat": 34.0855,
       "lng": -118.232,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i524sbrte110connector/i524sbrte110connector.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-24.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4489,13 +4489,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "b03fbc39a0d763259a13d90fde1484d1f7dfccd75c4a1b23fae2d22a03d4c6a1",
+      "frame_sha256": "b050d85f1ad3b8d5d4bfb593313b4d5c53bf23f6ea573e70a7d51cf2bebdc750",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:35.537208+00:00",
+      "verified_at": "2026-10-15T07:45:56.009532+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4509,7 +4509,7 @@
       "lat": 34.0283,
       "lng": -118.4488,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i10106bundydr/i10106bundydr.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-106.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4523,13 +4523,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4341a452e29105cf067f4f31e43a9c7bdf0ed7d0db07304b0fb3a215f9f0f8aa",
+      "frame_sha256": "974b7ad0d2c46f5839870a2b9a138d3f15de7b86304a768267591e95e27eead6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:36.406700+00:00",
+      "verified_at": "2026-10-15T07:45:56.569367+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4557,15 +4557,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "4510e0025e8604caa0380da677f8636384c2202988278339929599452c00bac2",
+      "frame_sha256": "6f13cc36837959b7927d654a18181972708e72fa00100a21d4015e4bf40ef68d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:39.840713+00:00",
+      "verified_at": "2026-10-15T07:45:56.650672+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1147",
@@ -4577,7 +4577,7 @@
       "lat": 34.012806,
       "lng": -118.489953,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i10100olympicblvd/i10100olympicblvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-100.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4591,13 +4591,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a473505ce045a10410b6cffea4328f9e1fd9270ba856dea27975ff1d7837f396",
+      "frame_sha256": "b6f46779ec43342ec84a8650aab62b12cdba3e6e134b6c76c0b10ca21a224f83",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:40.453088+00:00",
+      "verified_at": "2026-10-15T07:46:03.556030+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4611,7 +4611,7 @@
       "lat": 34.014886,
       "lng": -118.485507,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i10103lincolnblvd/i10103lincolnblvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-103.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4625,13 +4625,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "f4aa929c6a897eafa8cab01afb1f95cb25d463e680e3a672cdd61b9e89f720a3",
+      "frame_sha256": "17182df3f441809b55b9357eb5d451b02c5705d1cd61c5c2894dfe8452f80f8b",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:41.043207+00:00",
+      "verified_at": "2026-10-15T07:46:04.971032+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4645,7 +4645,7 @@
       "lat": 34.04647,
       "lng": -118.44664,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405367santamonicablvd/i405367santamonicablvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-367.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4659,13 +4659,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "36a552ff78cd8e54c6963831c356f463188d11bc25281f220099c7c7cd3c46b7",
+      "frame_sha256": "9417cda200389f59a164f11de693ef9001667eb826344a4404507000c13b009d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:41.050295+00:00",
+      "verified_at": "2026-10-15T07:46:05.934102+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4679,7 +4679,7 @@
       "lat": 33.96818,
       "lng": -118.3715,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i405358wolacienegablvd/i405358wolacienegablvd.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-358.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4693,13 +4693,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "8fa0af651bc89d3caeb20a4b767436ce174002a53ca026ba70f81f154945ce58",
+      "frame_sha256": "4db7a4b71d177802f6f1730162d6981b016ea31651a0637398caf69b36076672",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:44.311761+00:00",
+      "verified_at": "2026-10-15T07:46:12.771258+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     },
@@ -4727,15 +4727,15 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "19032aa15407a60091ee2a9a9dbefd368548c16e091e7f1649c524a4a56dd365",
+      "frame_sha256": "3cf66b00560be3038c21426d36dcd160bab5103684239626936755383f45e059",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:44.453430+00:00",
+      "verified_at": "2026-10-15T07:46:12.905003+00:00",
       "verification": "decodable_image",
-      "hls_status": 200
+      "hls_status": "unavailable"
     },
     {
       "id": "caltrans-d7-cctv-1213",
@@ -4761,13 +4761,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "a6eaf21e45259449f4809e71841309f1e20da21013da94b4b781b7907f130ace",
+      "frame_sha256": "bcfbf9bb4affdeb449343bcbe92f6dc0dce57f555cd05b0392b7e78dab0e4095",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:45.344361+00:00",
+      "verified_at": "2026-10-15T07:46:13.496403+00:00",
       "verification": "decodable_image",
       "hls_status": 200
     },
@@ -4795,13 +4795,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "aead1e9aa24d3f46f96eedc8ee6c1dda1ff9b0f1e3bf3affc8f04f492f791a0a",
+      "frame_sha256": "c1810e052ef13a161a36a29f68a0adadb8416508d3e821598d5b1a772b019887",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": false,
-      "verified_at": "2026-10-15T17:22:45.644260+00:00",
+      "verified_at": "2026-10-15T07:46:20.402911+00:00",
       "verification": "decodable_image",
       "hls_status": 200
     },
@@ -4829,13 +4829,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "3f18010129dc8376fbb2b723b4f4608fdcf5f663f32b42fc56764105979aef10",
+      "frame_sha256": "c235e0a8c74fa3be107917b21ded93d7c9f7a37000ed70b751977fceb0eebab6",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:46.643644+00:00",
+      "verified_at": "2026-10-15T07:46:21.858109+00:00",
       "verification": "placeholder"
     },
     {
@@ -4862,13 +4862,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "160ad3698ace701d39cc66e8dff1bf8b948d773470cb92352a45ffa1dbd9d88a",
+      "frame_sha256": "8480a20c6764316b4d1ba156f9013aaf9bf1c006110280034178ba86d2c1c2da",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:46.820509+00:00",
+      "verified_at": "2026-10-15T07:46:22.039564+00:00",
       "verification": "placeholder"
     },
     {
@@ -4895,13 +4895,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "991c811dfeb2158f8e50c2c111affe1072a97e094b2137a72bbe587280fff9e9",
+      "frame_sha256": "3169a96ccfdf6900d72ffaf7ba829b3337294d1e2ed39ae61bc86db03f6df00d",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:47.135151+00:00",
+      "verified_at": "2026-10-15T07:46:22.366212+00:00",
       "verification": "placeholder"
     },
     {
@@ -4928,13 +4928,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "6a5fbb4a872ebb05f61f29b5288be3a7d9835b0edc7b982472560c46552d65b6",
+      "frame_sha256": "10f8fd76595b85bf915e69d1f1314951f1bc5115b002572c219c5321eb1beb45",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:47.304545+00:00",
+      "verified_at": "2026-10-15T07:46:22.568122+00:00",
       "verification": "placeholder"
     },
     {
@@ -4947,7 +4947,7 @@
       "lat": 34.2440296,
       "lng": -118.4212952,
       "image_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/image/i551osbornest/i551osbornest.jpg",
-      "stream_url": "",
+      "stream_url": "https://wzmedia.dot.ca.gov/D7/CCTV-51.stream/playlist.m3u8",
       "source_url": "https://quickmap.dot.ca.gov/",
       "catalog_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json",
       "provider": "Caltrans",
@@ -4961,13 +4961,13 @@
       },
       "image_status": 200,
       "image_type": "image/jpeg",
-      "frame_sha256": "ef4a8be77792bb673ba78502dc30e6d330ed6329cf8ed6ca2f277eca5aa4dd4f",
+      "frame_sha256": "33b772f1dc73e22052f6bea1f48498fc99e1739864915a7782934815a919ff49",
       "resolution": [
         320,
         260
       ],
       "possible_placeholder": true,
-      "verified_at": "2026-10-15T17:22:47.668412+00:00",
+      "verified_at": "2026-10-15T07:46:22.596563+00:00",
       "verification": "placeholder",
       "hls_status": "unavailable"
     }

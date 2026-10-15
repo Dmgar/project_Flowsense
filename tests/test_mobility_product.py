@@ -18,6 +18,21 @@ def payload():
             "severity": "high", "note": "Review evidence", "data_origin": "presentation"}
 
 
+def test_source_status_expires_and_outage_is_distinguished(mobility, monkeypatch):
+    camera_id = next(iter(mobility.cameras))
+    monkeypatch.setattr("src.services.mobility_service.time.monotonic", lambda: 1000)
+    assert next(c for c in mobility.list_cameras() if c["id"] == camera_id)["status"] == "unverified"
+    mobility._frames[camera_id] = {"fetched_at": 990, "observed_at": "2026-10-15T00:00:00Z"}
+    camera = next(c for c in mobility.list_cameras() if c["id"] == camera_id)
+    assert camera["status"] == "online" and camera["observation_age_seconds"] == 10
+    mobility._frames[camera_id]["possible_placeholder"] = True
+    assert next(c for c in mobility.list_cameras() if c["id"] == camera_id)["status"] == "provider_notice"
+    mobility._frames[camera_id]["fetched_at"] = 0
+    stale = next(c for c in mobility.list_cameras() if c["id"] == camera_id)
+    assert stale["status"] == "stale" and stale["last_observed_at"] is not None
+    assert stale["last_source_status"] == "provider_notice"
+
+
 def test_provider_outage_card_never_becomes_a_zero_traffic_measurement(mobility, monkeypatch):
     frame = np.full((100, 160, 3), 255, dtype=np.uint8)
     captured = {"frame": frame, "detections": None, "possible_placeholder": True,

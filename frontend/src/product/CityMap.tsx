@@ -3,10 +3,10 @@ import { Circle, CircleMarker, MapContainer, Marker, Popup, ScaleControl, TileLa
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useStore } from '../store/useStore';
-import { useProduct } from './store';
+import { openObservedCamera, useProduct } from './store';
 import { signals } from './data';
 import type { GeoJsonEdgeFeature, RouteResponse } from '../types';
-import type { Signal } from './types';
+import type { Camera, Signal } from './types';
 import { Icon } from './ui';
 import { matchesZone, regions } from './coverage';
 
@@ -63,12 +63,13 @@ function SelectedSegment({ edge }: { edge?: GeoJsonEdgeFeature }) {
 
 function cameraIcon(online: boolean) { return L.divIcon({ className: 'p-camera-pin', html: `<span class="${online ? 'online' : ''}"><svg viewBox="0 0 24 24"><path d="M3 6h13v12H3z M16 10l5-3v10l-5-3"/></svg></span>`, iconSize: [30, 30], iconAnchor: [15, 15] }); }
 
-function Roads({ interactive = true }: { interactive?: boolean }) {
+function Roads({ interactive = true, forceObserved = false, onRoad }: { interactive?: boolean; forceObserved?: boolean; onRoad?: (name: string) => void }) {
 
   const map = useMap();
   const edges = useStore((s) => s.geojsonEdges);
   const layers = useProduct((s) => s.layers);
-  const mode = useProduct((s) => s.mode);
+  const storedMode = useProduct((s) => s.mode);
+  const mode = forceObserved ? 'observed' : storedMode;
   const [zoom, setZoom] = useState(map.getZoom());
   const [viewport, setViewport] = useState(() => map.getBounds());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()), moveend: () => setViewport(map.getBounds()) });
@@ -95,7 +96,7 @@ function Roads({ interactive = true }: { interactive?: boolean }) {
         if (!major) continue;
         const score = mode === 'presentation' ? ((p.u + p.v) % 17) / 17 : p.congestion_factor;
         const line = L.polyline(edge.coordinates, {
-          renderer, color: layers.freight && mode === 'presentation' ? '#94799f' : score > .70 ? '#cf7b69' : score > .4 ? '#d8b363' : '#7fac85',
+          renderer, color: mode === 'observed' ? '#8e9e82' : layers.freight && mode === 'presentation' ? '#94799f' : score > .70 ? '#cf7b69' : score > .4 ? '#d8b363' : '#7fac85',
           weight: zoom < 13 ? 2 : 3, opacity: mode === 'presentation' ? .65 : .3, interactive,
         });
         const content = () => {
@@ -107,7 +108,8 @@ function Roads({ interactive = true }: { interactive?: boolean }) {
         if (interactive) {
           line.bindTooltip(content, { sticky: true, className: 'p-map-tooltip' });
           const name = (p.name || '').toLowerCase();
-          if (name.includes('hollywood') || name.includes('santa monica') || name.includes('harbor freeway')) {
+          if (onRoad && p.name) line.on('click', () => onRoad(p.name!));
+          else if (name.includes('hollywood') || name.includes('santa monica') || name.includes('harbor freeway')) {
             line.on('click', () => useProduct.getState().navigate(`/corridors/${name.includes('hollywood') ? 'hollywood' : name.includes('santa monica') ? 'santa-monica' : 'harbor'}`));
           } else line.bindPopup(content);
         }
@@ -115,7 +117,7 @@ function Roads({ interactive = true }: { interactive?: boolean }) {
       }
     }
     return () => { group.remove(); };
-  }, [roads, viewport, layers.congestion, layers.freight, mode, map, interactive, zoom]);
+  }, [roads, viewport, layers.congestion, layers.freight, mode, map, interactive, zoom, onRoad]);
   return null;
 
 }
@@ -138,8 +140,8 @@ function MapEffects({ focus, route, bounds, highlight, compact, expanded, onPick
     map.invalidateSize({ pan: false });
     // One owner for the camera prevents flyTo and fitBounds from fighting during mount.
     if (route) return;
-    if (bounds?.isValid()) map.fitBounds(bounds, { padding: compact ? [20, 20] : [35, 50], maxZoom: 15, animate: false });
-    else if (focusLat !== undefined && focusLng !== undefined) map.setView([focusLat, focusLng], compact ? 15 : 14, { animate: false });
+    if (focusLat !== undefined && focusLng !== undefined) map.setView([focusLat, focusLng], compact ? 15 : 14, { animate: false });
+    else if (bounds?.isValid()) map.fitBounds(bounds, { padding: compact ? [20, 20] : [35, 50], maxZoom: 15, animate: false });
   }, [focusLat, focusLng, bounds, highlight, route, compact, expanded, map]);
   useEffect(() => {
     group.current?.remove();
@@ -162,7 +164,7 @@ function MapEffects({ focus, route, bounds, highlight, compact, expanded, onPick
 
 }
 
-function CameraMarkers({ onPick }: { onPick?: (lat: number, lng: number) => void }) {
+function CameraMarkers({ onPick, items, onCamera, selectedCamera, forceObserved }: { forceObserved?: boolean; onPick?: (lat: number, lng: number) => void; items?: Camera[]; onCamera?: (camera: Camera) => void; selectedCamera?: string }) {
 
   const map = useMap();
   const cameras = useProduct((s) => s.cameras);
@@ -171,7 +173,7 @@ function CameraMarkers({ onPick }: { onPick?: (lat: number, lng: number) => void
   const [zoom, setZoom] = useState(map.getZoom());
   useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
   const groups = useMemo(() => {
-    const visible = cameras.filter(c => matchesZone(district, c.district));
+    const visible = items || cameras.filter(c => matchesZone(district, c.district));
     const result: typeof cameras[] = [];
     for (const camera of visible) {
       const point = map.project([camera.lat, camera.lng], zoom);
@@ -179,30 +181,35 @@ function CameraMarkers({ onPick }: { onPick?: (lat: number, lng: number) => void
       if (group) group.push(camera); else result.push([camera]);
     }
     return result;
-  }, [cameras, district, zoom, map, onPick, cluster]);
+  }, [cameras, district, zoom, map, onPick, cluster, items]);
   return <>{groups.map(group => {
     const camera = group[0];
     const lat = group.reduce((sum, c) => sum + c.lat, 0) / group.length;
     const lng = group.reduce((sum, c) => sum + c.lng, 0) / group.length;
     const multiple = group.length > 1;
     const icon = multiple ? L.divIcon({ className: 'p-camera-cluster', html: `<span>${group.length}</span>`, iconSize: [38, 38], iconAnchor: [19, 19] }) : cameraIcon(camera.status === 'online');
-    return <Marker key={group.map(c => c.id).join('-')} position={[lat, lng]} icon={icon} title={multiple ? `${group.length} cámaras · ampliar para explorar` : camera.name} eventHandlers={{ click: () => {
+    return <Marker key={group.map(c => c.id).join('-')} position={[lat, lng]} icon={icon} opacity={!multiple && selectedCamera && camera.id !== selectedCamera ? .65 : 1} title={multiple ? `${group.length} cámaras · ampliar para explorar` : camera.name} eventHandlers={{ click: () => {
       if (onPick) onPick(lat, lng);
       else if (multiple) map.fitBounds(L.latLngBounds(group.map(c => [c.lat, c.lng] as [number, number])), { padding: [60, 60], maxZoom: 17 });
+      else if (onCamera) onCamera(camera);
+      else if (forceObserved) openObservedCamera(camera.id);
       else useProduct.getState().navigate(`/cameras/${camera.id}`);
-    } }} />;
+    } }}>{onCamera && !multiple && <Popup><strong>{camera.name}</strong><p>{camera.district}</p><button className="p-button" onClick={() => forceObserved ? openObservedCamera(camera.id) : useProduct.getState().navigate(`/cameras/${camera.id}`)}>Abrir evidencia</button></Popup>}</Marker>;
   })}</>;
 
 }
 
-export function CityMap({ focus, selected, compact = false, pedestrians = false, route, highlight, viewEdges, signalItems, onSignal, onPick }: { focus?: [number, number]; selected?: string; compact?: boolean; pedestrians?: boolean; route?: RouteResponse | null; highlight?: GeoJsonEdgeFeature; viewEdges?: GeoJsonEdgeFeature[]; signalItems?: Signal[]; onSignal?: (s: Signal) => void; onPick?: (lat: number, lng: number) => void }) {
+export function CityMap({ focus, selected, compact = false, pedestrians = false, route, highlight, viewEdges, signalItems, onSignal, onPick, cameraItems, onCamera, selectedCamera, mapStyle = 'streets', forceObserved = false, onRoad }: { onRoad?: (name: string) => void; forceObserved?: boolean; cameraItems?: Camera[]; onCamera?: (camera: Camera) => void; selectedCamera?: string; mapStyle?: 'streets' | 'terrain'; focus?: [number, number]; selected?: string; compact?: boolean; pedestrians?: boolean; route?: RouteResponse | null; highlight?: GeoJsonEdgeFeature; viewEdges?: GeoJsonEdgeFeature[]; signalItems?: Signal[]; onSignal?: (s: Signal) => void; onPick?: (lat: number, lng: number) => void }) {
 
   const layers = useProduct((s) => s.layers);
-  const mode = useProduct((s) => s.mode);
+  const storedMode = useProduct((s) => s.mode);
+  const mode = forceObserved ? 'observed' : storedMode;
   const district = useProduct((s) => s.district);
   const roadEdges = useStore((s) => s.geojsonEdges);
   const cameras = useProduct(s => s.cameras);
   const [expanded, setExpanded] = useState(false);
+  const [terrainFailed, setTerrainFailed] = useState(false);
+  const effectiveStyle = mapStyle === 'terrain' && !terrainFailed ? 'terrain' : 'streets';
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!expanded) return;
@@ -220,10 +227,12 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   }, [expanded]);
-  const cameraPointsKey = JSON.stringify(cameras.map(c => ({ lat: c.lat, lng: c.lng, district: c.district })));
+  const cameraPointsKey = JSON.stringify((cameraItems || cameras).map(c => ({ lat: c.lat, lng: c.lng, district: c.district })));
   const cameraPoints = useMemo(() => JSON.parse(cameraPointsKey) as { lat: number; lng: number; district: string }[], [cameraPointsKey]);
   const hasFocus = Boolean(focus);
+  const customCameras = cameraItems !== undefined;
   const bounds = useMemo(() => {
+    if (customCameras && !hasFocus && !route && !viewEdges) return cameraPoints.length ? L.latLngBounds(cameraPoints.map(c => [c.lat, c.lng] as [number, number])) : undefined;
     if (!viewEdges && !hasFocus && !route && district !== 'Todos los distritos') {
       const local = cameraPoints.filter(c => matchesZone(district, c.district));
       const region = regions.find(r => r.name === district);
@@ -235,7 +244,7 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
     const points = edges.flatMap(edge => edge.geometry.type === 'LineString' ? edge.geometry.coordinates.map(([x, y]) => [y, x] as [number, number]) : []);
     if (!viewEdges && !hasFocus && !route) points.push(...cameraPoints.map(c => [c.lat, c.lng] as [number, number]));
     return points.length ? L.latLngBounds(points) : undefined;
-  }, [viewEdges, roadEdges, cameraPoints, district, hasFocus, route]);
+  }, [viewEdges, roadEdges, cameraPoints, district, hasFocus, route, customCameras]);
   const graphStatus = useStore((s) => s.graphStatus);
   const focusLat = focus?.[0];
   const focusLng = focus?.[1];
@@ -243,18 +252,19 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
   const visible = (signalItems || signals).filter((s) => district === 'Todos los distritos' || district === s.district);
   return <div ref={root} className={`p-city-map ${compact ? 'compact' : ''} ${expanded ? 'expanded' : ''}`} role={expanded ? 'dialog' : undefined} aria-modal={expanded || undefined} aria-label={expanded ? 'Mapa ampliado de Los Angeles' : 'Mapa de movilidad'}>
     <MapContainer center={center} zoom={compact ? 14 : graphStatus?.default_zoom ?? 13} scrollWheelZoom={!compact} zoomControl={false} className="p-leaflet" attributionControl>
-      <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' maxZoom={19} />
-      <Roads interactive={!onPick} /><MapEffects focus={focus} route={route} bounds={bounds} highlight={highlight} compact={compact} expanded={expanded} onPick={onPick} />
+      <TileLayer key={effectiveStyle} eventHandlers={{ tileerror: () => { if (effectiveStyle === 'terrain') setTerrainFailed(true); } }} url={effectiveStyle === 'terrain' ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'} attribution={effectiveStyle === 'terrain' ? '&copy; OpenStreetMap · SRTM | &copy; OpenTopoMap (CC-BY-SA)' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'} maxZoom={effectiveStyle === 'terrain' ? 17 : 19} />
+      <Roads interactive={!onPick} forceObserved={forceObserved} onRoad={onRoad} /><MapEffects focus={focus} route={route} bounds={bounds} highlight={highlight} compact={compact} expanded={expanded} onPick={onPick} />
       <CorridorOverlay edges={viewEdges} />
       <SelectedSegment edge={highlight} />
       {!compact && <><ZoomControl position="topright" /><ScaleControl position="bottomleft" imperial={false} /><MapTools bounds={bounds} expanded={expanded} highlight={highlight} onExpand={() => setExpanded(v => !v)} /></>}
-      {(layers.cameras || compact) && <CameraMarkers onPick={onPick} />}
+      {(layers.cameras || compact) && <CameraMarkers forceObserved={forceObserved} onPick={onPick} items={cameraItems} onCamera={onCamera} selectedCamera={selectedCamera} />}
       {(mode === 'presentation' || signalItems !== undefined) && (layers.incidents || compact) && visible.map((signal) => <CircleMarker key={signal.id} center={[signal.lat, signal.lng]} radius={selected === signal.id ? 13 : 7} pathOptions={{ color: signal.severity === 'high' ? '#bf6e5b' : '#b79449', fillColor: signal.severity === 'high' ? '#d48d7b' : '#d8bd7b', fillOpacity: .80, weight: selected === signal.id ? 4 : 2 }} eventHandlers={{ click: () => { if (onPick) { onPick(signal.lat, signal.lng); return; } useProduct.getState().selectSignal(signal.id); if (onSignal) onSignal(signal); else useProduct.getState().navigate('/risk-signals'); } }}><Popup>{signal.title}<br />{signal.location} · {signal.data_origin === 'observation' ? 'revisión manual' : 'escenario ilustrativo'}</Popup></CircleMarker>)}
       {mode === 'presentation' && (pedestrians || layers.pedestrians) && visible.filter((_, index) => index % 2 === 0).map((signal) => <Circle key={`heat-${signal.id}`} center={[signal.lat, signal.lng]} radius={190 + signal.impact} pathOptions={{ color: '#bb9d47', fillColor: signal.severity === 'high' ? '#d19354' : '#a4b77d', fillOpacity: .23, weight: 1, interactive: false }} />)}
     </MapContainer>
+    {mapStyle === 'terrain' && terrainFailed && <div className="p-map-source-notice" role="status">Relieve no disponible · se muestra el mapa de calles</div>}
     <div className="p-map-atlas"><span className="p-compass">N<svg viewBox="0 0 20 25"><path d="M10 1L2 23l8-7 8 7z" fill="currentColor" /></svg></span><span>Gran Los Angeles<br /><b>California · US</b></span></div>
     {!compact && <div className="p-map-legend">{viewEdges && <span><i style={{ background: '#477a53', height: 5 }} />Corredor analizado</span>}{mode === 'presentation' ? <><span><i style={{ background: '#7fac85' }} />Fluido</span><span><i style={{ background: '#d8b363' }} />Moderado</span><span><i style={{ background: '#cf7b69' }} />Elevado</span></> : <span><i style={{ background: '#7fac85' }} />Red vial · sin aforo</span>}<small>{mode === 'presentation' ? 'Coloración ilustrativa' : 'Sin medición de congestión'}</small></div>}
-    {!compact && <div className="p-map-coverage">{district === 'Todos los distritos' ? 'Cobertura metropolitana' : district} · {cameras.filter(c => matchesZone(district, c.district)).length} cámaras <span>Acerca el mapa para separar las cámaras</span></div>}
+    {!compact && <div className="p-map-coverage">{district === 'Todos los distritos' ? 'Cobertura metropolitana' : district} · {(cameraItems || cameras.filter(c => matchesZone(district, c.district))).length} cámaras <span>Acerca el mapa para separar las cámaras</span></div>}
   </div>;
 
 }
