@@ -4,6 +4,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
+from src.api.routes.mobility import router as mobility_router
 from src.services.graph_service import graph_service
 from src.services.incident_intelligence import incident_intelligence
 from src.services.mock_simulator import simulator
@@ -55,7 +56,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Priority Routing & Perception Backend for Emergency Response Vehicles (Ambulances & Fire Trucks).",
+    description="Public camera evidence, aggregate mobility intelligence, human-reviewed cases and emergency corridor decision support.",
     lifespan=lifespan
 )
 
@@ -77,6 +78,7 @@ app.include_router(replay_router, prefix=settings.API_V1_STR)
 app.include_router(signals_router, prefix=settings.API_V1_STR)
 app.include_router(cameras_router, prefix=settings.API_V1_STR)
 app.include_router(perception_router, prefix=settings.API_V1_STR)
+app.include_router(mobility_router, prefix=settings.API_V1_STR)
 
 # Real-Time WebSocket Telemetry Channel
 @app.websocket("/ws/telemetry")

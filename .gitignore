@@ -1,5 +1,9 @@
 # Entornos virtuales
 venv/
+.venv/
+*.local.log
+*.local.err.log
+output/
 .env
 
 # Caché

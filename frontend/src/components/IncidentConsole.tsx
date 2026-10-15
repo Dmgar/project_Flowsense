@@ -54,9 +54,9 @@ export function IncidentConsole() {
     } catch { /* backend availability is shown elsewhere */ }
   }, [setIncidentPoints, setFloodMapPoints]);
   useEffect(() => {
-    void refresh();
+    const initial = window.setTimeout(() => { void refresh(); }, 0);
     const timer = window.setInterval(() => { void refresh(); }, 10000);
-    return () => window.clearInterval(timer);
+    return () => { window.clearTimeout(initial); window.clearInterval(timer); };
   }, [refresh]);
 
   const runDemo = async (scenario: typeof CARTAGENA_DEMOS[number]) => {

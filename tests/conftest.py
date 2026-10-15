@@ -1,4 +1,9 @@
+import os
 import pytest
+
+# The legacy routing fixtures use fixed Manhattan coordinates. Keep them
+# independent of the city selected by the local product launcher.
+os.environ["FLOWSENSE_CITY"] = "manhattan"
 from fastapi.testclient import TestClient
 from src.main import app
 from src.services.graph_service import graph_service

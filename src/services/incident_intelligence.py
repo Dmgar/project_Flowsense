@@ -1,5 +1,6 @@
 """In-memory triage for camera-derived roadway incident candidates."""
 from datetime import datetime, timezone
+from contextlib import closing
 import json
 import sqlite3
 from uuid import uuid4
@@ -25,7 +26,7 @@ class IncidentIntelligence:
         from src.core.config import settings
         self.database_path = settings.DATA_PROCESSED_DIR / f"incident_ledger_{settings.CITY_PROFILE}.sqlite3"
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.database_path) as db:
+        with closing(sqlite3.connect(self.database_path)) as db, db:
             db.execute("CREATE TABLE IF NOT EXISTS incident_candidates (incident_id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
             rows = db.execute("SELECT payload FROM incident_candidates").fetchall()
         for (payload,) in rows:
@@ -35,7 +36,7 @@ class IncidentIntelligence:
     def save(self, candidate: IncidentCandidate) -> None:
         self.candidates[candidate.incident_id] = candidate
         payload = json.dumps(candidate.model_dump(), ensure_ascii=False)
-        with sqlite3.connect(self.database_path) as db:
+        with closing(sqlite3.connect(self.database_path)) as db, db:
             db.execute(
                 "INSERT INTO incident_candidates (incident_id, payload) VALUES (?, ?) "
                 "ON CONFLICT(incident_id) DO UPDATE SET payload=excluded.payload",

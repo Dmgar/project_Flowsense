@@ -15,7 +15,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-def download_graph(place: str = None, bbox: list = None, output_path: str = "data/processed/manhattan_graph.graphml"):
+def download_graph(place: str = None, bbox: list = None, output_path: str = "data/processed/manhattan_graph.graphml", main_roads: bool = False):
     target_file = Path(output_path)
     target_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -32,13 +32,18 @@ def download_graph(place: str = None, bbox: list = None, output_path: str = "dat
         sys.exit(1)
 
     print(f"[INFO] Initializing download using OSMnx (version {ox.__version__})...")
+    if main_roads:
+        ox.settings.overpass_url = "https://overpass.private.coffee/api"
+        ox.settings.http_user_agent = "FlowSenseOpenCV/0.1 (https://github.com/Dmgar/project_Flowsense; local regional mobility prototype)"
+        ox.settings.requests_timeout = 90
 
     # In OSMnx >= 2.0, graph_from_bbox expects bbox=(left, bottom, right, top),
     # which corresponds strictly to (west, south, east, north) in geographical degrees.
     if bbox:
         west, south, east, north = bbox
         print(f"[INFO] Downloading bounding box: West={west}, South={south}, East={east}, North={north}")
-        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive")
+        options = {"custom_filter": '["highway"~"^(motorway|trunk|primary|secondary)(_link)?$"]["access"!~"private"]["area"!~"yes"]'} if main_roads else {}
+        G = ox.graph_from_bbox(bbox=(west, south, east, north), network_type="drive", **options)
     elif place:
         print(f"[INFO] Downloading place: '{place}' (drive network)...")
         G = ox.graph_from_place(place, network_type="drive")
@@ -94,6 +99,7 @@ if __name__ == "__main__":
         help="Bounding box coordinates in OSMnx >= 2.0 order: (west, south, east, north) / (left, bottom, right, top)"
     )
     parser.add_argument("--output", type=str, default="data/processed/manhattan_graph.graphml", help="Output GraphML path")
+    parser.add_argument("--main-roads", action="store_true", help="Download the regional arterial network instead of every local street")
 
     args = parser.parse_args()
-    download_graph(place=args.place, bbox=args.bbox, output_path=args.output)
+    download_graph(place=args.place, bbox=args.bbox, output_path=args.output, main_roads=args.main_roads)

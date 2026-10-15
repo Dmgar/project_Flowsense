@@ -1,0 +1,170 @@
+product:
+  name: FlowSense
+  definition: "City mobility intelligence from camera-derived movement data"
+  primary_value:
+    - visibility
+    - prioritization
+    - diagnosis
+    - human_review
+    - before_after_measurement
+
+routes:
+  - id: overview
+    path: /overview
+    image: assets/01-live-city-map.png
+    purpose: "Citywide operating picture"
+    primary_components:
+      - AppShell
+      - CityMap
+      - MapLayerToggle
+      - MobilitySignalPanel
+      - MetricCard
+    opens:
+      camera_detail: /cameras/:cameraId
+      corridor_detail: /corridors/:corridorId
+      hotspots: /hotspots
+      risk_signals: /risk-signals
+
+  - id: camera_evidence
+    path: /cameras/:cameraId
+    image: assets/02-camera-evidence.png
+    purpose: "Evidence review for a selected camera"
+    primary_components:
+      - CameraPlayer
+      - DetectionOverlayCanvas
+      - TimelineScrubber
+      - VehicleMixChart
+      - CameraHealthCard
+    data_dependencies:
+      - Camera
+      - Detection
+      - TimelineEvent
+
+  - id: corridor_analytics
+    path: /corridors/:corridorId
+    image: assets/03-corridor-analytics.png
+    purpose: "Diagnose corridor pressure and baseline changes"
+    primary_components:
+      - CorridorMapStrip
+      - KpiCard
+      - TrendLineChart
+      - StackedMixBar
+      - InsightDrawer
+    data_dependencies:
+      - Corridor
+      - RoadSegment
+      - TimeSeriesMetric
+
+  - id: city_hotspots
+    path: /hotspots
+    image: assets/04-city-hotspots.png
+    purpose: "Prioritize city mobility issues"
+    primary_components:
+      - HotspotTable
+      - DetailDrawer
+      - SeverityBadge
+      - ConfidenceMeter
+      - OpenCaseButton
+    data_dependencies:
+      - Hotspot
+      - Camera
+      - RoadSegment
+
+  - id: emergency_corridor
+    path: /emergency-corridor
+    image: assets/05-emergency-corridor.png
+    purpose: "Road intelligence for emergency route support"
+    primary_components:
+      - RouteMap
+      - RouteReliabilityCard
+      - CheckpointStrip
+      - CameraConfirmationCard
+      - DecisionSupportNotice
+    data_dependencies:
+      - EmergencyCorridor
+      - RouteOption
+      - Camera
+      - RoadSegment
+    guardrail: "Decision support only, not automatic dispatch"
+
+  - id: pedestrian_flow
+    path: /pedestrians
+    image: assets/06-pedestrian-flow.png
+    purpose: "Monitor pedestrian demand and crossing risk"
+    primary_components:
+      - PedestrianHeatmap
+      - CrosswalkFlowArrow
+      - PedestrianMetricCard
+      - ConflictTrendChart
+      - CameraPreview
+    data_dependencies:
+      - PedestrianZone
+      - Camera
+      - TimeSeriesMetric
+    guardrail: "Aggregate movement only, no individual identity tracking"
+
+  - id: platform_storyboard
+    path: /storyboard
+    image: assets/07-platform-flow-storyboard.png
+    purpose: "Explain the end-to-end product pipeline"
+    primary_components:
+      - PipelineStepCard
+      - ApplicationModeCard
+      - ReusableComponentReference
+    data_dependencies: []
+
+  - id: incident_risk_signals
+    path: /risk-signals
+    image: assets/08-incident-risk-signals.png
+    purpose: "Human-reviewed abnormal mobility signal triage"
+    primary_components:
+      - RiskSignalMap
+      - SignalQueueTable
+      - EvidenceThumbnailGrid
+      - VideoTimeline
+      - TrajectorySketch
+      - ReviewActionBar
+    data_dependencies:
+      - RiskSignal
+      - Camera
+      - RoadSegment
+    guardrail: "Signal triage only, not automatic accident confirmation"
+
+data_pipeline:
+  - step: camera_input
+    output:
+      - Camera
+      - VideoFrame
+      - StreamHealth
+  - step: detection_tracking
+    output:
+      - Detection
+      - ObjectTrack
+      - Trajectory
+  - step: metric_extraction
+    output:
+      - VehicleCount
+      - SpeedEstimate
+      - DensityEstimate
+      - ClassMix
+      - PedestrianFlow
+  - step: city_intelligence
+    output:
+      - RoadSegment
+      - Corridor
+      - Hotspot
+      - RiskSignal
+  - step: review_action
+    output:
+      - Case
+      - ReviewStatus
+      - Report
+
+review_statuses:
+  - new
+  - human_review_required
+  - under_review
+  - assigned
+  - confirmed
+  - resolved
+  - dismissed

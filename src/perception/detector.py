@@ -44,11 +44,13 @@ class VehicleDetector:
         confidence_threshold: float = 0.45,
         nms_threshold: float = 0.5,
         backend: str = "opencv_dnn",
+        class_names: Optional[dict[int, str]] = None,
     ):
         self.model_path = model_path
         self.confidence_threshold = confidence_threshold
         self.nms_threshold = nms_threshold
         self.backend = backend
+        self.class_names = class_names or VEHICLE_CLASS_IDS
 
         self._net: Optional[cv2.dnn.Net] = None
         self._ort_session = None  # onnxruntime.InferenceSession
@@ -72,7 +74,10 @@ class VehicleDetector:
         self._net = cv2.dnn.readNetFromONNX(self.model_path)
         # Prefer CUDA if available, otherwise CPU
         self._net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-        self._net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+        # OpenCV 5's graph engine currently ignores target selection. Its
+        # OpenCV backend uses CPU by default; older engines need the explicit target.
+        if int(cv2.__version__.split(".")[0]) < 5:
+            self._net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
         logger.info("OpenCV DNN model loaded successfully.")
 
     def _load_onnxruntime(self) -> None:
@@ -191,7 +196,8 @@ class VehicleDetector:
         confidences = class_scores[np.arange(len(output)), class_ids]  # (N,)
 
         # 2. Vectorized boolean mask for confidence and vehicle class filtering
-        vehicle_class_keys = list(VEHICLE_CLASS_IDS.keys())
+        names = getattr(self, "class_names", VEHICLE_CLASS_IDS)
+        vehicle_class_keys = list(names.keys())
         mask = (confidences >= self.confidence_threshold) & np.isin(class_ids, vehicle_class_keys)
 
         if not np.any(mask):
@@ -240,7 +246,7 @@ class VehicleDetector:
                     Detection(
                         bbox=tuple(boxes[idx]),
                         class_id=class_id_list[idx],
-                        class_name=VEHICLE_CLASS_IDS[class_id_list[idx]],
+                        class_name=names[class_id_list[idx]],
                         confidence=round(conf_list[idx], 3),
                     )
                 )

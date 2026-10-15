@@ -5,6 +5,7 @@ Tests A* with Haversine heuristic, K alternative routes, clearance corridor
 pre-computation and restoration, and NSGA-II fleet placeholder.
 """
 import pytest
+import networkx as nx
 from src.services.graph_service import graph_service
 from src.services.routing_engine import routing_engine, _haversine_m
 from src.models.schemas import DispatchRequest, Coordinates, FleetDispatchRequest
@@ -184,10 +185,10 @@ class TestClearanceCorridor:
 class TestFleetDispatch:
     def test_fleet_routes_returned(self):
         G = graph_service.get_graph()
-        nodes = list(G.nodes(data=True))
-        first = nodes[0]
-        mid = nodes[len(nodes) // 2]
-        last = nodes[-1]
+        # Node insertion order does not guarantee reachability on real OSM roads.
+        component = max(nx.strongly_connected_components(G), key=len)
+        nodes = [(node, G.nodes[node]) for node in sorted(component)]
+        first, mid, last = nodes[0], nodes[len(nodes) // 2], nodes[-1]
 
         fleet = FleetDispatchRequest(
             vehicles=[

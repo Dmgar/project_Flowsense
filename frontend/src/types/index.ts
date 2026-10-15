@@ -31,7 +31,7 @@ export interface RouteResponse {
 
 export interface GraphStatus {
   city: string;
-  city_profile: 'cartagena' | 'manhattan';
+  city_profile: 'cartagena' | 'manhattan' | 'los_angeles';
   center_latitude: number;
   center_longitude: number;
   default_zoom: number;

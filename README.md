@@ -1,13 +1,42 @@
-# FlowSense: Priority Routing & Perception for Emergency Response [![OpenCV 5](https://img.shields.io/badge/Computer_Vision-OpenCV_5-blue?logo=opencv)](https://opencv.org/) [![AWS Powered](https://img.shields.io/badge/Cloud-AWS_Free_Tier-orange?logo=amazon-aws)](https://aws.amazon.com/) [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-teal?logo=fastapi)](https://fastapi.tiangolo.com/) [![Status](https://img.shields.io/badge/Status-Competition_Phase-yellow)](https://github.com/Dmgar/project_Flowsense)
+# FlowSense: City Mobility Intelligence [![OpenCV 5](https://img.shields.io/badge/Computer_Vision-OpenCV_5-green?logo=opencv)](https://opencv.org/) [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green?logo=fastapi)](https://fastapi.tiangolo.com/)
 
 > **Real-Time Computer Vision & Urban Graph Modeling for Emergency Vehicles (Ambulances & Fire Trucks)**
 > Proposal for the **OpenCV AI Competition 2026, powered by AWS**.
+
+FlowSense connects public camera evidence, aggregate movement observations, corridor
+analytics, pedestrian context, prioritized review and emergency route support in one
+navigable operations interface. The regional expansion includes 69 public Caltrans sources across seven zones, with 44 distinct images checked during implementation. See [the regional expansion plan](docs/REGIONAL_EXPANSION_PLAN.md) for coverage, availability, validation, and limitations. The current local product covers Greater Los Angeles, California,
+with eight free public Caltrans camera sources and a real OpenStreetMap road graph.
+Historical indicators used for presentation are explicitly separated from observations.
+
+## Run the product on Windows
+
+Requires Python 3.13+ and Node.js with npm:
+
+```powershell
+.\scripts\run_flowsense.ps1 -Setup
+# On subsequent runs:
+.\scripts\run_flowsense.ps1
+```
+
+Open `http://127.0.0.1:3001/overview`. The API uses port 8002. Camera images require
+internet access; no Caltrans account, payment or API key is required. Sources may be
+interrupted. The launcher downloads the LA graph and ONNX model when absent.
+
+- [Detailed implementation plan](docs/PRODUCT_IMPLEMENTATION_PLAN.md)
+- [Product delivery, verification and data boundaries](docs/PRODUCT_DELIVERY.md)
+- [Verified public camera sources](docs/PUBLIC_CAMERAS.md)
+- [Original frontend handoff](docs/product-reference/README.md)
+
+Checks: `python -m pytest -q`, `python -m scripts.verify_los_angeles_integration`,
+and, in `frontend/`, `npm run build` and `npm run lint`. The legacy test fixtures
+pin Manhattan independently of the profile selected by the local launcher.
 
 ---
 
 ## One-Line Pitch
 
-**FlowSense** leverages **OpenCV 5** on traffic cameras to extract real-time congestion and lane availability signals, dynamically updating an urban graph to compute zero-latency optimal corridors for **ambulances and fire trucks** navigating congested cities.
+**FlowSense** turns camera-derived movement observations into city mobility intelligence: visible conditions, corridor context, prioritized human review and emergency route continuity.
 
 For dispatch teams, FlowSense pairs each recommended corridor with a topology-based backup assessment, so an operator can see whether the alternate route depends on the same vulnerable streets. Camera-derived incident candidates can be reviewed before they affect routing, then exported as verified partner-feed events.
 
@@ -79,7 +108,7 @@ Designed for practical, low-cost execution within AWS Free Tier limits:
 | :--- | :--- |
 | **Computer Vision** | OpenCV 5 (dnn, tracking, optical flow), ONNX Runtime, YOLO-based models |
 | **Urban Graph & Routing** | osmnx, networkx, scipy |
-| **Backend & Real-Time** | Python 3.10+, FastAPI, WebSockets, Uvicorn |
+| **Backend & Real-Time** | Python 3.13+, FastAPI, WebSockets, Uvicorn |
 | **Frontend & GIS** | Leaflet.js, HTML5, CSS3, GeoJSON |
 | **Cloud & Deployment** | AWS (EC2, S3, IAM), Docker |
 
@@ -122,13 +151,18 @@ For deep technical dives into the specific modules, check the versioned document
 git clone https://github.com/Dmgar/project_Flowsense.git
 cd project_Flowsense
 
-# Create and activate environment
+# Create and activate environment (Python 3.13+)
 python -m venv venv
 source venv/bin/activate # Windows: venv\Scripts\activate
 
-# Install dependencies (once published)
+# Install dependencies
 pip install -r requirements.txt
 ```
+
+To verify the Cartagena integration with an existing road graph and disposable
+incident databases, run `python -m scripts.verify_cartagena_integration`.
+On Windows, `scripts/run_cartagena_pilot.ps1` uses `.venv` when available and starts
+the Cartagena API on port 8002, matching the frontend proxy.
 
 ## License
 

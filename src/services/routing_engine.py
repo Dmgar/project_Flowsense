@@ -34,16 +34,12 @@ def _haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-MIN_WEIGHT_FACTOR: float = 0.5  # Constant admissible scaling factor ensuring h(n) <= c(n, n')
-
-def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node: int):
+def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node: int, weight: str = "emergency_weight"):
     """
     Returns an A* heuristic function that estimates remaining distance
-    to ``target_node`` using the Haversine formula scaled by MIN_WEIGHT_FACTOR (0.5).
-
-    The heuristic is strictly *admissible* (never overestimates) because:
-      h(n) = distance_haversine(n, target) * MIN_WEIGHT_FACTOR <= emergency_weight(edge)
-    even under road class discounts (0.85) and green-wave clearance preemption (down to 0.7 or 0.1).
+    to ``target_node`` using the minimum cost per geographic metre in the
+    current graph. This remains admissible when clearance discounts change
+    edge costs, and also supports baseline searches weighted by length.
     """
     t_node = int(target_node)
     target_data = G.nodes.get(t_node)
@@ -53,13 +49,21 @@ def _make_haversine_heuristic(G: nx.MultiDiGraph, target_node: int):
     t_lat = float(target_data.get("y", 0.0))
     t_lon = float(target_data.get("x", 0.0))
 
+    scale = 1.0
+    for u, v, data in G.edges(data=True):
+        u_data, v_data = G.nodes[u], G.nodes[v]
+        distance = _haversine_m(float(u_data.get("y", 0.0)), float(u_data.get("x", 0.0)),
+                                float(v_data.get("y", 0.0)), float(v_data.get("x", 0.0)))
+        if distance > 0:
+            scale = min(scale, max(0.0, float(data.get(weight, 1.0))) / distance)
+
     def heuristic(u, v):
         # In nx.astar_path, the heuristic receives (current, target).
         # 'u' is the node being expanded.
         u_data = G.nodes.get(int(u), {})
         u_lat = float(u_data.get("y", 0.0))
         u_lon = float(u_data.get("x", 0.0))
-        return _haversine_m(u_lat, u_lon, t_lat, t_lon) * MIN_WEIGHT_FACTOR
+        return _haversine_m(u_lat, u_lon, t_lat, t_lon) * scale
 
     return heuristic
 
@@ -278,7 +282,7 @@ class RoutingEngine:
         Falls back to Dijkstra if A* fails (e.g., disconnected components).
         """
         src_int, tgt_int = int(source), int(target)
-        heuristic = _make_haversine_heuristic(G, tgt_int)
+        heuristic = _make_haversine_heuristic(G, tgt_int, weight)
         try:
             raw_path = list(nx.astar_path(G, source=src_int, target=tgt_int, heuristic=heuristic, weight=weight))
             return [int(p) for p in raw_path]
@@ -341,12 +345,14 @@ class RoutingEngine:
             raise ValueError(f"No reachable route between coordinates ({request.origin}) and ({request.destination}).")
 
         choke_backup: List[Dict[str, Any]] = []
+        keep_choke = False
         try:
             # 2b. Demo scenario: grind the naive static corridor to a halt.
             if simulate:
                 choke_backup = self._choke_corridor(static_path, severity=0.85)
-                if persist_choke:
-                    self._active_choke_backup = list(choke_backup)
+                # Flood filtering may have copied the edge attributes before
+                # the simulation changed them. Refresh the safe graph.
+                route_graph, _, _ = self._flood_safe_graph(G, request)
 
             # 3. Compute dynamic shortest path using real-time 'emergency_weight'
             try:
@@ -369,9 +375,17 @@ class RoutingEngine:
             )
 
             route.static_geojson = baseline.geojson
+            if persist_choke and choke_backup:
+                # Keep the earliest snapshot of each edge across dispatches.
+                previous = {(item["u"], item["v"], item["key"]): item
+                            for item in self._active_choke_backup}
+                for item in choke_backup:
+                    previous.setdefault((item["u"], item["v"], item["key"]), item)
+                self._active_choke_backup = list(previous.values())
+                keep_choke = True
             return route
         finally:
-            if choke_backup and not persist_choke:
+            if choke_backup and not keep_choke:
                 self._restore_choke(choke_backup)
 
     # ==================================================================
@@ -445,6 +459,12 @@ class RoutingEngine:
                 primary=primary,
                 alternatives=[],
                 algorithm=settings.ROUTING_ALGORITHM,
+                resilience=RouteResilience(
+                    score_pct=0, status="no_backup", shared_segment_pct=100.0,
+                    explanation="No se solicitó una ruta de respaldo.",
+                    flood_reports_considered=flood_count,
+                    flood_reports_excluded_by_vehicle=excluded_by_vehicle,
+                ),
             )
 
         primary_edges = set(zip(primary_path[:-1], primary_path[1:]))
@@ -664,13 +684,13 @@ class RoutingEngine:
         )
 
         routes: List[RouteResponse] = []
-        for vehicle_req in fleet_request.vehicles:
+        for index, vehicle_req in enumerate(fleet_request.vehicles, start=1):
             try:
                 route = self.calculate_emergency_route_astar(vehicle_req)
                 route.status = f"fleet_optimised ({fleet_request.optimize_for})"
                 routes.append(route)
-            except Exception as e:
-                logger.warning(f"Fleet routing failed for vehicle: {e}")
+            except (ValueError, nx.NetworkXNoPath, nx.NodeNotFound) as e:
+                raise ValueError(f"No se pudo calcular la ruta de la unidad {index}: {e}") from e
 
         return routes
 

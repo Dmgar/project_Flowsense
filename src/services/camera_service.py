@@ -1,6 +1,9 @@
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
+import json
+from pathlib import Path
+from src.core.config import settings
 
 from src.services.graph_service import graph_service
 from src.api.websockets.connection_manager import manager
@@ -40,6 +43,17 @@ class CameraService:
             ("CAM-NYC-MID-08", "Port Authority Terminal", 40.7565, -73.9905, 270.0),
         ]
 
+        if settings.CITY_PROFILE == "los_angeles":
+            catalog = Path(__file__).resolve().parents[2] / "data/public_cameras_los_angeles.json"
+            cctv_configs = [(c["id"], c["name"], c["lat"], c["lng"], 0.0)
+                            for c in json.loads(catalog.read_text(encoding="utf-8"))]
+        elif settings.CITY_PROFILE == "cartagena":
+            cctv_configs = [(f"CAM-CTG-{index:02d}", label, lat, lon, 0.0) for index, (label, lat, lon) in enumerate([
+                ("Centro", 10.391, -75.4794), ("Zaragocilla", 10.4006, -75.5041),
+                ("Centro histórico", 10.418, -75.5515), ("El Bosque", 10.395, -75.49),
+                ("La Castellana", 10.395, -75.477), ("Terminal", 10.397, -75.465),
+            ], 1)]
+
         for cam_id, name, lat, lon, bearing in cctv_configs:
             nearest_node = graph_service.find_nearest_node(lat, lon)
             node_data = G.nodes.get(nearest_node) or G.nodes.get(str(nearest_node), {})
@@ -48,8 +62,8 @@ class CameraService:
                 "camera_id": cam_id,
                 "name": name,
                 "intersection_node": nearest_node,
-                "latitude": float(node_data.get("y", lat)),
-                "longitude": float(node_data.get("x", lon)),
+                "latitude": lat if settings.CITY_PROFILE == "los_angeles" else float(node_data.get("y", lat)),
+                "longitude": lon if settings.CITY_PROFILE == "los_angeles" else float(node_data.get("x", lon)),
                 "bearing_degrees": bearing,
                 "status": "online",
                 "latest_vehicle_count": 18,

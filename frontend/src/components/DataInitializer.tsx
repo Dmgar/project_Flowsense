@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { fetchGraphStatus, fetchGraphGeoJson, startTrafficSimulation } from '../api/client';
-import { generateMockReplay, generateMockEdges } from '../data/mock';
+import { fetchGraphStatus, fetchGraphGeoJson } from '../api/client';
 
 export function DataInitializer() {
   const setGraphStatus = useStore((s) => s.setGraphStatus);
@@ -23,29 +22,25 @@ export function DataInitializer() {
         if (edges.length === 0) throw new Error('Grafo vacío');
         setGraphStatus(status);
         useStore.getState().setOrigin({
-          label: status.city_profile === 'cartagena' ? 'Centro, Cartagena' : 'Midtown Manhattan',
+          label: status.city_profile === 'los_angeles' ? 'Downtown Los Angeles' : status.city_profile === 'cartagena' ? 'Centro, Cartagena' : 'Midtown Manhattan',
           latitude: status.center_latitude,
           longitude: status.center_longitude,
           category: 'destination',
         });
         setGeojsonEdges(edges);
-        setReplayFrames(generateMockReplay(30));
+        setReplayFrames([]);
         addAlert({
           message: `Grafo cargado: ${status.edge_count} segmentos en ${status.city}`,
           severity: 'info',
           timestamp: new Date().toISOString(),
         });
-        await startTrafficSimulation(3);
-        if (!cancelled) useStore.getState().setIsSimulating(true);
       } catch {
         if (cancelled) return;
         useStore.getState().setConnectionStatus('offline');
-        if (useStore.getState().geojsonEdges.length === 0) {
-          setGeojsonEdges(generateMockEdges());
-        }
-        setReplayFrames(generateMockReplay(30));
+        setGeojsonEdges([]);
+        setReplayFrames([]);
         addAlert({
-          message: 'Backend no disponible — activado MODO MOCK OFFLINE',
+          message: 'Backend no disponible. La red y las cámaras se cargarán al reconectar.',
           severity: 'warning',
           timestamp: new Date().toISOString(),
         });

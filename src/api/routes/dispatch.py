@@ -104,6 +104,8 @@ async def compute_fleet_dispatch(
     """
     try:
         return routing_engine.optimize_fleet_routes(fleet_request)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         logger.error(f"Fleet dispatch calculation failed: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Fleet dispatch failed.")

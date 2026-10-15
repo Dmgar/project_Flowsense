@@ -1,5 +1,6 @@
 """Durable, operator-confirmed flood observations with conservative expiry."""
 from __future__ import annotations
+from contextlib import closing, contextmanager
 import math
 import sqlite3
 import uuid
@@ -22,8 +23,11 @@ class FloodIntelligence:
         with self._connect() as db:
             db.execute("CREATE TABLE IF NOT EXISTS flood_reports (report_id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
 
+    @contextmanager
     def _connect(self):
-        return sqlite3.connect(self.db_path, timeout=10)
+        # SQLite's transaction context commits but does not close the handle.
+        with closing(sqlite3.connect(self.db_path, timeout=10)) as db, db:
+            yield db
 
     def _save(self, report: FloodReport) -> None:
         with self._connect() as db:

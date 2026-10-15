@@ -1,0 +1,24 @@
+flowchart LR
+  A[City Cameras] --> B[Detection + Tracking]
+  B --> C[Mobility Metrics]
+  C --> D[City Map Intelligence]
+
+  D --> E[Live City Map]
+  E --> F[Camera Evidence]
+  E --> G[Corridor Analytics]
+  E --> H[City Hotspots]
+  E --> I[Pedestrian Flow]
+  E --> J[Incident & Risk Signals]
+  E --> K[Emergency Corridor]
+
+  H --> L[Open Case]
+  J --> M[Assign Review]
+  M --> N{Human Review}
+  N --> O[Confirmed Issue]
+  N --> P[Dismissed / False Positive]
+  O --> Q[Operational Action]
+  Q --> R[Report + Before/After KPI]
+
+  G --> R
+  I --> R
+  K --> R
