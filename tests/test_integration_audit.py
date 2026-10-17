@@ -122,6 +122,8 @@ def test_services_init_exports():
         "benchmark_service", "BenchmarkService",
         "replay_service", "ReplayService",
         "simulator", "MockSimulator",
+        "incident_intelligence", "IncidentIntelligence",
+        "flood_intelligence", "FloodIntelligence",
     ]
     for name in expected_exports:
         assert hasattr(s, name), f"Missing export: {name}"

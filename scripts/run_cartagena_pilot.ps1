@@ -11,7 +11,7 @@ $env:FLOWSENSE_CITY = 'cartagena'
 
 $Graph = Join-Path $Repo 'data/processed/cartagena_graph.graphml'
 if ($DownloadGraph -or -not (Test-Path -LiteralPath $Graph)) {
-  & $PythonCommand scripts/download_city_graph.py --bbox 10.50 10.31 -75.42 -75.62 --output data/processed/cartagena_graph.graphml
+  & $PythonCommand scripts/download_city_graph.py --bbox -75.62 10.31 -75.42 10.50 --output data/processed/cartagena_graph.graphml
   if ($LASTEXITCODE -ne 0) { throw 'No se pudo descargar el grafo vial de Cartagena.' }
 }
 

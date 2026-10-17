@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     DATA_PROCESSED_DIR: Path = Path("data/processed")
     GRAPH_CACHE_FILE: Path = Path("data/processed/los_angeles_regional_graph.graphml" if _LOS_ANGELES else "data/processed/cartagena_graph.graphml" if _CARTAGENA else "data/processed/manhattan_graph.graphml")
     FLOOD_REPORT_TTL_MINUTES: int = 45
-    AMBULANCE_MAX_WATER_DEPTH_CM: float = 0.0
-    FIRE_TRUCK_MAX_WATER_DEPTH_CM: float = 0.0
+    AMBULANCE_MAX_WATER_DEPTH_CM: float = 15.0
+    FIRE_TRUCK_MAX_WATER_DEPTH_CM: float = 45.0
 
     # ---- Perception Engine (OpenCV 5) ----
     PERCEPTION_MODEL_PATH: Path = Path("models/yolov8n.onnx")

@@ -82,10 +82,9 @@ class GraphService:
             "residential", "living_street", "service", "road", "track",
             "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link",
         }
-        # Prefer cached extracts covering the city center; a whole-island
-        # bbox center falls north of many useful Manhattan extracts.
-        center_lat = 40.75
-        center_lon = -73.985
+        # Prefer cached extracts covering the city center
+        center_lat = settings.MAP_CENTER_LATITUDE
+        center_lon = settings.MAP_CENTER_LONGITUDE
         candidates = []
 
         for response_path in cache_dir.glob("*.json"):
@@ -344,8 +343,8 @@ class GraphService:
             self.graph = nx.relabel_nodes(self.graph, relabel_map)
 
         for node_id, data in self.graph.nodes(data=True):
-            data["x"] = float(data.get("x", -73.9850))
-            data["y"] = float(data.get("y", 40.7580))
+            data["x"] = float(data.get("x", settings.MAP_CENTER_LONGITUDE))
+            data["y"] = float(data.get("y", settings.MAP_CENTER_LATITUDE))
             # Sanitize node attributes for GraphML serialization
             for k, v in list(data.items()):
                 if isinstance(v, (list, tuple, set)):

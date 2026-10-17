@@ -36,7 +36,20 @@ export function useTelemetrySocket() {
 
       switch (msg.event) {
         case 'traffic_update': {
-          const d = msg.data as { updated_edges: EdgeUpdate[] };
+          const d = msg.data as { updated_edges?: EdgeUpdate[]; status?: string };
+          if (d.status === 'reset' && (!d.updated_edges || d.updated_edges.length === 0)) {
+            useStore.setState((state) => ({
+              geojsonEdges: state.geojsonEdges.map((edge) => ({
+                ...edge,
+                properties: {
+                  ...edge.properties,
+                  congestion_factor: 0,
+                  vehicle_count: 0,
+                  color: '#10B981',
+                },
+              })),
+            }));
+          }
           for (const e of d.updated_edges ?? []) {
             updateEdgeCongestion(e.u, e.v, e.key, e.congestion_factor, e.vehicle_count);
           }

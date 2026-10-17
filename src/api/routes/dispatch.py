@@ -178,7 +178,9 @@ async def restore_clearance_corridor(corridor_id: str = Query(...)):
 async def start_simulated_traffic(interval_seconds: float = 3.0):
     """Starts background simulated traffic variations."""
     if not simulator.is_simulating_traffic:
-        asyncio.create_task(simulator.start_traffic_simulation(interval_seconds=interval_seconds))
+        simulator._traffic_task = asyncio.create_task(
+            simulator.start_traffic_simulation(interval_seconds=interval_seconds)
+        )
         return {"status": "started", "interval_seconds": interval_seconds}
     return {"status": "already_running"}
 

@@ -2,6 +2,8 @@ import logging
 from fastapi import APIRouter
 from src.models.schemas import GraphStatus
 from src.services.graph_service import graph_service
+from src.api.websockets.connection_manager import manager
+from src.models.telemetry import WebSocketMessage, TelemetryEventType
 
 logger = logging.getLogger("flowsense.api.graph")
 router = APIRouter(prefix="/graph", tags=["Urban Graph Status & GIS"])
@@ -23,4 +25,10 @@ async def get_graph_geojson():
 async def reset_graph_congestion():
     """Resets all congestion factors in the network to free flow (0.0)."""
     count = graph_service.reset_all_congestion()
+    await manager.broadcast(
+        WebSocketMessage(
+            event=TelemetryEventType.TRAFFIC_UPDATE,
+            data={"status": "reset"}
+        )
+    )
     return {"status": "success", "message": f"All network congestion reset to 0.0 ({count} segments)."}

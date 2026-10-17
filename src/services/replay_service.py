@@ -2,6 +2,7 @@ import time
 import logging
 from typing import List, Dict, Any, Optional
 from collections import deque
+from src.core.config import settings
 from src.services.graph_service import graph_service
 from src.services.routing_engine import routing_engine
 from src.models.schemas import DispatchRequest, Coordinates
@@ -39,21 +40,56 @@ class ReplayService:
         if len(self._buffer) >= 10:
             return list(self._buffer)[-frames:]
 
-        # Build an authentic mission playback session on Manhattan
+        # Build an authentic mission playback session on active city network
         return self._build_synthetic_session(frames)
 
     def _build_synthetic_session(self, total_frames: int) -> List[Dict[str, Any]]:
         G = graph_service.get_graph()
         base_time = int((time.time() - total_frames * 2) * 1000)
 
-        # Generate a sample emergency mission across Manhattan
-        req = DispatchRequest(
-            origin=Coordinates(latitude=40.7490, longitude=-73.9920),
-            destination=Coordinates(latitude=40.7600, longitude=-73.9780),
-            vehicle_type="ambulance",
-            priority="critical"
-        )
-        route_resp = routing_engine.calculate_emergency_route(req, simulate=False)
+        # Generate a sample emergency mission dynamically using real graph nodes or city center
+        nodes = list(G.nodes(data=True))
+        route_resp = None
+        if len(nodes) >= 2:
+            candidates = [min(15, len(nodes) - 1), min(5, len(nodes) - 1), 1]
+            for step in candidates:
+                n1_data = nodes[0][1]
+                n2_data = nodes[step][1]
+                req = DispatchRequest(
+                    origin=Coordinates(
+                        latitude=float(n1_data.get("y", settings.MAP_CENTER_LATITUDE)),
+                        longitude=float(n1_data.get("x", settings.MAP_CENTER_LONGITUDE)),
+                    ),
+                    destination=Coordinates(
+                        latitude=float(n2_data.get("y", settings.MAP_CENTER_LATITUDE)),
+                        longitude=float(n2_data.get("x", settings.MAP_CENTER_LONGITUDE)),
+                    ),
+                    vehicle_type="ambulance",
+                    priority="critical",
+                )
+                try:
+                    candidate_route = routing_engine.calculate_emergency_route(req, simulate=False)
+                    if candidate_route and candidate_route.waypoints:
+                        route_resp = candidate_route
+                        break
+                except Exception:
+                    continue
+
+        if route_resp is None:
+            req = DispatchRequest(
+                origin=Coordinates(
+                    latitude=settings.MAP_CENTER_LATITUDE - 0.005,
+                    longitude=settings.MAP_CENTER_LONGITUDE - 0.005,
+                ),
+                destination=Coordinates(
+                    latitude=settings.MAP_CENTER_LATITUDE + 0.005,
+                    longitude=settings.MAP_CENTER_LONGITUDE + 0.005,
+                ),
+                vehicle_type="ambulance",
+                priority="critical",
+            )
+            route_resp = routing_engine.calculate_emergency_route(req, simulate=False)
+
         waypoints = route_resp.waypoints
         n_wp = len(waypoints)
 
@@ -109,7 +145,7 @@ class ReplayService:
             alerts = []
             if f == 5:
                 alerts.append({
-                    "message": "Corredor de emergencia activado en 7th Ave",
+                    "message": "Corredor de emergencia activado",
                     "severity": "info",
                     "timestamp": str(frame_time)
                 })

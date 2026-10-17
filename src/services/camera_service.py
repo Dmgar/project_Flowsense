@@ -48,11 +48,16 @@ class CameraService:
             cctv_configs = [(c["id"], c["name"], c["lat"], c["lng"], 0.0)
                             for c in json.loads(catalog.read_text(encoding="utf-8"))]
         elif settings.CITY_PROFILE == "cartagena":
-            cctv_configs = [(f"CAM-CTG-{index:02d}", label, lat, lon, 0.0) for index, (label, lat, lon) in enumerate([
-                ("Centro", 10.391, -75.4794), ("Zaragocilla", 10.4006, -75.5041),
-                ("Centro histórico", 10.418, -75.5515), ("El Bosque", 10.395, -75.49),
-                ("La Castellana", 10.395, -75.477), ("Terminal", 10.397, -75.465),
-            ], 1)]
+            cctv_configs = [
+                ("CAM-CTG-01", "Av. Pedro de Heredia", 10.4150, -75.5230, 90.0),
+                ("CAM-CTG-02", "Torre del Reloj", 10.4236, -75.5478, 180.0),
+                ("CAM-CTG-03", "Mercado Bazurto", 10.4135, -75.5255, 45.0),
+                ("CAM-CTG-04", "Bocagrande (Av. San Martín)", 10.4020, -75.5560, 0.0),
+                ("CAM-CTG-05", "Ronda Real (La Plazuela)", 10.3960, -75.4770, 270.0),
+                ("CAM-CTG-06", "Marbella (Av. Santander)", 10.4350, -75.5340, 180.0),
+                ("CAM-CTG-07", "Ceballos (Av. Crisanto Luque)", 10.3880, -75.5050, 90.0),
+                ("CAM-CTG-08", "Bomba El Amparo", 10.3920, -75.4700, 0.0),
+            ]
 
         for cam_id, name, lat, lon, bearing in cctv_configs:
             nearest_node = graph_service.find_nearest_node(lat, lon)
@@ -137,8 +142,8 @@ class CameraService:
                 return None
 
             node_data = G.nodes.get(selected_node) or G.nodes.get(str(selected_node), {})
-            lat = float(node_data.get("y", 40.7550))
-            lon = float(node_data.get("x", -73.9850))
+            lat = float(node_data.get("y", settings.MAP_CENTER_LATITUDE))
+            lon = float(node_data.get("x", settings.MAP_CENTER_LONGITUDE))
             name = node_data.get("name") or f"Dynamic Camera ({report.camera_id})"
 
             self._cameras[report.camera_id] = {

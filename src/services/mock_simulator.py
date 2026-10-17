@@ -236,7 +236,26 @@ class MockSimulator:
             # Release all remaining preemption signals and any active demo choke upon reaching destination
             for wp in current_route.waypoints:
                 await signal_service.release_intersection(wp.node_id)
+            active_choke = routing_engine.get_active_choke()
             routing_engine.clear_active_choke()
+            if active_choke:
+                restored_updates = [
+                    {
+                        "u": int(item["u"]),
+                        "v": int(item["v"]),
+                        "key": int(item["key"]),
+                        "congestion_factor": round(float(item.get("congestion_factor", 0.0)), 2),
+                        "vehicle_count": int(item.get("vehicle_count", 0)),
+                        "average_speed_kmh": round(float(item.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)), 1),
+                    }
+                    for item in active_choke
+                ]
+                await manager.broadcast(
+                    WebSocketMessage(
+                        event=TelemetryEventType.TRAFFIC_UPDATE,
+                        data={"updated_edges": restored_updates, "status": "reset"}
+                    )
+                )
             logger.info(f"Emergency vehicle {vehicle_id} reached destination or mission concluded.")
 
 simulator = MockSimulator()

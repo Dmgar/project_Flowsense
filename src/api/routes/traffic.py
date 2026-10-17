@@ -4,10 +4,17 @@ import statistics
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, Response, status
-from src.models.schemas import TrafficSignalUpdate, BatchTrafficUpdate, IncidentReport, IncidentCandidateInput, FloodReportInput
-from src.services.graph_service import graph_service
-from src.services.incident_intelligence import incident_intelligence
-from src.services.flood_intelligence import flood_intelligence
+from src.core.config import settings
+from src.models.schemas import (
+    TrafficSignalUpdate,
+    BatchTrafficUpdate,
+    IncidentReport,
+    IncidentCandidateInput,
+    IncidentCandidate,
+    FloodReportInput,
+    FloodReport,
+)
+from src.services import graph_service, incident_intelligence, flood_intelligence
 from src.api.websockets.connection_manager import manager
 from src.models.telemetry import WebSocketMessage, TelemetryEventType, MissionAlertEvent
 
@@ -32,6 +39,21 @@ async def confirm_flood_report(report_id: str):
         raise HTTPException(status_code=409, detail=str(exc))
     if report is None:
         raise HTTPException(status_code=404, detail="Flood report not found.")
+
+    # When water depth exceeds ambulance tolerance, apply edge impact to graph_service
+    if report.depth_cm > settings.AMBULANCE_MAX_WATER_DEPTH_CM:
+        block_traffic = report.depth_cm > settings.FIRE_TRUCK_MAX_WATER_DEPTH_CM
+        affected_nodes, affected_edges = graph_service.report_incident(
+            incident_id=report.report_id,
+            lat=report.latitude,
+            lon=report.longitude,
+            radius_m=report.radius_m,
+            block_traffic=block_traffic,
+        )
+        await manager.broadcast(WebSocketMessage(event=TelemetryEventType.TRAFFIC_UPDATE, data={
+            "incident_id": report.report_id, "nodes": affected_nodes, "status": "blocked" if block_traffic else "congested",
+        }))
+
     await manager.broadcast(WebSocketMessage(event=TelemetryEventType.MISSION_ALERT, data=MissionAlertEvent(
         message=f"Inundación confirmada · {report.depth_cm:.0f} cm · expira {report.expires_at}", severity="warning"
     ).model_dump()))
@@ -45,6 +67,7 @@ async def dismiss_flood_report(report_id: str):
         raise HTTPException(status_code=409, detail=str(exc))
     if report is None:
         raise HTTPException(status_code=404, detail="Flood report not found.")
+    graph_service.clear_incident(report_id)
     return report.model_dump()
 
 @router.post("/flood-reports/{report_id}/clear")
@@ -55,6 +78,10 @@ async def clear_flood_report(report_id: str):
         raise HTTPException(status_code=409, detail=str(exc))
     if report is None:
         raise HTTPException(status_code=404, detail="Flood report not found.")
+    graph_service.clear_incident(report_id)
+    await manager.broadcast(WebSocketMessage(event=TelemetryEventType.TRAFFIC_UPDATE, data={
+        "incident_id": report_id, "status": "reset",
+    }))
     return report.model_dump()
 
 @router.get("/detections")
@@ -310,6 +337,7 @@ async def clear_incident(incident_id: str):
     """
     Clears an active incident and restores original corridor impedance.
     """
+    incident_backup = graph_service.active_incidents.get(incident_id, {}).get("edges_backup", [])
     cleared = graph_service.clear_incident(incident_id)
     if not cleared:
         raise HTTPException(
@@ -332,6 +360,25 @@ async def clear_incident(incident_id: str):
         WebSocketMessage(
             event=TelemetryEventType.MISSION_ALERT,
             data=alert.model_dump()
+        )
+    )
+
+    restored_updates = [
+        {
+            "u": int(b["u"]),
+            "v": int(b["v"]),
+            "key": int(b["key"]),
+            "congestion_factor": float(b.get("congestion_factor", 0.0)),
+            "vehicle_count": int(b.get("vehicle_count", 0)),
+            "average_speed_kmh": float(b.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)),
+        }
+        for b in incident_backup
+    ]
+
+    await manager.broadcast(
+        WebSocketMessage(
+            event=TelemetryEventType.TRAFFIC_UPDATE,
+            data={"incident_id": incident_id, "status": "reset", "updated_edges": restored_updates}
         )
     )
 

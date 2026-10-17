@@ -7,6 +7,9 @@ from src.services.benchmark_service import benchmark_service, BenchmarkService
 from src.services.replay_service import replay_service, ReplayService
 from src.services.mock_simulator import simulator, MockSimulator
 
+from src.services.incident_intelligence import incident_intelligence, IncidentIntelligence
+from src.services.flood_intelligence import flood_intelligence, FloodIntelligence
+
 __all__ = [
     "graph_service",
     "GraphService",
@@ -22,4 +25,8 @@ __all__ = [
     "ReplayService",
     "simulator",
     "MockSimulator",
+    "incident_intelligence",
+    "IncidentIntelligence",
+    "flood_intelligence",
+    "FloodIntelligence",
 ]

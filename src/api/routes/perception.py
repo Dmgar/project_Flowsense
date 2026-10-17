@@ -8,9 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from src.models.schemas import (
     DispatchRequest,
-    RouteResponse,
     AlternativeRoutesResponse,
-    FleetDispatchRequest,
     PerceptionStatus,
 )
 from src.services.routing_engine import routing_engine
@@ -171,25 +169,3 @@ async def compute_alternative_routes(
     except Exception as e:
         logger.error(f"Alternative routing failed: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Routing failed.")
-
-
-@router.post(
-    "/dispatch/fleet",
-    response_model=List[RouteResponse],
-    summary="Multi-vehicle fleet optimisation (NSGA-II placeholder)",
-)
-async def dispatch_fleet(fleet_request: FleetDispatchRequest):
-    """
-    Compute optimised routes for multiple simultaneous emergency vehicles.
-
-    .. note::
-        Currently uses independent A* routing per vehicle.
-        Full NSGA-II multi-objective optimisation is planned for a future iteration.
-    """
-    try:
-        return routing_engine.optimize_fleet_routes(fleet_request)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        logger.error(f"Fleet dispatch failed: {e}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Fleet dispatch failed.")
