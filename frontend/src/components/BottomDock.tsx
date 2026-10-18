@@ -1,11 +1,11 @@
 import { useStore, type MobilePanel } from '../store/useStore';
 
 const DOCK_ITEMS: { panel: MobilePanel; icon: string; label: string; action?: 'benchmark' | 'replay' | 'present' }[] = [
-  { panel: 'dispatch', icon: '🚨', label: 'Despacho' },
-  { panel: 'layers', icon: '🗺️', label: 'Capas' },
+  { panel: 'dispatch', icon: '🚨', label: "Dispatch" },
+  { panel: 'layers', icon: '🗺️', label: "Layers" },
   { panel: 'none', icon: '▶', label: 'Replay', action: 'replay' },
   { panel: 'none', icon: '▦', label: 'Bench', action: 'benchmark' },
-  { panel: 'follow', icon: '◎', label: 'Seguir' },
+  { panel: 'follow', icon: '◎', label: "Follow" },
 ];
 
 export function BottomDock() {

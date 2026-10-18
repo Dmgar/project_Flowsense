@@ -20,7 +20,7 @@ class CameraConnection(BaseModel):
 class CaseInput(BaseModel):
     signal_id: str = Field(min_length=1, max_length=120)
     title: str = Field(min_length=2, max_length=200)
-    owner: str = Field(default="Operaciones de movilidad", min_length=2, max_length=120)
+    owner: str = Field(default="Mobility operations", min_length=2, max_length=120)
     severity: Literal["low", "medium", "high"] = "medium"
     note: str = Field(default="", max_length=2000)
     data_origin: Literal["presentation", "observation"] = "presentation"
@@ -57,9 +57,9 @@ async def snapshot(camera_id: str, frame_id: str | None = None):
         return Response(frame["image"], media_type="image/jpeg", headers={
             "Cache-Control": "no-store", "X-Observed-At": frame["observed_at"], "X-Frame-Id": frame["hash"]})
     except KeyError:
-        raise HTTPException(404, "Cámara no encontrada.")
+        raise HTTPException(404, "Camera not found.")
     except Exception:
-        raise HTTPException(503, "La cámara no responde. El proveedor público puede interrumpir su señal.") from None
+        raise HTTPException(503, "The camera is not responding. The public provider may interrupt its stream.") from None
 
 
 @router.get("/cameras/{camera_id}/observation")
@@ -67,15 +67,15 @@ async def observation(camera_id: str):
     try:
         return await asyncio.to_thread(mobility_service.observe, camera_id)
     except KeyError:
-        raise HTTPException(404, "Cámara no encontrada.")
+        raise HTTPException(404, "Camera not found.")
     except Exception:
-        raise HTTPException(503, "No se pudo observar esta cámara. Reintenta más tarde.") from None
+        raise HTTPException(503, "Could not observe this camera. Try again later.") from None
 
 
 @router.get("/cameras/{camera_id}/history")
 def history(camera_id: str):
     if camera_id not in mobility_service.cameras:
-        raise HTTPException(404, "Cámara no encontrada.")
+        raise HTTPException(404, "Camera not found.")
     return mobility_service.history(camera_id)
 
 
@@ -94,7 +94,7 @@ def review_case(case_id: str, payload: CaseReview):
     try:
         return mobility_service.review_case(case_id, payload.model_dump())
     except KeyError:
-        raise HTTPException(404, "Caso no encontrado.")
+        raise HTTPException(404, "Case not found.")
     except ValueError as error:
         raise HTTPException(409, str(error))
 
@@ -114,8 +114,8 @@ def export_cases():
 
 
 @router.get("/reports/cases.pdf")
-def export_pdf(title: str = Query(default="Situación operativa", max_length=80),
-               period: str = Query(default="Últimos 15 min", max_length=80)):
+def export_pdf(title: str = Query(default="Operational situation", max_length=80),
+               period: str = Query(default="Last 15 min", max_length=80)):
     from src.services.mobility_report import build_case_report
     return Response(build_case_report(mobility_service.cases(), title, period), media_type="application/pdf",
                     headers={"Content-Disposition": 'attachment; filename="flowsense-review.pdf"'})

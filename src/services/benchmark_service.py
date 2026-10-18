@@ -125,27 +125,27 @@ class BenchmarkService:
 
         metrics = [
             BenchmarkMetric(
-                metric="Tiempo Promedio (s)",
+                metric="Average time (s)",
                 static=round(avg_static_time, 1),
                 flowsense=round(avg_fs_time, 1)
             ),
             BenchmarkMetric(
-                metric="Distancia (m)",
+                metric="Distance (m)",
                 static=round(avg_static_dist, 1),
                 flowsense=round(avg_fs_dist, 1)
             ),
             BenchmarkMetric(
-                metric="Intersecciones Bloqueadas",
+                metric="Blocked intersections",
                 static=round(avg_stat_blocked, 1),
                 flowsense=round(avg_fs_blocked, 1)
             ),
             BenchmarkMetric(
-                metric="Tasa de Éxito (%)",
+                metric="Success rate (%)",
                 static=round(max(50.0, 100.0 - savings_pct * 1.2), 1),
                 flowsense=success_rate
             ),
             BenchmarkMetric(
-                metric="Segundos Salvados",
+                metric="Seconds saved",
                 static=0.0,
                 flowsense=round(time_saved_avg, 1)
             ),

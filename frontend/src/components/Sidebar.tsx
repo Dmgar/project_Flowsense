@@ -42,7 +42,7 @@ export function RouteCard({ route, label, tone }: { route: RouteResponse; label:
           </div>
         </div>
         <div>
-          <div className="font-mono text-[10px] text-text-muted">DISTANCIA</div>
+          <div className="font-mono text-[10px] text-text-muted">DISTANCE</div>
           <div className="font-mono text-lg font-bold tabular-nums text-text-primary">
             {(route.total_distance_m / 1000).toFixed(1)} km
           </div>
@@ -91,14 +91,14 @@ export function DispatchForm() {
       }
       if (dynamicRoute.savings_pct > 0) {
         addAlert({
-          message: `FlowSense rehusó tráfico: ${dynamicRoute.savings_pct}% más rápido que ruta estática`,
+          message: `FlowSense avoided traffic: ${dynamicRoute.savings_pct}% faster than the static route`,
           severity: 'info',
           timestamp: new Date().toISOString(),
         });
       }
     } catch (err) {
       addAlert({
-        message: `Error de despacho: ${err instanceof Error ? err.message : 'desconocido'}`,
+        message: `Dispatch error: ${err instanceof Error ? err.message : "unknown"}`,
         severity: 'warning',
         timestamp: new Date().toISOString(),
       });
@@ -119,10 +119,11 @@ export function DispatchForm() {
   return (
     <section className="rounded border border-border-subtle bg-bg-tertiary/40 p-4">
       <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-widest text-text-secondary">
-        Despacho de Emergencia
+
+        Emergency dispatch
       </h2>
 
-      <label className="mb-1 block font-mono text-[10px] text-text-muted">ORIGEN</label>
+      <label className="mb-1 block font-mono text-[10px] text-text-muted">ORIGIN</label>
       <select
         value={originIdx}
         onChange={(e) => setOriginIdx(Number(e.target.value))}
@@ -135,7 +136,7 @@ export function DispatchForm() {
         ))}
       </select>
 
-      <label className="mb-1 block font-mono text-[10px] text-text-muted">DESTINO</label>
+      <label className="mb-1 block font-mono text-[10px] text-text-muted">DESTINATION</label>
       <select
         value={destIdx}
         onChange={(e) => setDestIdx(Number(e.target.value))}
@@ -148,7 +149,7 @@ export function DispatchForm() {
         ))}
       </select>
 
-      <label className="mb-1 block font-mono text-[10px] text-text-muted">VEHÍCULO</label>
+      <label className="mb-1 block font-mono text-[10px] text-text-muted">VEHICLE</label>
       <div className="mb-4 grid grid-cols-2 gap-2">
         {(['ambulance', 'fire_truck'] as const).map((vt) => (
           <button
@@ -160,7 +161,7 @@ export function DispatchForm() {
                 : 'border-border-subtle text-text-secondary hover:border-text-muted'
             }`}
           >
-            {vt === 'ambulance' ? '🚑 Ambulancia' : '🚒 Bomberos'}
+            {vt === 'ambulance' ? "🚑 Ambulance" : "🚒 Fire truck"}
           </button>
         ))}
       </div>
@@ -170,7 +171,7 @@ export function DispatchForm() {
         disabled={isLoading}
         className="w-full rounded border border-accent-cyan bg-accent-cyan/20 px-3 py-2 font-mono text-xs font-bold text-accent-cyan transition-colors hover:bg-accent-cyan/30 disabled:opacity-40"
       >
-        {isLoading ? 'CALCULANDO…' : '🚨 SIMULAR DESPACHO (FLOWSENSE)'}
+        {isLoading ? "CALCULATING…" : "🚨 SIMULATE DISPATCH (FLOWSENSE)"}
       </button>
 
       <button
@@ -178,7 +179,8 @@ export function DispatchForm() {
         disabled={isLoading}
         className="mt-2 w-full rounded border border-border-subtle bg-bg-tertiary px-3 py-2 font-mono text-xs font-bold text-text-secondary transition-colors hover:border-text-muted hover:text-text-primary disabled:opacity-40"
       >
-        RUTA ESTÁTICA (BASELINE)
+
+        STATIC ROUTE (BASELINE)
       </button>
 
       <button
@@ -189,7 +191,7 @@ export function DispatchForm() {
             : 'border-amber-500 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
         }`}
       >
-        {isSimulating ? '■ DETENER TRÁFICO SIMULADO' : '▶ INICIAR TRÁFICO SIMULADO'}
+        {isSimulating ? "■ STOP SIMULATED TRAFFIC" : "▶ START SIMULATED TRAFFIC"}
       </button>
     </section>
   );
@@ -207,10 +209,11 @@ export function ActiveRoutePanel() {
   return (
     <section className="animate-fade-in rounded border border-border-subtle bg-bg-tertiary/40 p-4">
       <h2 className="mb-3 font-mono text-xs font-bold uppercase tracking-widest text-text-secondary">
-        Corredor de Emergencia
+
+        Emergency corridor
       </h2>
       <div className="space-y-3">
-        <RouteCard route={activeRoute} label="FlowSense Dinámico" tone="dynamic" />
+        <RouteCard route={activeRoute} label="Dynamic FlowSense" tone="dynamic" />
         {activeRoute.baseline_eta_seconds > 0 && (
           <RouteCard
             route={{
@@ -218,7 +221,7 @@ export function ActiveRoutePanel() {
               total_estimated_time_s: activeRoute.baseline_eta_seconds,
               total_distance_m: activeRoute.baseline_distance_m,
             }}
-            label="Ruta Estática (baseline)"
+            label="Static route (baseline)"
             tone="static"
           />
         )}
@@ -228,20 +231,20 @@ export function ActiveRoutePanel() {
           <div className="font-mono text-sm font-bold tabular-nums text-accent-green">
             {savings.toFixed(1)}%
           </div>
-          <div className="font-mono text-[10px] text-text-muted">AHORRO DE TIEMPO</div>
+          <div className="font-mono text-[10px] text-text-muted">TIME SAVINGS</div>
         </div>
         <div className="rounded bg-bg-tertiary p-2 text-center">
           <div className="font-mono text-sm font-bold tabular-nums text-accent-cyan">
             {Object.keys(vehicles).length}
           </div>
-          <div className="font-mono text-[10px] text-text-muted">UNIDADES</div>
+          <div className="font-mono text-[10px] text-text-muted">UNITS</div>
         </div>
       </div>
       <div className="mt-3 rounded bg-bg-tertiary p-2 text-center">
         <div className="font-mono text-2xl font-bold tabular-nums text-accent-green">
-          {secondsCount.toLocaleString('es-ES')}
+          {secondsCount.toLocaleString("en-US")}
         </div>
-        <div className="font-mono text-[10px] text-text-muted">SEGUNDOS SALVADOS ACUMULADOS</div>
+        <div className="font-mono text-[10px] text-text-muted">TOTAL SECONDS SAVED</div>
       </div>
     </section>
   );
@@ -256,20 +259,22 @@ export function ActiveUnitsPanel() {
     <section className="rounded border border-border-subtle p-4">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-text-secondary">
-          Unidades Activas
+
+          Active units
         </h2>
         {followUnitId && (
           <button
             onClick={() => setFollowUnitId(null)}
             className="font-mono text-[10px] text-text-muted hover:text-text-primary"
           >
-            ✕ SOLTAR {followUnitId}
+
+            ✕ RELEASE {followUnitId}
           </button>
         )}
       </div>
       <div className="space-y-2">
         {Object.keys(vehicles).length === 0 && (
-          <p className="font-mono text-[11px] text-text-muted">Sin unidades activas.</p>
+          <p className="font-mono text-[11px] text-text-muted">No active units.</p>
         )}
         {Object.values(vehicles).map((v) => {
           const isFollowed = followUnitId === v.vehicle_id;
@@ -298,7 +303,7 @@ export function ActiveUnitsPanel() {
                 <span
                   className={`font-mono text-[9px] ${isFollowed ? 'text-accent-cyan' : 'text-text-muted'}`}
                 >
-                  {isFollowed ? '🔒 SIGUIENDO' : 'SEGUIR'}
+                  {isFollowed ? "🔒 FOLLOWING" : "FOLLOW"}
                 </span>
               </div>
             </div>

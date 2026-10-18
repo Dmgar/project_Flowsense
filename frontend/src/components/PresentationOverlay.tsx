@@ -28,18 +28,19 @@ export function PresentationOverlay() {
             onClick={togglePresentationMode}
             className="pointer-events-auto rounded border border-border-subtle bg-bg-panel/70 px-3 py-1.5 font-mono text-[11px] text-text-muted backdrop-blur hover:text-text-primary"
           >
-            SALIR (ESC)
+
+            EXIT (ESC)
           </button>
         </div>
       </div>
 
       <div className="flex items-end justify-between">
         <p className="max-w-xs font-mono text-[10px] leading-relaxed text-text-muted">
-          No ALPR · No facial recognition · Solo conteos agregados de vehículos.
-          Datos públicos: UA-DETRAC / BDD100K.
+
+          No ALPR · No facial recognition · Aggregate vehicle counts only. Public data: UA-DETRAC / BDD100K.
         </p>
         <div className="text-right">
-          <div className="font-mono text-[10px] text-text-muted">SEGUNDOS SALVADOS</div>
+          <div className="font-mono text-[10px] text-text-muted">SECONDS SAVED</div>
           <div className="font-mono text-4xl font-bold tabular-nums text-accent-green">
             {secondsSaved}
           </div>

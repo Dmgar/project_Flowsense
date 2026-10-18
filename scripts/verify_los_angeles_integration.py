@@ -26,7 +26,7 @@ def main():
         from src.main import app
         with TestClient(app) as client:
             health = client.get("/")
-            assert health.status_code == 200 and health.json()["pilot_city"] == "Gran Los Angeles, California"
+            assert health.status_code == 200 and health.json()["pilot_city"] == "Greater Los Angeles, California"
             cameras = client.get("/api/v1/mobility/cameras").json()
             assert len(cameras) >= 40
             assert {"Los Angeles", "Santa Monica", "Burbank", "El Monte", "West Covina", "Norwalk", "Long Beach"}.issubset({c["district"] for c in cameras})

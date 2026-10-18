@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { telemetryUrl } from '../api/urls';
 import { useStore } from '../store/useStore';
 import type {
   WebSocketMessage,
@@ -8,14 +9,14 @@ import type {
   RouteResponse,
 } from '../types';
 
-const WS_URL =
-  `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/telemetry`;
+const WS_URL = telemetryUrl(window.location.origin);
 
 const RECONNECT_DELAY = 2000;
 const HEARTBEAT_INTERVAL = 15000;
 const MAX_RECONNECT_DELAY = 15000;
 
 export function useTelemetrySocket() {
+  const mounted = useRef(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const heartbeatTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -63,13 +64,13 @@ export function useTelemetrySocket() {
           if (savedThisRoute > 0) addSecondsSaved(Math.round(savedThisRoute));
           if (r.recalculated) {
             addAlert({
-              message: `Ruta recalculada en vivo — ahorro ${r.savings_pct}%`,
+              message: `Route recalculated live — savings ${r.savings_pct}%`,
               severity: 'info',
               timestamp: msg.timestamp,
             });
           } else {
             addAlert({
-              message: 'Corredor dinámico FlowSense despejado',
+              message: 'FlowSense dynamic corridor cleared',
               severity: 'info',
               timestamp: msg.timestamp,
             });
@@ -83,7 +84,7 @@ export function useTelemetrySocket() {
             useStore.getState().setAutoFollowNextDispatch(false);
             setFollowUnitId(v.vehicle_id);
             addAlert({
-              message: `Siguiendo ${v.vehicle_id} en vivo`,
+              message: `Following ${v.vehicle_id} live`,
               severity: 'info',
               timestamp: msg.timestamp,
             });
@@ -106,6 +107,7 @@ export function useTelemetrySocket() {
   }
 
   function scheduleReconnect() {
+    if (!mounted.current) return;
     const delay = Math.min(RECONNECT_DELAY * (retryCount.current + 1), MAX_RECONNECT_DELAY);
     retryCount.current++;
     clearTimeout(reconnectTimer.current);
@@ -113,7 +115,7 @@ export function useTelemetrySocket() {
   }
 
   function connect() {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (!mounted.current || wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     setConnectionStatus('reconnecting');
 
@@ -129,6 +131,8 @@ export function useTelemetrySocket() {
       ws.onmessage = (e) => handleMessage(e.data);
 
       ws.onclose = () => {
+        if (!mounted.current || wsRef.current !== ws) return;
+        wsRef.current = null;
         setConnectionStatus('offline');
         scheduleReconnect();
       };
@@ -145,6 +149,7 @@ export function useTelemetrySocket() {
   connectRef.current = connect;
 
   useEffect(() => {
+    mounted.current = true;
     connect();
 
     heartbeatTimer.current = setInterval(() => {
@@ -154,9 +159,15 @@ export function useTelemetrySocket() {
     }, HEARTBEAT_INTERVAL);
 
     return () => {
+      mounted.current = false;
       if (heartbeatTimer.current) clearInterval(heartbeatTimer.current);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
+      const ws = wsRef.current;
+      wsRef.current = null;
+      if (ws) {
+        ws.onopen = ws.onclose = ws.onerror = ws.onmessage = null;
+        ws.close();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

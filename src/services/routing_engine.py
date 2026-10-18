@@ -334,7 +334,7 @@ class RoutingEngine:
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
         route_graph, _, _ = self._flood_safe_graph(G, request)
         if source_node not in route_graph or target_node not in route_graph:
-            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
+            raise ValueError("The origin or destination is inside a confirmed flooded area.")
 
         # 2. Compute static shortest path using physical length only
         try:
@@ -402,7 +402,7 @@ class RoutingEngine:
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
         route_graph, _, _ = self._flood_safe_graph(G, request)
         if source_node not in route_graph or target_node not in route_graph:
-            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
+            raise ValueError("The origin or destination is inside a confirmed flooded area.")
         path = self._find_path_astar(route_graph, source_node, target_node, weight="emergency_weight")
         return self._build_route(path, request)
 
@@ -441,7 +441,7 @@ class RoutingEngine:
         target_node = graph_service.find_nearest_node(request.destination.latitude, request.destination.longitude, max_distance_m=750)
         safe_G, flood_count, excluded_by_vehicle = self._flood_safe_graph(G, request)
         if source_node not in safe_G or target_node not in safe_G:
-            raise ValueError("El origen o destino está dentro de una zona inundada confirmada.")
+            raise ValueError("The origin or destination is inside a confirmed flooded area.")
 
         k = min(k, settings.MAX_ALTERNATIVE_ROUTES)
         if k <= 0:
@@ -461,7 +461,7 @@ class RoutingEngine:
                 algorithm=settings.ROUTING_ALGORITHM,
                 resilience=RouteResilience(
                     score_pct=0, status="no_backup", shared_segment_pct=100.0,
-                    explanation="No se solicitó una ruta de respaldo.",
+                    explanation="No backup route was requested.",
                     flood_reports_considered=flood_count,
                     flood_reports_excluded_by_vehicle=excluded_by_vehicle,
                 ),
@@ -543,7 +543,7 @@ class RoutingEngine:
         resilience = RouteResilience(
             score_pct=0,
             status="no_backup",
-            explanation="No existe una segunda ruta calculable con la red vial disponible.",
+            explanation="No second route can be calculated with the available road network.",
             shared_segment_pct=100.0,
             flood_reports_considered=flood_count,
             flood_reports_excluded_by_vehicle=excluded_by_vehicle,
@@ -558,11 +558,11 @@ class RoutingEngine:
             status = "resilient" if overlap <= 0.20 and detour <= 0.35 else "constrained" if overlap <= 0.55 and detour <= 0.75 else "fragile"
             score = round(100.0 * (1.0 - overlap) * max(0.2, 1.0 - 0.4 * min(detour, 1.5)))
             if status == "resilient":
-                explanation = "La alternativa comparte pocos tramos críticos y conserva un desvío moderado."
+                explanation = "The alternative shares few critical segments and keeps the detour moderate."
             elif status == "constrained":
-                explanation = "Hay una alternativa, pero comparte tramos o añade demora; confirma el estado antes del despacho."
+                explanation = "An alternative exists, but it shares segments or adds delay; confirm conditions before dispatch."
             else:
-                explanation = "Las rutas dependen de muchos tramos comunes o el respaldo es largo; el corredor es frágil ante otro cierre."
+                explanation = "The routes share many segments or the backup is long; the corridor is vulnerable to another closure."
             resilience = RouteResilience(
                 score_pct=max(0, min(100, score)), status=status,
                 backup_route_id=backup.route_id,

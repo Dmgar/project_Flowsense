@@ -59,21 +59,21 @@ class MobilityService:
         source = payload["source"]
         parsed = urlparse(source)
         if not source.isdigit() and parsed.scheme not in {"http", "https", "rtsp"}:
-            raise ValueError("Usa una imagen HTTP(S), una cámara RTSP o el índice de webcam.")
+            raise ValueError("Use an HTTP(S) image, an RTSP camera or a webcam index.")
         if parsed.username or parsed.password:
-            raise ValueError("No incluyas credenciales en la URL de la cámara.")
+            raise ValueError("Do not include credentials in the camera URL.")
         camera_id = "connected-" + uuid.uuid4().hex[:10]
-        item = {"id": camera_id, "name": payload["name"], "district": "Fuente conectada",
+        item = {"id": camera_id, "name": payload["name"], "district": "Connected source",
                 "lat": payload["lat"], "lng": payload["lng"], "image_url": source,
                 "stream_url": "", "source_url": source if parsed.scheme in {"http", "https"} else "",
-                "provider": "Fuente del operador", "refresh_seconds": 20}
+                "provider": "Operator source", "refresh_seconds": 20}
         # A saved connection must actually yield a decodable frame.
         self.cameras[camera_id] = item
         try:
             self.capture(camera_id)
         except Exception:
             self.cameras.pop(camera_id, None)
-            raise ValueError("No se pudo leer una imagen de esa fuente. Revisa URL y disponibilidad.") from None
+            raise ValueError("Could not read an image from this source. Check its URL and availability.") from None
         with closing(sqlite3.connect(self.db_path)) as db, db:
             db.execute("INSERT INTO connected_cameras VALUES (?, ?)", (camera_id, json.dumps(item)))
         return next(item for item in self.list_cameras() if item["id"] == camera_id)
@@ -96,7 +96,7 @@ class MobilityService:
                 with urllib.request.urlopen(request, timeout=12) as response:
                     image = response.read(10_000_001)
                 if len(image) > 10_000_000:
-                    raise ValueError("La imagen supera el tamaño permitido.")
+                    raise ValueError("The image exceeds the allowed size.")
                 frame = cv2.imdecode(np.frombuffer(image, dtype=np.uint8), cv2.IMREAD_COLOR)
             else:
                 cap = (cv2.VideoCapture(int(source)) if source.isdigit() else
@@ -109,7 +109,7 @@ class MobilityService:
                 finally:
                     cap.release()
             if frame is None:
-                raise ValueError("La fuente no devolvió una imagen válida.")
+                raise ValueError("The source did not return a valid image.")
             _, encoded = cv2.imencode(".jpg", frame)
             captured = {"image": encoded.tobytes(), "frame": frame, "observed_at": now(),
                         "fetched_at": time.monotonic(), "detections": None,
@@ -130,7 +130,7 @@ class MobilityService:
                 try:
                     from src.perception.detector import VehicleDetector
                     if not settings.PERCEPTION_MODEL_PATH.is_file():
-                        raise ValueError("Modelo de detección no instalado.")
+                        raise ValueError("Detection model not installed.")
                     if self._detector is None:
                         self._detector = VehicleDetector(str(settings.PERCEPTION_MODEL_PATH),
                             confidence_threshold=0.35,
@@ -141,7 +141,7 @@ class MobilityService:
                                   "width": item.bbox[2] / width, "height": item.bbox[3] / height}}
                         for item in self._detector.detect(frame)]
                 except Exception:
-                    detection_error = "Inferencia no disponible. La imagen pública sigue siendo visible."
+                    detection_error = "Inference unavailable. The public image remains visible."
         counts = {name: 0 for name in ["car", "motorcycle", "bus", "truck", "bicycle", "pedestrian"]}
         for item in captured["detections"] or []:
             counts[item["className"]] += 1
@@ -153,7 +153,7 @@ class MobilityService:
                   "inference_status": "ready" if captured["detections"] is not None else "unavailable",
                   "inference_error": detection_error, "data_origin": "opencv_snapshot",
                   "speed_kmh": None, "lane_occupancy": None,
-                  "note": "Conteo instantáneo. No es aforo horario ni velocidad calibrada."}
+                  "note": "Instantaneous count. This is not an hourly traffic count or calibrated speed."}
         history = self._history.setdefault(camera_id, deque(maxlen=60))
         if not history or history[-1]["observed_at"] != result["observed_at"]:
             history.append(result)
@@ -200,7 +200,7 @@ class MobilityService:
             item = json.loads(row[0])
             target = payload["status"]
             if target not in allowed[item["status"]]:
-                raise ValueError("La transición requiere revisar y confirmar primero; los casos cerrados no se modifican.")
+                raise ValueError("This transition requires review and confirmation first; closed cases cannot be modified.")
             item.update(status=target, owner=payload["owner"], updated_at=now())
             item["audit"].append({"at": item["updated_at"], "action": target,
                                   "note": payload["note"], "owner": payload["owner"]})

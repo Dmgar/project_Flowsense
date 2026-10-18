@@ -13,6 +13,7 @@ The product is not only an ambulance router and not only a vehicle detector. Det
 ## Folder Contents
 
 - `assets/`: generated UI reference images.
+- `images/product-reference-01.jpeg` through `product-reference-08.jpeg`: original supplied references, ordered by original filename. Image contents are unchanged.
 - `product-brief.md`: what the platform is, who uses it, and what it improves.
 - `screen-specs.md`: detailed implementation brief for every generated screen.
 - `component-system.md`: reusable frontend components and shared behavior.

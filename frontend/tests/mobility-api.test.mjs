@@ -15,7 +15,7 @@ test('a stalled service cannot leave a camera request pending indefinitely', asy
   t.mock.method(globalThis, 'fetch', hangingFetch);
   const pending = getObservation('camera-a');
   t.mock.timers.tick(25000);
-  await assert.rejects(pending, /tardó demasiado/);
+  await assert.rejects(pending, /took too long/);
 });
 
 test('leaving the camera cancels the request without misreporting a timeout', async t => {
@@ -27,8 +27,13 @@ test('leaving the camera cancels the request without misreporting a timeout', as
 });
 
 test('server errors retain the actionable detail supplied by the API', async t => {
-  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ detail: 'La cámara no responde.' }), { status: 503 }));
-  await assert.rejects(getObservation('camera-a'), /La cámara no responde/);
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ detail: 'The camera is not responding.' }), { status: 503 }));
+  await assert.rejects(getObservation('camera-a'), /The camera is not responding/);
+});
+
+test('validation errors identify the input field instead of showing an object placeholder', async t => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ detail: [{ loc: ['body', 'lat'], msg: 'Input should be less than or equal to 90' }] }), { status: 422 }));
+  await assert.rejects(getObservation('camera-a'), /lat: Input should be less than or equal to 90/);
 });
 
 test('the deadline covers a stalled response body, not only response headers', async t => {
@@ -37,5 +42,5 @@ test('the deadline covers a stalled response body, not only response headers', a
   const pending = getObservation('camera-a');
   await Promise.resolve();
   t.mock.timers.tick(25000);
-  await assert.rejects(pending, /tardó demasiado/);
+  await assert.rejects(pending, /took too long/);
 });

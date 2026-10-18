@@ -14,7 +14,7 @@ test('observation desk retains four sources and rejects a fifth without silently
   useProduct.setState({ watchCameras: [], toast: '' });
   for (const id of ['a', 'b', 'c', 'd', 'e']) useProduct.getState().toggleWatch(id);
   assert.deepEqual(useProduct.getState().watchCameras, ['a', 'b', 'c', 'd']);
-  assert.match(useProduct.getState().toast, /cuatro/);
+  assert.match(useProduct.getState().toast, /four/);
   useProduct.getState().toggleWatch('b'); useProduct.getState().toggleWatch('e');
   assert.deepEqual(useProduct.getState().watchCameras, ['a', 'c', 'd', 'e']);
 });
@@ -37,4 +37,34 @@ test('street queries survive encoded links and back navigation', () => {
   assert.equal(useProduct.getState().query, 'Long Beach');
   useProduct.getState().navigate('/watch');
   assert.equal(useProduct.getState().query, '');
+});
+
+test('legacy period preferences recover an English label without losing saved cameras', async () => {
+  const previous = useProduct.getState().period;
+  const legacyPeriods = ['\u00daltimos 15 min', '\u00daltima hora', '\u00daltimas 24 h', '\u00daltimos 7 d\u00edas'];
+  const expected = ['Last 15 min', 'Last hour', 'Last 24 h', 'Last 7 days'];
+  for (const [index, period] of legacyPeriods.entries()) {
+    saved.set('flowsense-product-preferences', JSON.stringify({ state: { period, favoriteCameras: ['camera-legacy'], watchCameras: ['camera-desk'], mode: 'observed' }, version: 0 }));
+    await useProduct.persist.rehydrate();
+    assert.equal(useProduct.getState().period, expected[index]);
+    assert.deepEqual(useProduct.getState().favoriteCameras, ['camera-legacy']);
+    assert.deepEqual(useProduct.getState().watchCameras, ['camera-desk']);
+    assert.equal(useProduct.getState().mode, 'observed');
+  }
+  useProduct.getState().setPeriod(previous);
+});
+
+test('theme persists across hydration and older preferences retain new layer defaults', async () => {
+  useProduct.getState().setTheme('dark');
+  const preference = JSON.parse(saved.get('flowsense-product-preferences'));
+  assert.equal(preference.state.theme, 'dark');
+  useProduct.setState({ theme: 'light' });
+  saved.set('flowsense-product-preferences', JSON.stringify(preference));
+  await useProduct.persist.rehydrate();
+  assert.equal(useProduct.getState().theme, 'dark');
+  saved.set('flowsense-product-preferences', JSON.stringify({ state: { theme: 'invalid', layers: { cameras: false } }, version: 0 }));
+  await useProduct.persist.rehydrate();
+  assert.equal(useProduct.getState().theme, 'dark');
+  assert.equal(useProduct.getState().layers.cameras, false);
+  assert.equal(useProduct.getState().layers.clusterCameras, true);
 });

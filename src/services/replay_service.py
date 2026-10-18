@@ -145,13 +145,13 @@ class ReplayService:
             alerts = []
             if f == 5:
                 alerts.append({
-                    "message": "Corredor de emergencia activado",
+                    "message": "Emergency corridor activated",
                     "severity": "info",
                     "timestamp": str(frame_time)
                 })
             elif f == 15:
                 alerts.append({
-                    "message": "Tráfico despejado con prioridad por semaforización",
+                    "message": "Traffic cleared with signal priority",
                     "severity": "info",
                     "timestamp": str(frame_time)
                 })

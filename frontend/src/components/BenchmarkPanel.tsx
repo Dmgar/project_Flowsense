@@ -13,7 +13,7 @@ import { MOCK_BENCHMARK } from '../data/mock';
 
 const CHART_DATA = MOCK_BENCHMARK.map((d) => ({
   name: d.metric,
-  'Ruta Estática': d.static,
+  "Static route": d.static,
   'FlowSense': d.flowsense,
 }));
 
@@ -27,7 +27,8 @@ export function BenchmarkPanel() {
     <div className="animate-fade-in absolute bottom-24 left-1/2 z-[600] w-[min(620px,calc(100vw-1rem))] -translate-x-1/2 rounded-lg border border-border-primary bg-bg-panel/95 p-4 shadow-2xl backdrop-blur">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-xs font-bold uppercase tracking-widest text-text-secondary">
-          Benchmark — Tiempo de Respuesta
+
+          Benchmark — Response time
         </h2>
         <button
           onClick={toggleBenchmark}
@@ -59,7 +60,7 @@ export function BenchmarkPanel() {
               labelStyle={{ color: '#e2e8f0' }}
             />
             <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'monospace' }} />
-            <Bar dataKey="Ruta Estática" fill="#64748b" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="Static route" fill="#64748b" radius={[0, 3, 3, 0]} />
             <Bar dataKey="FlowSense" fill="#00e676" radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -67,15 +68,15 @@ export function BenchmarkPanel() {
       <div className="mt-2 grid grid-cols-3 gap-2">
         <div className="rounded bg-bg-tertiary p-2 text-center">
           <div className="font-mono text-lg font-bold tabular-nums text-accent-green">-27%</div>
-          <div className="font-mono text-[9px] text-text-muted">TIEMPO PROMEDIO</div>
+          <div className="font-mono text-[9px] text-text-muted">AVERAGE TIME</div>
         </div>
         <div className="rounded bg-bg-tertiary p-2 text-center">
           <div className="font-mono text-lg font-bold tabular-nums text-accent-cyan">67s</div>
-          <div className="font-mono text-[9px] text-text-muted">SEGUNDOS SALVADOS</div>
+          <div className="font-mono text-[9px] text-text-muted">SECONDS SAVED</div>
         </div>
         <div className="rounded bg-bg-tertiary p-2 text-center">
           <div className="font-mono text-lg font-bold tabular-nums text-emerald-400">96%</div>
-          <div className="font-mono text-[9px] text-text-muted">TASA DE ÉXITO</div>
+          <div className="font-mono text-[9px] text-text-muted">SUCCESS RATE</div>
         </div>
       </div>
     </div>

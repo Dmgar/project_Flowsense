@@ -9,6 +9,7 @@ import type {
   GeoJsonEdgeFeature,
   ReplayFrame,
   FloodReport,
+  AlternativeRoutesResponse,
 } from '../types';
 
 export type MobilePanel = 'none' | 'dispatch' | 'layers' | 'follow';
@@ -44,6 +45,8 @@ interface FlowSenseState {
   setActiveRoute: (r: RouteResponse | null) => void;
   routeOptions: RouteResponse[];
   setRouteOptions: (routes: RouteResponse[]) => void;
+  routeResilience: AlternativeRoutesResponse['resilience'];
+  setRouteResilience: (value: AlternativeRoutesResponse['resilience']) => void;
 
   vehicles: Record<string, VehiclePosition>;
   updateVehicle: (v: VehiclePosition) => void;
@@ -130,9 +133,13 @@ export const useStore = create<FlowSenseState>((set) => ({
   toggleCongestionLayer: () => set((s) => ({ showCongestionLayer: !s.showCongestionLayer })),
 
   activeRoute: null,
-  setActiveRoute: (activeRoute) => set({ activeRoute }),
+  setActiveRoute: (activeRoute) => set(state => ({ activeRoute,
+    routeResilience: activeRoute && state.routeOptions.some(route => route.route_id === activeRoute.route_id) ? state.routeResilience : null,
+  })),
   routeOptions: [],
-  setRouteOptions: (routeOptions) => set({ routeOptions }),
+  setRouteOptions: (routeOptions) => set({ routeOptions, routeResilience: null }),
+  routeResilience: null,
+  setRouteResilience: (routeResilience) => set({ routeResilience }),
 
   vehicles: {},
   updateVehicle: (v) =>
@@ -185,7 +192,7 @@ export const useStore = create<FlowSenseState>((set) => ({
   autoFollowNextDispatch: false,
   setAutoFollowNextDispatch: (autoFollowNextDispatch) => set({ autoFollowNextDispatch }),
 
-  origin: { label: 'Centro, Cartagena', latitude: 10.3910, longitude: -75.4794, category: 'destination' },
+  origin: { label: "Downtown, Cartagena", latitude: 10.3910, longitude: -75.4794, category: 'destination' },
   setOrigin: (origin) => set({ origin }),
   destination: null,
   setDestination: (destination) => set({ destination }),

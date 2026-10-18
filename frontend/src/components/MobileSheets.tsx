@@ -44,7 +44,8 @@ export function MobileSheets() {
             {mobilePanel === 'layers' && <MobileLayers close={() => setMobilePanel('none')} />}
             {mobilePanel === 'none' && (
               <div className="py-8 text-center font-mono text-[11px] text-text-muted">
-                Toca un control de la barra inferior.
+
+                Tap a control in the bottom bar.
               </div>
             )}
           </div>
@@ -57,11 +58,11 @@ export function MobileSheets() {
 function sheetTitle(p: MobilePanel): string {
   switch (p) {
     case 'dispatch':
-      return 'Despacho de Emergencia';
+      return "Emergency dispatch";
     case 'layers':
-      return 'Capas y Controles';
+      return "Layers and controls";
     case 'follow':
-      return 'Seguir Unidad';
+      return "Follow unit";
     default:
       return 'FlowSense Mobile';
   }
@@ -117,7 +118,7 @@ function MobileLayers({ close }: { close: () => void }) {
             : off
         }`}
       >
-        {showCongestionLayer ? '◉ CONGESTIÓN ON' : '○ CONGESTIÓN OFF'}
+        {showCongestionLayer ? "◉ CONGESTION ON" : "○ CONGESTION OFF"}
       </button>
       <button
         onClick={toggleSim}
@@ -125,7 +126,7 @@ function MobileLayers({ close }: { close: () => void }) {
           isSimulating ? 'border-amber-500 bg-amber-500/10 text-amber-400' : off
         }`}
       >
-        {isSimulating ? '■ TRAFICO ON' : '▶ TRAFICO OFF'}
+        {isSimulating ? "■ TRAFFIC ON" : "▶ TRAFFIC OFF"}
       </button>
       <button
         onClick={handleReplay}
@@ -153,7 +154,8 @@ function MobileLayers({ close }: { close: () => void }) {
         }}
         className={`${btn} border-accent-green/50 bg-accent-green/10 text-accent-green`}
       >
-        ⛶ PRESENTACIÓN
+
+        ⛶ PRESENTATION
       </button>
     </div>
   );

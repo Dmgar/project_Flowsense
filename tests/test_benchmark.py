@@ -9,11 +9,11 @@ def test_benchmark_service_execution():
     assert len(summary.metrics) == 5
 
     metric_names = [m.metric for m in summary.metrics]
-    assert "Tiempo Promedio (s)" in metric_names
-    assert "Distancia (m)" in metric_names
-    assert "Intersecciones Bloqueadas" in metric_names
-    assert "Tasa de Éxito (%)" in metric_names
-    assert "Segundos Salvados" in metric_names
+    assert "Average time (s)" in metric_names
+    assert "Distance (m)" in metric_names
+    assert "Blocked intersections" in metric_names
+    assert "Success rate (%)" in metric_names
+    assert "Seconds saved" in metric_names
 
 def test_benchmark_summary_endpoint(client: TestClient):
     response = client.get("/api/v1/benchmark/summary")

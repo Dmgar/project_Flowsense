@@ -1,68 +1,95 @@
-# FlowSense — Dispatch Operations Dashboard (Frontend)
+# FlowSense Frontend
 
-React + TypeScript + Vite + Tailwind CSS v4 + react-leaflet + Zustand.
-Digital twin urbano en tiempo real para el OpenCV AI Competition 2026.
+React 19, TypeScript, Vite 8, Tailwind CSS, Leaflet and Zustand.
 
-## Stack
+## Active application and shared state
 
-| Domain | Technology |
-| --- | --- |
-| Framework | React 19 + TypeScript + Vite 8 |
-| Styling | Tailwind CSS v4 (design tokens CSS-first) |
-| Mapping | react-leaflet v5 + Leaflet 1.9 (renderer canvas) |
-| State | Zustand (selectores granulares, cero re-renders masivos) |
-| Charts | Recharts (benchmark) |
-| Real-time | WebSocket `/ws/telemetry` con reconexión + heartbeat |
+`src/App.tsx` mounts `product/Shell.tsx`. The product shell mounts
+`components/DataInitializer.tsx` and `hooks/useTelemetrySocket.ts`.
+`product/CityMap.tsx`, `product/Screens.tsx` and `product/EvidenceExplorer.tsx`
+read the shared `store/useStore.ts` for road edges, graph status and routes.
+Telemetry updates that same store, so route and traffic updates reach the active view.
+`product/store.ts` holds workspace preferences, camera selection and case data;
+it does not replace the routing store. The classic components remain available
+but are not the main application.
 
-## Scripts
+Both `api/client.ts` (routing) and `product/api.ts` (mobility) use `api/urls.ts`.
+This also resolves telemetry, backend camera media and report download URLs.
+Product API availability and telemetry connection status are tracked separately.
+The product presentation data remains illustrative; this configuration does not
+convert it into observed telemetry or replace its Los Angeles-specific content.
 
-```bash
-npm install
-npm run dev        # dev server :3001 (proxy /api y /ws -> localhost:8002)
-npm run build      # tsc -b && vite build
-npm run lint       # oxlint
-npm run preview    # sirve el build
+## Local development
+
+```powershell
+cd frontend
+npm ci
+npm run dev
 ```
 
-## Requisitos
+Vite listens on port 3001. With no configuration, `/api` and `/ws` proxy to
+`http://127.0.0.1:8002`.
 
-Backend FastAPI corriendo en `http://localhost:8002` para el perfil de Cartagena (`scripts/run_cartagena_pilot.ps1`).
-El frontend funciona también en **modo offline** con datos mock si el backend no responde.
+- `FLOWSENSE_API_URL`: server-side proxy target, including hostname and port.
+- `FLOWSENSE_API_PORT`: local proxy port fallback (default: 8002).
+- `VITE_API_URL`: browser-facing HTTP API base, also used to derive the
+  `ws://` or `wss://` telemetry URL. Leave empty for same-origin proxying.
+  A separate API origin must permit the frontend origin through backend CORS.
 
-## Estructura
+Proxy target precedence is `FLOWSENSE_API_URL`, then `VITE_API_URL`, then
+`http://127.0.0.1:$FLOWSENSE_API_PORT`. Restart Vite after changing environment
+settings. For a static build, `VITE_API_URL` is embedded at build time; an empty
+value requires the deployment server to forward `/api` and `/ws`.
+See `.env.example` for local settings.
 
-```
-src/
-├── api/client.ts               # Cliente REST del backend
-├── components/                 # Componentes del dashboard
-│   ├── MapView.tsx             # Mapa Leaflet (CartoDB dark) + capas
-│   ├── CongestionLayer.tsx     # Edges con canvas renderer, tooltips, updates imperativos
-│   ├── RouteLayer.tsx          # Corredor dinámico animado + baseline gris punteado
-│   ├── VehicleMarkers.tsx      # Marcadores de unidades (ambulancia/bombero) rotados
-│   ├── Sidebar.tsx             # Despacho, ETA, comparación static vs FlowSense
-│   ├── StatusBar.tsx           # Estado conexión, segundos salvados, ciudad
-│   ├── AlertsFeed.tsx          # Feed de alertas en vivo
-│   ├── LayerControls.tsx       # Toggles de capas, replay, presentación
-│   ├── CongestionLegend.tsx    # Leyenda de gradiente
-│   ├── BenchmarkPanel.tsx      # Gráfico Recharts static vs FlowSense
-│   ├── PresentationOverlay.tsx # Modo presentación/fullscreen demo
-│   ├── PrivacyBadge.tsx        # Badge Responsible AI
-│   ├── TimelineScrubber.tsx    # Scrubber de replay
-│   ├── ReplayController.tsx    # Motor de replay offline
-│   └── DataInitializer.tsx     # Bootstrapping (grafo, status, sim, mock)
-├── data/mock.ts                # Datos demo offline + benchmark
-├── hooks/useTelemetrySocket.ts # WebSocket con heartbeat y backoff
-├── store/useStore.ts           # Estado global Zustand
-└── types/index.ts              # Contratos de API
+From the repository root:
+
+```powershell
+# Cartagena API, default port 8002; then run Vite in the same terminal.
+./scripts/run_cartagena_pilot.ps1 -ApiPort 8002
+Push-Location frontend
+npm run dev -- --host 127.0.0.1
+Pop-Location
+
+# General launcher: Los Angeles API on 8002 and frontend on 3001.
+./scripts/run_flowsense.ps1 -Setup -ApiPort 8002 -WebPort 3001
 ```
 
-## Contratos consumidos (backend)
+Both launchers select the requested API port through `FLOWSENSE_API_URL` and
+clear inherited `VITE_API_URL` so HTTP and WebSocket use the same proxy.
+Use separate ports for simultaneously running city profiles. The Cartagena
+launcher configures API connectivity; the current product presentation still
+contains Los Angeles-specific defaults and labels.
 
-| Endpoint | Uso |
-| --- | --- |
-| `WS /ws/telemetry` | `traffic_update`, `route_update`, `route_recalculated`, `vehicle_telemetry`, `mission_alert` |
-| `GET /api/v1/graph/status` | Nodos/aristas de la ciudad |
-| `GET /api/v1/graph/geojson` | Grafo urbano con propiedades de congestión |
-| `POST /api/v1/graph/reset` | Reset de congestión |
-| `POST /api/v1/dispatch/route?simulate=true` | Corredor dinámico + baseline + `savings_pct` |
-| `POST /api/v1/dispatch/simulate/traffic/start\|stop` | Simulación de tráfico |
+## Docker Compose
+
+From the repository root:
+
+```powershell
+docker compose up --build
+```
+
+Open `http://localhost:5173`. The frontend Dockerfile runs Vite on
+`0.0.0.0:5173`. Compose sets `FLOWSENSE_API_URL=http://backend:8000`, so both
+HTTP and WebSocket are forwarded through the Docker service network.
+The backend is also exposed on host port 8000. This is a development setup.
+
+## Language
+
+All application-owned interface text, accessibility labels, notifications,
+illustrative scenarios and report labels use English. Dates and numbers use
+`en-US`. Geographic names, source names and operator-authored case history
+retain their original values. Legacy period preferences recover their English
+labels while preserving saved cameras, layers and working mode.
+
+## Checks
+
+The header and Settings provide a saved light/dark appearance preference for all
+product modules. See [Frontend reliability](../docs/FRONTEND_RELIABILITY.md) for
+the interaction fixes and verification scope.
+
+```powershell
+npm test
+npm run build
+npm run lint
+```

@@ -47,7 +47,8 @@ export function LayerControls() {
     <div className="absolute bottom-6 right-4 z-[500] hidden flex-col items-end gap-2 md:flex">
       <div className="flex flex-col items-end gap-2 rounded border border-border-primary bg-bg-panel/90 p-3 backdrop-blur">
         <div className="mb-1 w-full font-mono text-[10px] uppercase tracking-widest text-text-muted">
-          Controles
+
+          Controls
         </div>
         <button
           onClick={toggleCongestionLayer}
@@ -57,7 +58,7 @@ export function LayerControls() {
               : 'border-border-subtle text-text-muted'
           }`}
         >
-          {showCongestionLayer ? '◉ CONGESTIÓN ON' : '○ CONGESTIÓN OFF'}
+          {showCongestionLayer ? "◉ CONGESTION ON" : "○ CONGESTION OFF"}
         </button>
         <button
           onClick={toggleSim}
@@ -67,7 +68,7 @@ export function LayerControls() {
               : 'border-border-subtle bg-bg-tertiary text-text-secondary'
           }`}
         >
-          {isSimulating ? '■ TRAFICO ON' : '▶ TRAFICO OFF'}
+          {isSimulating ? "■ TRAFFIC ON" : "▶ TRAFFIC OFF"}
         </button>
         <button
           onClick={handleReplay}
@@ -83,7 +84,8 @@ export function LayerControls() {
 
       <div className="flex flex-col gap-2 rounded border border-border-primary bg-bg-panel/90 p-3 backdrop-blur">
         <div className="mb-1 w-full font-mono text-[10px] uppercase tracking-widest text-text-muted">
-          Vista
+
+          View
         </div>
         {Object.keys(vehicles).map((id) => (
           <button
@@ -91,14 +93,16 @@ export function LayerControls() {
             onClick={() => setFollowUnitId(id)}
             className={`${btn} border-border-subtle text-text-secondary`}
           >
-            ◎ SEGUIR {id}
+
+            ◎ FOLLOW {id}
           </button>
         ))}
         <button
           onClick={() => setFollowUnitId(null)}
           className={`${btn} border-border-subtle text-text-muted`}
         >
-          ✕ SOLTAR UNIDAD
+
+          ✕ RELEASE UNIT
         </button>
       </div>
 
@@ -114,7 +118,8 @@ export function LayerControls() {
             onClick={togglePresentationMode}
             className={`${btn} border-accent-green/50 bg-accent-green/10 text-accent-green`}
           >
-            ⛶ PRESENTACIÓN
+
+            ⛶ PRESENTATION
           </button>
         )}
       </div>

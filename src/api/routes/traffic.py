@@ -55,7 +55,7 @@ async def confirm_flood_report(report_id: str):
         }))
 
     await manager.broadcast(WebSocketMessage(event=TelemetryEventType.MISSION_ALERT, data=MissionAlertEvent(
-        message=f"Inundación confirmada · {report.depth_cm:.0f} cm · expira {report.expires_at}", severity="warning"
+        message=f"Flooding confirmed · {report.depth_cm:.0f} cm · expires {report.expires_at}", severity="warning"
     ).model_dump()))
     return report.model_dump()
 
@@ -113,7 +113,7 @@ async def validate_incident_candidate(incident_id: str):
     candidate.affected_edges_count = affected_edges
     incident_intelligence.save(candidate)
     alert = MissionAlertEvent(
-        message=f"{candidate.label} validado · {candidate.confidence:.0%} de score de evidencia · {affected_edges} vías afectadas",
+        message=f"{candidate.label} validated · {candidate.confidence:.0%} evidence score · {affected_edges} roads affected",
         severity=severity,
     )
     await manager.broadcast(WebSocketMessage(event=TelemetryEventType.MISSION_ALERT, data=alert.model_dump()))
@@ -198,7 +198,7 @@ async def export_cifs_feed(
         items.append({
             "id": report.report_id, "type": "HAZARD", "subtype": "HAZARD_WEATHER_FLOOD",
             "polyline": point,
-            "description": f"Inundación confirmada por operador · {report.depth_cm:.0f} cm de profundidad",
+            "description": f"Flooding confirmed by operator · {report.depth_cm:.0f} cm depth",
             "direction": "BOTH_DIRECTIONS", "creationtime": report.created_at,
             "starttime": report.confirmed_at or report.created_at,
         })
@@ -304,7 +304,7 @@ async def report_incident(incident: IncidentReport):
     )
 
     alert = MissionAlertEvent(
-        message=f"{incident.description} (Radio {int(incident.radius_m)}m - {affected_edges} vías afectadas)",
+        message=f"{incident.description} (Radius {int(incident.radius_m)}m - {affected_edges} roads affected)",
         severity=incident.severity
     )
 
@@ -352,7 +352,7 @@ async def clear_incident(incident_id: str):
         incident_intelligence.save(candidate)
 
     alert = MissionAlertEvent(
-        message=f"Incidente {incident_id} despejado. Vía rehabilitada para tránsito prioritario.",
+        message=f"Incident {incident_id} cleared. Road reopened for priority traffic.",
         severity="info"
     )
 

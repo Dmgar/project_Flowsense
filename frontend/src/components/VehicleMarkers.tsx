@@ -21,9 +21,9 @@ function vehicleIcon(kind: 'ambulance' | 'fire', heading: number, isFollowed: bo
 function tooltipHtml(v: VehiclePosition): string {
   return `<div class="text-[11px] font-mono">
     <div class="text-cyan-300 font-bold">${v.vehicle_id}</div>
-    <div>Velocidad: <b>${v.speed_kmh.toFixed(0)} km/h</b></div>
+    <div>Speed: <b>${v.speed_kmh.toFixed(0)} km/h</b></div>
     <div>Heading: <b>${v.heading.toFixed(0)}°</b></div>
-    <div>Corredor despejado: <b>${v.corridor_cleared_ahead_m.toFixed(0)} m</b></div>
+    <div>Cleared corridor: <b>${v.corridor_cleared_ahead_m.toFixed(0)} m</b></div>
   </div>`;
 }
 

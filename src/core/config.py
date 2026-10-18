@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     
     # City profiles keep graph caches and incident ledgers isolated.
     CITY_PROFILE: str = "los_angeles" if _LOS_ANGELES else "cartagena" if _CARTAGENA else "manhattan"
-    PILOT_CITY: str = "Gran Los Angeles, California" if _LOS_ANGELES else "Cartagena de Indias, Colombia" if _CARTAGENA else "New York (Manhattan)"
+    PILOT_CITY: str = "Greater Los Angeles, California" if _LOS_ANGELES else "Cartagena de Indias, Colombia" if _CARTAGENA else "New York (Manhattan)"
     # Cover Manhattan from the southern tip through Inwood so nearby routes
     # do not silently snap to the edge of a small midtown-only graph.
     PILOT_BBOX_NORTH: float = 34.25 if _LOS_ANGELES else 10.50 if _CARTAGENA else 40.8800

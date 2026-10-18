@@ -38,19 +38,22 @@ export function AlertsFeed() {
     <section className="pointer-events-none absolute left-3 top-3 z-[500] flex w-72 max-w-[calc(100vw-1rem)] flex-col md:left-4 md:top-4">
       <div className="pointer-events-auto flex items-center justify-between px-1 pb-1">
         <h2 className="font-mono text-[10px] font-bold uppercase tracking-widest text-text-muted">
-          Alertas en Vivo
+
+          Live alerts
         </h2>
         <button
           onClick={clearAlerts}
           className="font-mono text-[10px] text-text-muted hover:text-text-secondary"
         >
-          LIMPIAR
+
+          CLEAR
         </button>
       </div>
       <div ref={containerRef} className="pointer-events-auto max-h-40 space-y-1.5 overflow-y-auto md:max-h-56">
         {alerts.length === 0 && (
           <div className="rounded border border-border-subtle bg-bg-panel/80 px-3 py-2 font-mono text-[11px] text-text-muted backdrop-blur">
-            Esperando alertas…
+
+            Waiting for alerts…
           </div>
         )}
         {alerts.map((a, i) => (
@@ -63,7 +66,7 @@ export function AlertsFeed() {
               <span className="line-clamp-2">{a.message}</span>
             </div>
             <div className="mt-1 text-[9px] text-text-muted">
-              {new Date(a.timestamp).toLocaleTimeString('es-ES', {
+              {new Date(a.timestamp).toLocaleTimeString("en-US", {
                 hour12: false,
                 hour: '2-digit',
                 minute: '2-digit',

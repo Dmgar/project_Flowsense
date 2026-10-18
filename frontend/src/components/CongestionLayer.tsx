@@ -23,11 +23,11 @@ function edgeStyle(p: GeoJsonEdgeFeature['properties']): L.PathOptions {
 
 function tooltipContent(p: GeoJsonEdgeFeature['properties']): string {
   return `<div class="text-[11px] font-mono">
-    <div class="text-cyan-300 font-bold">${p?.name ?? 'Segmento'}</div>
-    <div>Velocidad: <b>${p?.average_speed_kmh?.toFixed(1) ?? '--'} km/h</b></div>
-    <div>Vehículos: <b>${p?.vehicle_count ?? 0}</b></div>
-    <div>Longitud: <b>${p?.length?.toFixed(0) ?? '--'} m</b></div>
-    <div>Congestión: <b>${((p?.congestion_factor ?? 0) * 100).toFixed(0)}%</b></div>
+    <div class="text-cyan-300 font-bold">${p?.name ?? "Segment"}</div>
+    <div>Speed: <b>${p?.average_speed_kmh?.toFixed(1) ?? '--'} km/h</b></div>
+    <div>Vehicles: <b>${p?.vehicle_count ?? 0}</b></div>
+    <div>Length: <b>${p?.length?.toFixed(0) ?? '--'} m</b></div>
+    <div>Congestion: <b>${((p?.congestion_factor ?? 0) * 100).toFixed(0)}%</b></div>
   </div>`;
 }
 

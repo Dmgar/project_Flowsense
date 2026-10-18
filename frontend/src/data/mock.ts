@@ -114,7 +114,7 @@ export function mockRoute(frames: number, frameIdx: number): RouteResponse {
       node_id: 1000 + i,
       latitude: lat,
       longitude: lon,
-      street_name: `Corredor ${i}`,
+      street_name: `Corridor ${i}`,
       length_m: 220,
       congestion_factor: 0.2,
       estimated_duration_s: 16,
@@ -201,7 +201,7 @@ export function generateMockReplay(frames = 30): ReplayFrame[] {
     const alert: MissionAlert | null =
       f % 5 === 0
         ? {
-            message: `Corredor despejado en ${['Broadway', '7th Ave', 'W 42nd St', '9th Ave'][f % 4]}`,
+            message: `Corridor cleared on ${['Broadway', '7th Ave', 'W 42nd St', '9th Ave'][f % 4]}`,
             severity: 'info',
             timestamp: new Date(baseTime + f * 3000).toISOString(),
           }
@@ -220,11 +220,11 @@ export function generateMockReplay(frames = 30): ReplayFrame[] {
 }
 
 export const MOCK_BENCHMARK: BenchmarkData[] = [
-  { metric: 'Tiempo Promedio (s)', static: 245, flowsense: 178 },
-  { metric: 'Distancia (m)', static: 3200, flowsense: 2850 },
-  { metric: 'Intersecciones Bloqueadas', static: 4, flowsense: 1 },
-  { metric: 'Tasa de Éxito (%)', static: 72, flowsense: 96 },
-  { metric: 'Segundos Salvados', static: 0, flowsense: 67 },
+  { metric: "Average time (s)", static: 245, flowsense: 178 },
+  { metric: "Distance (m)", static: 3200, flowsense: 2850 },
+  { metric: "Blocked intersections", static: 4, flowsense: 1 },
+  { metric: "Success rate (%)", static: 72, flowsense: 96 },
+  { metric: "Seconds saved", static: 0, flowsense: 67 },
 ];
 
 export { MANHATTAN_CENTER };

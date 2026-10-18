@@ -9,12 +9,12 @@ from src.models.schemas import IncidentCandidate, IncidentCandidateInput
 
 
 LABELS = {
-    "collision": "Posible colisión",
-    "stopped_vehicle": "Vehículo detenido",
-    "road_obstruction": "Obstrucción vial",
-    "smoke_fire": "Humo o incendio",
-    "flooding": "Inundación",
-    "unknown": "Evento sin clasificar",
+    "collision": "Possible collision",
+    "stopped_vehicle": "Stopped vehicle",
+    "road_obstruction": "Road obstruction",
+    "smoke_fire": "Smoke or fire",
+    "flooding": "Flooding",
+    "unknown": "Unclassified event",
 }
 
 
@@ -49,17 +49,17 @@ class IncidentIntelligence:
         traffic = min(evidence.speed_drop_pct / 80, 1.0)
         # An evidence score for triage, not a calibrated probability.
         score = min(1.0, 0.55 * evidence.model_confidence + 0.20 * temporal + 0.10 * persistence + 0.15 * traffic)
-        rationale = [f"Confianza del detector: {evidence.model_confidence:.0%}"]
+        rationale = [f"Detector confidence: {evidence.model_confidence:.0%}"]
         if evidence.corroborating_frames > 1:
-            rationale.append(f"Persistente en {evidence.corroborating_frames} fotogramas")
+            rationale.append(f"Persistent across {evidence.corroborating_frames} frames")
         if evidence.stationary_seconds >= 10:
-            rationale.append(f"Objeto detenido durante {evidence.stationary_seconds:.0f} s")
+            rationale.append(f"Object stationary for {evidence.stationary_seconds:.0f} s")
         if evidence.speed_drop_pct >= 20:
-            rationale.append(f"Caída de velocidad del flujo: {evidence.speed_drop_pct:.0f}%")
+            rationale.append(f"Traffic speed drop: {evidence.speed_drop_pct:.0f}%")
         if evidence.detected_classes:
-            rationale.append("Clases observadas: " + ", ".join(evidence.detected_classes[:5]))
+            rationale.append("Observed classes: " + ", ".join(evidence.detected_classes[:5]))
         if evidence.demo:
-            rationale.append("Escenario sintético de demostración; no procede de una cámara real")
+            rationale.append("Synthetic demonstration scenario; not from a real camera")
         urgency = "crítica" if evidence.event_type in {"collision", "smoke_fire", "flooding"} else "alta" if evidence.event_type in {"road_obstruction", "stopped_vehicle"} else "por evaluar"
         candidate = IncidentCandidate(
             incident_id=f"det_{uuid4().hex[:8]}", event_type=evidence.event_type,

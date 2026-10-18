@@ -1,3 +1,5 @@
+import { apiUrl } from './urls.ts';
+import { apiErrorMessage } from './errors.ts';
 import type {
   GraphStatus,
   GeoJsonEdgeFeature,
@@ -7,26 +9,39 @@ import type {
   FloodReport,
 } from '../types';
 
-const BASE = '';
-
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  });
-  if (!res.ok) {
-    const payload = await res.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(payload?.detail || `API ${res.status}: ${res.statusText}`);
+  const controller = new AbortController();
+  let timedOut = false;
+  const cancel = () => controller.abort();
+  if (init?.signal?.aborted) cancel();
+  else init?.signal?.addEventListener('abort', cancel, { once: true });
+  const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, 25000);
+  try {
+    const res = await fetch(apiUrl(path), {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const payload: unknown = await res.json().catch(() => null);
+      throw new Error(apiErrorMessage(payload, `API ${res.status}: ${res.statusText}`));
+    }
+    return await res.json();
+  } catch (error) {
+    if (timedOut) throw new Error('FlowSense took too long to respond. Check the connection and retry.');
+    throw error;
+  } finally {
+    clearTimeout(deadline);
+    init?.signal?.removeEventListener('abort', cancel);
   }
-  return res.json();
 }
 
-export function fetchGraphStatus(): Promise<GraphStatus> {
-  return apiFetch<GraphStatus>('/api/v1/graph/status');
+export function fetchGraphStatus(signal?: AbortSignal): Promise<GraphStatus> {
+  return apiFetch<GraphStatus>('/api/v1/graph/status', { signal });
 }
 
-export async function fetchGraphGeoJson(): Promise<GeoJsonEdgeFeature[]> {
-  const fc = await apiFetch<GeoJSON.FeatureCollection>('/api/v1/graph/geojson');
+export async function fetchGraphGeoJson(signal?: AbortSignal): Promise<GeoJsonEdgeFeature[]> {
+  const fc = await apiFetch<GeoJSON.FeatureCollection>('/api/v1/graph/geojson', { signal });
   return (fc.features ?? []) as GeoJsonEdgeFeature[];
 }
 

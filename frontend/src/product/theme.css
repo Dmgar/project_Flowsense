@@ -1,0 +1,106 @@
+:root {
+  color-scheme: light;
+  --chart-ink: #617768;
+  --chart-grid: #e5ebe6;
+  --chart-surface: #fff;
+  --chart-border: #d0dfcd;
+  --chart-accent: #4d805a;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --chart-ink: #b0c7b8;
+  --chart-grid: #34483c;
+  --chart-surface: #1b2b22;
+  --chart-border: #435c4a;
+  --chart-accent: #9cc69e;
+}
+.p-theme-toggle { flex: none; border: 1px solid var(--p-border); border-radius: 9px; width: 36px; height: 36px; }
+.p-theme-toggle:hover { background: #edf3e6; }
+.p-theme-settings { border: 1px solid var(--p-border); border-radius: 12px; padding: 20px; margin: 0 0 24px; background: #fff; }
+.p-theme-settings legend { padding: 0 6px; font-size: 14px; font-weight: 600; }
+.p-theme-settings p { color: #637768; margin: 0 0 16px; line-height: 1.6; }
+.p-theme-settings > div { display: flex; flex-wrap: wrap; gap: 12px; }
+.p-theme-settings label { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--p-border); border-radius: 8px; cursor: pointer; }
+.p-theme-settings label:has(input:checked) { background: #edf3e6; border-color: #6f976a; }
+.p-platform button:disabled { cursor: not-allowed; opacity: .5; }
+.p-platform :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #648d62; outline-offset: 3px; }
+.p-mobile-filters:not(.open) { visibility: hidden; }
+.p-layer-controls button:disabled { pointer-events: auto; }
+.p-platform .p-eyebrow { font-size: 10px; }
+.p-platform .p-badge { font-size: 10px; }
+.p-platform .p-metric-bottom > span { font-size: 11px; line-height: 1.5; }
+.p-platform .p-layer-controls > button { min-height: 35px; font-size: 11px; }
+.p-platform .p-connection-error { flex-wrap: wrap; }
+.p-platform .p-connection-error > span { flex: 1; min-width: 180px; }
+.p-platform .p-connection-error .p-button { flex: none; }
+
+html[data-theme="dark"] .p-platform {
+  --p-bg: #111c17;
+  --p-ink: #e0eadd;
+  --p-muted: #a8bca9;
+  --p-border: #34483b;
+  --p-green: #9ac393;
+}
+html[data-theme="dark"] body { background: #111c17; }
+html[data-theme="dark"] .p-platform :is(h1,h2,h3,h4,strong,b,legend) { color: #e0eadd; }
+html[data-theme="dark"] .p-platform :is(p,small,label,figcaption) { color: #afbfac; }
+html[data-theme="dark"] .p-platform :is(.p-eyebrow,.p-metric-label,.p-metric-bottom,.p-filter-count,.p-table-foot,.p-overview-footer,.p-chart-key,.p-detail-description,.p-table td,.p-class-counts,.p-health-rows,.p-desk-count,.p-desk-classes,.p-compass,.p-map-atlas,.p-report-summary,.p-setting-option) { color: #afbfac; }
+html[data-theme="dark"] .p-platform :is(.p-metric-bottom>span,.p-metric-value>small,.p-report-summary span,.p-detail-metrics>span,.p-region-explorer button,.p-layer-controls button) { color: #b7c9ad; }
+html[data-theme="dark"] .p-platform .p-region-explorer button>b { background: #41583c; color: #e1ecd9; }
+html[data-theme="dark"] .p-platform .p-insight-list > div > b { background: #3e412a; color: #e5dfb2; }
+html[data-theme="dark"] .p-platform .p-signal-icon { background: #453228; color: #ebbd9f; }
+html[data-theme="dark"] .p-platform :is(.p-camera-thumb,.p-regional-summary,.p-coverage-cities>button,.p-favorite-button,.p-segmented,.p-zone-label,.p-zone-context,.p-pipeline-icon,.p-story-principle) { background: #243829; color: #d2e3c6; border-color: #41593b; }
+html[data-theme="dark"] .p-platform :is(.p-favorite-button[aria-pressed="true"],.p-segmented>button.active,.p-navigation nav b,.p-coverage-cities b) { background: #415a38; color: #e6f1dc; }
+html[data-theme="dark"] .p-platform :is(.p-coverage-bar,.p-confidence>span) { background: #3b4e38; }
+html[data-theme="dark"] .p-platform .p-detail-rank { background: #4a352a; color: #efc3a7; }
+html[data-theme="dark"] .p-platform :is(.p-city-map,.p-leaflet) { background: #18251c !important; }
+html[data-theme="dark"] .p-leaflet .leaflet-control-scale-line { background: #1a2a20dd; color: #ccddc1; }
+html[data-theme="dark"] .p-platform :is(.p-navigation,.p-topbar) { background: #16241c; border-color: var(--p-border); }
+html[data-theme="dark"] .p-platform :is(.p-brand,.p-navigation button,.p-navigation a,.p-region,.p-nav-note,.p-profile,.p-system-state) { color: #bed0b5; }
+html[data-theme="dark"] .p-platform :is(.p-brand-symbol,.p-profile,.p-context-bar,.p-mobile-filters,.p-nav-note,.p-region,.p-desk-summary,.p-desk-index) { background: #213326; border-color: var(--p-border); }
+html[data-theme="dark"] .p-platform :is(.p-navigation button.active,.p-navigation button:hover,.p-theme-toggle:hover,.p-region-explorer button.active,.p-segment-selector button.active,.p-theme-settings label:has(input:checked)) { background: #304735; color: #d8e8ce; border-color: #729568; }
+html[data-theme="dark"] .p-platform :is(.p-panel,.p-metric,.p-detail-drawer,.p-filter-bar,.p-camera-tile,.p-desk-card,.p-theme-settings,.p-explorer-result,.p-map-camera-detail,.p-dialog,.p-tour,.p-search-results,.p-camera-intro,.p-dispatch-form,.p-report-type-grid>button,.p-story-modes>button,.p-pipeline>button) { background: #1a2a20; border-color: var(--p-border); box-shadow: 0 5px 22px #0002; }
+html[data-theme="dark"] .p-platform :is(.p-signal-card,.p-signal-card:hover,.p-audit,.p-camera-alternatives>button,.p-explorer-suggestions button,.p-region-explorer button,.p-segment-selector button,.p-report-type-grid>button.selected,.p-explorer-result.selected) { background: #243829; border-color: #41593b; color: #c2d2b7; }
+html[data-theme="dark"] .p-platform :is(.p-table th,.p-table tr.selected td,.p-table tbody tr:hover td,.p-search-results>button:hover,.p-search-all) { background: #263b2b !important; color: #cfddc5; }
+html[data-theme="dark"] .p-platform :is(.p-table td,.p-table th,.p-panel-head,.p-insight-action,.p-review-actions,.p-audit>div,.p-dialog footer,.p-theme-settings label,.p-desk-classes,.p-setting-option,.p-report-summary>span,.p-health-rows>span) { border-color: var(--p-border); }
+html[data-theme="dark"] .p-platform :is(.p-button,.p-select,.p-text-button,.p-icon-button,.p-context-bar>button,.p-search-results>button,.p-search-results b) { color: #bbd4a8; }
+html[data-theme="dark"] .p-platform .p-button { background: #23392b; border-color: #57734d; color: #d2e4c5 !important; }
+html[data-theme="dark"] .p-platform .p-button:hover { background: #304c35; }
+html[data-theme="dark"] .p-platform .p-button.primary { background: #84aa73; color: #101e13 !important; border-color: #a9c990; }
+html[data-theme="dark"] .p-platform .p-button.primary:hover { background: #a0c18b; }
+html[data-theme="dark"] .p-platform :is(.p-source-link,.p-corridor-caption span) { color: #c3d5b5 !important; }
+html[data-theme="dark"] .p-platform :is(input:not([type="radio"]):not([type="checkbox"]):not([type="range"]),select,textarea) { background: #14231a !important; color: #e0eadd !important; border-color: #4b6344 !important; }
+html[data-theme="dark"] .p-platform .p-search input,
+html[data-theme="dark"] .p-platform .p-explorer-search input { background: transparent !important; }
+html[data-theme="dark"] .p-platform :is(input,textarea)::placeholder { color: #a5b39d; opacity: 1; }
+html[data-theme="dark"] .p-platform :is(input[type="radio"],input[type="checkbox"],input[type="range"]) { accent-color: #a2c58c; }
+html[data-theme="dark"] .p-platform .p-explorer-search { background: #1a2a20; border-color: #57734d; color: #bad0aa; }
+html[data-theme="dark"] .p-platform :is(.p-badge,.p-badge.green) { background: #2c4831; color: #c1dfb3; border-color: #4c6a43; }
+html[data-theme="dark"] .p-platform .p-badge.amber { background: #463b23; color: #f1d38f; border-color: #79643a; }
+html[data-theme="dark"] .p-platform .p-badge.red { background: #4b2d28; color: #f4b6a2; border-color: #795044; }
+html[data-theme="dark"] .p-platform .p-badge.gray { background: #303d32; color: #c0cdc0; }
+html[data-theme="dark"] .p-platform :is(.p-photo-empty,.p-donut>div) { background: #203224; color: #bdcdb4; }
+html[data-theme="dark"] .p-platform :is(.p-video-health,.p-map-layer-menu,.p-map-actions button,.p-map-story,.p-map-legend,.p-map-coverage,.p-corridor-caption,.p-risk-map-key,.p-map-tooltip) { background: #1a2a20ed !important; border-color: #4b6344 !important; color: #d2e0c8 !important; }
+html[data-theme="dark"] .p-platform :is(.p-layer-controls>button,.p-layer-controls>button.active) { background: #1a2a20ee; color: #bdd1ae; border-color: #68835b; }
+html[data-theme="dark"] .p-platform .p-layer-controls>button:not(.active) { color: #8f9c89; border-color: #354735; }
+html[data-theme="dark"] .p-platform .p-camera-pin>span { background: #213626; color: #d1e7bb; border-color: #9ab985; }
+html[data-theme="dark"] .p-platform .p-camera-cluster>span { background: #2c4630; color: #e2f0d5; border-color: #99bc80; }
+html[data-theme="dark"] .p-leaflet .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.75) contrast(.9) saturate(.5); }
+html[data-theme="dark"] .p-leaflet :is(.leaflet-popup-content-wrapper,.leaflet-popup-tip,.leaflet-tooltip,.leaflet-control-zoom a) { background: #1a2a20; color: #dce8d4; border-color: #506648; }
+html[data-theme="dark"] .p-leaflet .leaflet-control-zoom a { background: #1a2a20 !important; color: #dce8d4 !important; border-color: #506648 !important; }
+html[data-theme="dark"] .p-leaflet .leaflet-control-attribution { background: #14231ad9 !important; color: #b6c6ab !important; }
+html[data-theme="dark"] .p-leaflet .leaflet-control-attribution a { color: #c5dbb2 !important; }
+html[data-theme="dark"] .p-platform :is(.p-connection-error,.p-video-fallback,.p-map-source-notice,.p-decision-notice) { background: #3e3422; color: #e6cc93; border-color: #6c5c38; }
+html[data-theme="dark"] .p-platform .p-inline-error { background: #422c26; color: #f0b9a5; }
+html[data-theme="dark"] .p-platform .p-dialog::backdrop { background: #0009; }
+html[data-theme="dark"] .p-platform .p-toast { background: #35563b; color: #eef6e7; }
+.p-navigation-close { display: none; }
+@media (max-width: 760px) {
+  .p-theme-toggle { width: 32px; height: 34px; }
+  .p-navigation-close { display: grid; align-self: flex-end; margin: 8px; }
+  .p-topbar .p-profile { display: none; }
+}
+@media print {
+  html[data-theme="dark"] .p-platform :is(h1,h2,h3,h4,p,small,b,strong) { color: #263426 !important; }
+  .p-theme-toggle,.p-theme-settings { display: none !important; }
+}

@@ -14,7 +14,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
   const hls = useRef<Hls | null>(null);
   const [quality, setQuality] = useState('stable');
   const [revision, setRevision] = useState(0);
-  const [status, setStatus] = useState('Conectando con el proveedor…');
+  const [status, setStatus] = useState("Connecting to the provider…");
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
@@ -24,14 +24,14 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
     let deferredRecovery: 'network' | 'media' | null = null;
     let lastIssue = '';
     const timers: number[] = [];
-    const unavailable = (reason?: string) => { if (active) { active = false; onUnavailable(reason || (lastIssue ? `${lastIssue} Se muestra la imagen periódica; puedes volver a intentar el video.` : 'El video no avanzó después de los intentos de recuperación. Se muestra la imagen periódica; puedes volver a intentar el video.')); } };
+    const unavailable = (reason?: string) => { if (active) { active = false; onUnavailable(reason || (lastIssue ? `${lastIssue} Showing the periodic image; you can retry the video.` : "Video did not advance after recovery attempts. Showing the periodic image; you can retry the video.")); } };
     const waitForUser = (error: unknown) => {
       if (!active) return;
       const name = error instanceof Error ? error.name : '';
       if (name === 'AbortError') return; // Reattachment can supersede an earlier play request.
       if (name === 'NotAllowedError') {
-        health.setPaused(true, performance.now()); setStatus('Pulsa reproducir para continuar');
-      } else unavailable('No se pudo iniciar este video en el navegador. Se muestra la imagen periódica; puedes intentar otra fuente del entorno.');
+        health.setPaused(true, performance.now()); setStatus("Press play to continue");
+      } else unavailable("Could not start this video in the browser. Showing the periodic image; you can try another nearby source.");
     };
     const recover = (kind: 'network' | 'media') => {
       if (!active) return;
@@ -39,7 +39,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       if (decision.action === 'fallback') { unavailable(); return; }
       if (decision.action !== 'retry') { deferredRecovery = kind; return; }
       deferredRecovery = null;
-      setStatus(`Recuperando transmisión · intento ${decision.attempt}/2`);
+      setStatus(`Recovering stream · attempt ${decision.attempt}/2`);
       if (kind === 'media' && hls.current) hls.current.recoverMediaError();
       else {
         timers.push(window.setTimeout(() => {
@@ -54,12 +54,12 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       if (video.readyState >= 2 && health.recordProgress(video.currentTime, performance.now()) && active) {
         deferredRecovery = null;
         lastIssue = '';
-        setStatus(video.paused ? 'Video en pausa' : 'Video en reproducción');
+        setStatus(video.paused ? "Video paused" : "Video playing");
       }
     };
-    const waiting = () => { if (active) setStatus('Cargando señal del proveedor…'); };
-    const paused = () => { if (active) { health.setPaused(true, performance.now()); setStatus('Video en pausa'); } };
-    const resumed = () => { if (active) { health.setPaused(false, performance.now()); setStatus('Cargando señal del proveedor…'); } };
+    const waiting = () => { if (active) setStatus("Loading provider stream…"); };
+    const paused = () => { if (active) { health.setPaused(true, performance.now()); setStatus("Video paused"); } };
+    const resumed = () => { if (active) { health.setPaused(false, performance.now()); setStatus("Loading provider stream…"); } };
     const visibility = () => health.setVisible(document.visibilityState === 'visible', performance.now());
     const nativeError = () => { if (!hls.current) recover('network'); };
     video.addEventListener('timeupdate', progress);
@@ -73,7 +73,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       if (deferredRecovery) recover(deferredRecovery);
       if (!active) return;
       const decision = health.poll(performance.now(), video.seeking);
-      if (decision === 'fallback') { unavailable(lastIssue ? undefined : 'No se recibió un primer fotograma de video tras 35 segundos de espera activa. Se muestra la imagen periódica; puedes intentar otra cámara del entorno.'); return; }
+      if (decision === 'fallback') { unavailable(lastIssue ? undefined : "No first video frame arrived after 35 seconds of active waiting. Showing the periodic image; you can try another nearby camera."); return; }
       if (decision === 'recover') {
         const live = liveTarget(hls.current, video);
         if (live && live > video.currentTime + 3) video.currentTime = live;
@@ -82,7 +82,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
     }, 3000);
     void import('hls.js').then(({ default: HlsPlayer }) => {
       if (!active) return;
-      setStatus('Cargando señal del proveedor…');
+      setStatus("Loading provider stream…");
       if (video.canPlayType('application/vnd.apple.mpegurl') && !HlsPlayer.isSupported()) {
         video.src = url; void video.play().catch(waitForUser); return;
       }
@@ -97,11 +97,11 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
         void video.play().catch(waitForUser);
       });
       instance.on(HlsPlayer.Events.ERROR, (_, data) => {
-        if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) lastIssue = 'La solicitud de video al proveedor no se completó.';
-        if (data.details === HlsPlayer.ErrorDetails.BUFFER_ADD_CODEC_ERROR || data.details === HlsPlayer.ErrorDetails.FRAG_PARSING_ERROR) lastIssue = 'No se pudo decodificar el video recibido en este navegador.';
+        if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) lastIssue = "The video request to the provider did not complete.";
+        if (data.details === HlsPlayer.ErrorDetails.BUFFER_ADD_CODEC_ERROR || data.details === HlsPlayer.ErrorDetails.FRAG_PARSING_ERROR) lastIssue = "This browser could not decode the received video.";
         if (!data.fatal) return;
         if (data.response?.code === 403 || data.response?.code === 404) {
-          unavailable(`El proveedor devolvió un error ${data.response.code} al solicitar el video. Se muestra la imagen periódica; la disponibilidad depende de Caltrans.`); return;
+          unavailable(`The provider returned an error ${data.response.code} when requesting video. Showing the periodic image; availability depends on Caltrans.`); return;
         }
         if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) recover('network');
         else if (data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR) recover('media');
@@ -118,5 +118,5 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       video.pause(); video.removeAttribute('src'); video.load();
     };
   }, [url, quality, revision, onUnavailable]);
-  return <div className="p-public-video"><video ref={ref} poster={poster} className="p-hls-video" controls muted autoPlay playsInline aria-label="Video público de la cámara" /><div className="p-video-health"><span role="status"><Badge tone={status === 'Video en reproducción' ? 'green' : 'amber'}>{status}</Badge></span><div><label>Calidad<select value={quality} onChange={event => setQuality(event.target.value)}><option value="stable">Priorizar estabilidad</option><option value="auto">Automática</option></select></label><button className="p-text-button" onClick={() => { const video = ref.current; const live = video ? liveTarget(hls.current, video) : null; if (video && live !== null) video.currentTime = live; void video?.play().catch(() => setStatus('Pulsa reproducir para continuar')); }}><Icon name="play" size={14} />Ir al directo</button><button className="p-text-button" onClick={() => { setStatus('Reconectando…'); setRevision(value => value + 1); }}><Icon name="refresh" size={14} />Reconectar</button></div></div></div>;
+  return <div className="p-public-video"><video ref={ref} poster={poster} className="p-hls-video" controls muted autoPlay playsInline aria-label="Public video from camera" /><div className="p-video-health"><span role="status"><Badge tone={status === "Video playing" ? 'green' : 'amber'}>{status}</Badge></span><div><label>Quality<select value={quality} onChange={event => setQuality(event.target.value)}><option value="stable">Prioritize stability</option><option value="auto">Automatic</option></select></label><button className="p-text-button" onClick={() => { const video = ref.current; const live = video ? liveTarget(hls.current, video) : null; if (video && live !== null) video.currentTime = live; void video?.play().catch(() => setStatus("Press play to continue")); }}><Icon name="play" size={14} />Go live</button><button className="p-text-button" onClick={() => { setStatus("Reconnecting…"); setRevision(value => value + 1); }}><Icon name="refresh" size={14} />Reconnect</button></div></div></div>;
 }

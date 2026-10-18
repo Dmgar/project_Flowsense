@@ -21,7 +21,7 @@ function DestinationPicker() {
   useMapEvents({
     click(event) {
       setDestination({
-        label: 'Punto seleccionado en el mapa',
+        label: "Point selected on the map",
         latitude: event.latlng.lat,
         longitude: event.latlng.lng,
         category: 'destination',
@@ -54,11 +54,11 @@ function IncidentMarkers() {
       fillColor: incident.status === 'validated' ? '#df685b' : '#f0bd5c',
       fillOpacity: 0.82, weight: 2,
     }}
-  ><Popup><strong>{incident.label}</strong><br />{incident.status === 'validated' ? 'Validado · vías afectadas' : 'Pendiente de verificación'}<br />Score de evidencia: {Math.round(incident.confidence * 100)}%</Popup></CircleMarker>)}
+  ><Popup><strong>{incident.label}</strong><br />{incident.status === 'validated' ? "Validated · roads affected" : "Pending verification"}<br />Evidence score: {Math.round(incident.confidence * 100)}%</Popup></CircleMarker>)}
   {floods.filter((f) => ['pending_review', 'confirmed'].includes(f.status)).map((f) => <CircleMarker key={f.report_id}
     center={[f.latitude, f.longitude]} radius={f.status === 'confirmed' ? 12 : 8}
     pathOptions={{ color: '#087d99', fillColor: f.status === 'confirmed' ? '#18b8d2' : '#8ddce8', fillOpacity: 0.85, weight: 2 }}>
-    <Popup><strong>{f.demo ? 'SIMULACIÓN · ' : ''}Agua reportada: {f.depth_cm} cm</strong><br />{f.status === 'confirmed' ? 'Confirmada · rutas excluyen el tramo' : 'Pendiente · aún no afecta rutas'}<br />Vence: {new Date(f.expires_at).toLocaleTimeString('es-CO')}</Popup>
+    <Popup><strong>{f.demo ? "SIMULATION · " : ''}Reported water depth: {f.depth_cm} cm</strong><br />{f.status === 'confirmed' ? "Confirmed · routes exclude this segment" : "Pending · does not affect routes yet"}<br />Expires: {new Date(f.expires_at).toLocaleTimeString("en-US")}</Popup>
   </CircleMarker>)}</>;
 }
 
