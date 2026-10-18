@@ -1,11 +1,12 @@
 """Printable, source-labelled case reports; no invented impact or camera metrics."""
 import io
+from pathlib import Path
 from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Flowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from src.core.config import settings
 from src.services.mobility_service import now
 
@@ -14,10 +15,29 @@ LABELS = {"new": "Review required", "assigned": "Assigned", "under_review": "Und
           "confirmed": "Confirmed by operator", "resolved": "Resolved", "dismissed": "Dismissed"}
 
 
+class FlowSenseMark(Flowable):
+    """Display the original artwork with the same framing as the web logo."""
+    def __init__(self, width=14 * mm):
+        super().__init__()
+        self.width = width
+        self.height = width * 360 / 412
+
+    def draw(self):
+        scale = self.width / 412
+        canvas = self.canv
+        canvas.saveState()
+        clip = canvas.beginPath()
+        clip.rect(0, 0, self.width, self.height)
+        canvas.clipPath(clip, stroke=0, fill=0)
+        canvas.drawImage(str(Path(__file__).resolve().parents[1] / "assets/flowsense-logo.png"),
+                         -128 * scale, -128 * scale, width=640 * scale, height=640 * scale)
+        canvas.restoreState()
+
+
 def build_case_report(cases, title="Operational situation", period="Last 15 min"):
     output = io.BytesIO()
-    ink = colors.HexColor("#334A36")
-    muted = colors.HexColor("#78886E")
+    ink = colors.HexColor("#17191E")
+    muted = colors.HexColor("#626975")
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle("FlowTitle", fontName="Helvetica-Bold", fontSize=25, leading=30, textColor=ink, spaceAfter=12))
     styles.add(ParagraphStyle("FlowHeading", fontName="Helvetica-Bold", fontSize=12, leading=16, textColor=ink, spaceBefore=15, spaceAfter=9, keepWithNext=True))
@@ -29,13 +49,13 @@ def build_case_report(cases, title="Operational situation", period="Last 15 min"
                                  topMargin=22 * mm, bottomMargin=22 * mm, title="FlowSense - " + title,
                                  author="FlowSense - Mobility Intelligence")
     generated = now()
-    story = [p("FLOWSENSE / MOBILITY INTELLIGENCE", "FlowMuted"), p(title, "FlowTitle"),
+    story = [FlowSenseMark(), Spacer(1, 5 * mm), p("FLOWSENSE / MOBILITY INTELLIGENCE", "FlowMuted"), p(title, "FlowTitle"),
              p(f"{settings.PILOT_CITY} | {period}", "FlowBody"),
              p(f"Generated: {generated} (UTC)", "FlowMuted"), Spacer(1, 8 * mm)]
     summary = Table([[p("Registered cases"), p("Confirmed"), p("Resolved / dismissed")],
                      [p(len(cases), "FlowHeading"), p(sum(c["status"] == "confirmed" for c in cases), "FlowHeading"),
                       p(sum(c["status"] in {"resolved", "dismissed"} for c in cases), "FlowHeading")]], colWidths=[56 * mm] * 3)
-    summary.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EEF3E7")),
+    summary.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F1F3F6")),
                                  ("VALIGN", (0, 0), (-1, -1), "TOP"), ("TOPPADDING", (0, 0), (-1, -1), 10),
                                  ("BOTTOMPADDING", (0, 0), (-1, -1), 8), ("LEFTPADDING", (0, 0), (-1, -1), 12)]))
     story.extend([summary, Spacer(1, 9 * mm), p("Provenance and scope", "FlowHeading"),
@@ -63,7 +83,7 @@ def build_case_report(cases, title="Operational situation", period="Last 15 min"
     story.extend([Spacer(1, 2 * mm), KeepTogether([p("Official sources", "FlowHeading"),
                   Paragraph("<br/>".join(escape(url) for url in source_urls), styles["FlowMuted"])])])
     def footer(canvas, doc):
-        canvas.setStrokeColor(colors.HexColor("#DBE4D4")); canvas.line(21 * mm, 16 * mm, 189 * mm, 16 * mm)
+        canvas.setStrokeColor(colors.HexColor("#DCE1E8")); canvas.line(21 * mm, 16 * mm, 189 * mm, 16 * mm)
         canvas.setFont("Helvetica", 7); canvas.setFillColor(muted)
         canvas.drawString(21 * mm, 12 * mm, "FlowSense | Evidence - context - human review")
         canvas.drawRightString(189 * mm, 12 * mm, f"Page {doc.page}")

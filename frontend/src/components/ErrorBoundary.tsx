@@ -1,3 +1,4 @@
+import { BrandMark } from './BrandMark';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
@@ -22,8 +23,8 @@ export class ErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-bg-primary font-mono text-text-primary">
-          <div className="text-2xl font-bold text-accent-red">SYSTEM ERROR</div>
+        <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 fs-brand-loading font-mono">
+          <BrandMark size={54} /><div className="text-2xl font-bold text-accent-red">SYSTEM ERROR</div>
           <div className="text-xs text-text-muted">The Command Center interface encountered an error.</div>
           <button
             onClick={() => {

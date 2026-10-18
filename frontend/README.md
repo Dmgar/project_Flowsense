@@ -76,6 +76,10 @@ The backend is also exposed on host port 8000. This is a development setup.
 
 ## Language
 
+The supplied FlowSense logo and the neutral/blue palette are documented in
+[Branding](../docs/BRANDING.md). The shared mark is used across application shells,
+loading views, print output and downloadable reports.
+
 All application-owned interface text, accessibility labels, notifications,
 illustrative scenarios and report labels use English. Dates and numbers use
 `en-US`. Geographic names, source names and operator-authored case history

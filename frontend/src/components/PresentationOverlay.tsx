@@ -1,3 +1,4 @@
+import { BrandMark } from './BrandMark';
 import { useStore } from '../store/useStore';
 
 export function PresentationOverlay() {
@@ -14,7 +15,7 @@ export function PresentationOverlay() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="font-mono text-xl font-bold tracking-widest text-text-primary">
-            FLOWSENSE
+            <BrandMark size={42} /> FLOWSENSE
           </h1>
           <p className="font-mono text-[11px] text-accent-cyan">
             PRIORITY ROUTING & PERCEPTION · EMERGENCY RESPONSE

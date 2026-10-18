@@ -7,7 +7,7 @@ export function ThemeControl() {
   const dark = theme === 'dark';
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#111c17' : '#f5f7f2');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#111216' : '#f5f6f8');
   }, [theme, dark]);
   return <button className="p-theme-toggle p-icon-button" aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} title={dark ? 'Switch to light mode' : 'Switch to dark mode'} aria-pressed={dark} onClick={() => useProduct.getState().setTheme(dark ? 'light' : 'dark')}><Icon name={dark ? 'sun' : 'moon'} size={19} /></button>;
 }

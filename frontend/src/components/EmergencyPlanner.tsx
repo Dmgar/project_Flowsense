@@ -1,3 +1,4 @@
+import { BrandMark } from './BrandMark';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { computeAlternativeRoutes, computeRoute } from '../api/client';
 import { useStore, type MapPlace } from '../store/useStore';
@@ -251,7 +252,7 @@ export function EmergencyPlanner() {
   return (
     <section className="planner-card" aria-label="Plan an emergency route">
       <div className="planner-heading">
-        <div className="planner-brand"><span className="brand-mark">F</span><span>FlowSense</span></div>
+        <div className="planner-brand"><span className="brand-mark"><BrandMark size={25} decorative /></span><span>FlowSense</span></div>
         <span className={`service-status ${online ? 'is-online' : ''}`}><i />{online ? "Online" : "Demo mode"}</span>
       </div>
       <p className="planner-eyebrow">DISPATCH WITH A BACKUP ROUTE</p>

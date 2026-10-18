@@ -28,6 +28,11 @@
 
 ## Verification
 
+Global search supports arrow-key navigation through its results and Escape to
+return focus to the search field. Browser back/forward closes transient navigation
+panels, and each section updates the page title. Offline events immediately mark
+the workspace disconnected; reconnecting triggers a refresh.
+
 Run `npm test`, `npm run build` and `npm run lint` from `frontend/`.
 
 Browser checks covered light/dark switching and reload persistence, all navigation

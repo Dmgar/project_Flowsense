@@ -1,3 +1,4 @@
+import { BrandMark } from './components/BrandMark';
 // Development entry only. Vite's production entry remains index.html.
 import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,7 +23,7 @@ export function PlaybackQA() {
     } catch (error) { setSource(error instanceof Error ? error.message : "Connection error"); }
   };
   return <main style={{ maxWidth: 850, margin: '30px auto', padding: 20, fontFamily: 'system-ui', color: '#284331' }}>
-    <h1>Player verification</h1><p>Local synthetic pattern. This is not a public camera or a Caltrans availability test.</p>
+    <BrandMark size={38} /><h1>Player verification</h1><p>Local synthetic pattern. This is not a public camera or a Caltrans availability test.</p>
     <p role="status">Test source: {source}</p><div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
       <button onClick={() => void changeSource(true)}>Interrupt source</button>
       <button onClick={() => void changeSource(false)}>Restore source</button>
