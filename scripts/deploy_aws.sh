@@ -47,11 +47,12 @@ if ! command -v docker &> /dev/null; then
         echo "  -> Using dnf (Amazon Linux 2023)..."
         sudo dnf update -y
         sudo dnf install -y docker git
-        # Install Docker Compose plugin for Amazon Linux if missing
-        DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
-        mkdir -p "$DOCKER_CONFIG/cli-plugins"
-        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o "$DOCKER_CONFIG/cli-plugins/docker-compose"
-        chmod +x "$DOCKER_CONFIG/cli-plugins/docker-compose"
+        # Install Docker Compose plugin system-wide so user and sudo can run it
+        sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/local/bin "$HOME/.docker/cli-plugins"
+        sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
+        sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+        sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+        cp /usr/local/lib/docker/cli-plugins/docker-compose "$HOME/.docker/cli-plugins/docker-compose" 2>/dev/null || true
     fi
     sudo systemctl enable --now docker
     sudo usermod -aG docker "$USER" || true
