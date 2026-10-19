@@ -27,7 +27,7 @@ else
     echo "[1/5] Swap memory already present: ${TOTAL_SWAP}MB. Skipping."
 fi
 
-# 2. Check and Install Docker & Docker Compose (Ubuntu/Debian and Amazon Linux/RHEL)
+# 2. Check and Install Docker, Docker Compose & Docker Buildx
 echo "[2/5] Checking Docker & Docker Compose installation..."
 if ! command -v docker &> /dev/null; then
     echo "  -> Docker not detected. Detecting OS package manager..."
@@ -47,20 +47,45 @@ if ! command -v docker &> /dev/null; then
         echo "  -> Using dnf (Amazon Linux 2023)..."
         sudo dnf update -y
         sudo dnf install -y docker git
-        # Install Docker Compose plugin system-wide so user and sudo can run it
-        sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/local/bin "$HOME/.docker/cli-plugins"
-        sudo curl -SL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m)" -o /usr/local/lib/docker/cli-plugins/docker-compose
-        sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-        sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
-        cp /usr/local/lib/docker/cli-plugins/docker-compose "$HOME/.docker/cli-plugins/docker-compose" 2>/dev/null || true
     fi
-    sudo systemctl enable --now docker
-    sudo usermod -aG docker "$USER" || true
-    echo "  -> Docker installed successfully."
 fi
 
-# Ensure docker service is running
+# Ensure docker service is running and enabled
+sudo systemctl enable --now docker 2>/dev/null || true
 sudo systemctl start docker 2>/dev/null || true
+sudo usermod -aG docker "$USER" 2>/dev/null || true
+sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+
+# Ensure docker-compose plugin is available system-wide
+if ! docker compose version &> /dev/null; then
+    echo "  -> Installing docker-compose plugin..."
+    COMPOSE_ARCH=$(uname -m)
+    sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins "$HOME/.docker/cli-plugins"
+    sudo curl -sSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${COMPOSE_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-compose
+    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+    sudo cp -f /usr/local/lib/docker/cli-plugins/docker-compose /usr/libexec/docker/cli-plugins/docker-compose 2>/dev/null || true
+    cp -f /usr/local/lib/docker/cli-plugins/docker-compose "$HOME/.docker/cli-plugins/docker-compose" 2>/dev/null || true
+fi
+
+# Ensure docker-buildx plugin is available system-wide (Required by modern compose build)
+if ! docker buildx version &> /dev/null; then
+    echo "  -> Installing docker-buildx plugin..."
+    ARCH=$(uname -m)
+    case "$ARCH" in
+        x86_64) BUILDX_ARCH="amd64" ;;
+        aarch64) BUILDX_ARCH="arm64" ;;
+        *) BUILDX_ARCH="$ARCH" ;;
+    esac
+    BUILDX_TAG=$(curl -sI https://github.com/docker/buildx/releases/latest | grep -i '^Location:' | sed -E 's/.*tag\/(.*)/\1/' | tr -d '\r\n' || true)
+    [ -z "$BUILDX_TAG" ] && BUILDX_TAG="v0.38.0"
+    sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins "$HOME/.docker/cli-plugins"
+    sudo curl -sSL "https://github.com/docker/buildx/releases/download/${BUILDX_TAG}/buildx-${BUILDX_TAG}.linux-${BUILDX_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-buildx
+    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+    sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/bin/docker-buildx
+    sudo cp -f /usr/local/lib/docker/cli-plugins/docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx 2>/dev/null || true
+    cp -f /usr/local/lib/docker/cli-plugins/docker-buildx "$HOME/.docker/cli-plugins/docker-buildx" 2>/dev/null || true
+fi
 
 # Ensure directories exist
 mkdir -p data/processed models
