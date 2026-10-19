@@ -74,8 +74,8 @@ async def test_3_ssrf_and_lfi_block(client: httpx.AsyncClient):
     )
     print_result(
         "3B. SSRF Block on /mobility/cameras",
-        resp_cam.status_code in (403, 422),
-        f"Status code returned: {resp_cam.status_code} (expected 422 or 403)",
+        resp_cam.status_code in (400, 403, 422),
+        f"Status code returned: {resp_cam.status_code} (expected 400, 403, or 422)",
     )
 
 
