@@ -27,12 +27,12 @@ else
     echo "[1/5] Swap memory already present: ${TOTAL_SWAP}MB. Skipping."
 fi
 
-# 2. Check and Install Docker, Docker Compose & Docker Buildx
-echo "[2/5] Checking Docker & Docker Compose installation..."
+# 2. Check and Install Docker
+echo "[2/5] Configuring Docker, Docker Compose & Docker Buildx..."
 if ! command -v docker &> /dev/null; then
     echo "  -> Docker not detected. Detecting OS package manager..."
     if command -v apt-get &> /dev/null; then
-        echo "  -> Using apt (Ubuntu/Debian)..."
+        echo "  -> Installing Docker via apt (Ubuntu/Debian)..."
         sudo apt-get update -y
         sudo apt-get install -y ca-certificates curl gnupg lsb-release git
         sudo install -m 0755 -d /etc/apt/keyrings
@@ -44,50 +44,52 @@ if ! command -v docker &> /dev/null; then
         sudo apt-get update -y
         sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     elif command -v dnf &> /dev/null; then
-        echo "  -> Using dnf (Amazon Linux 2023)..."
+        echo "  -> Installing Docker via dnf (Amazon Linux 2023)..."
         sudo dnf update -y
         sudo dnf install -y docker git
     fi
 fi
 
-# Ensure docker service is running and enabled
+# Start docker and ensure user permissions
 sudo systemctl enable --now docker 2>/dev/null || true
 sudo systemctl start docker 2>/dev/null || true
 sudo usermod -aG docker "$USER" 2>/dev/null || true
 sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
 
-# Ensure docker-compose plugin is available system-wide
-if ! docker compose version &> /dev/null; then
-    echo "  -> Installing docker-compose plugin..."
-    COMPOSE_ARCH=$(uname -m)
-    sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins "$HOME/.docker/cli-plugins"
-    sudo curl -sSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${COMPOSE_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-compose
-    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-    sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
-    sudo cp -f /usr/local/lib/docker/cli-plugins/docker-compose /usr/libexec/docker/cli-plugins/docker-compose 2>/dev/null || true
-    cp -f /usr/local/lib/docker/cli-plugins/docker-compose "$HOME/.docker/cli-plugins/docker-compose" 2>/dev/null || true
-fi
+# Prepare directories for plugins (system-wide and user)
+sudo mkdir -p /usr/libexec/docker/cli-plugins /usr/lib/docker/cli-plugins /usr/local/lib/docker/cli-plugins /usr/local/bin "$HOME/.docker/cli-plugins"
 
-# Ensure docker-buildx plugin is available system-wide (Required by modern compose build)
-if ! docker buildx version &> /dev/null; then
-    echo "  -> Installing docker-buildx plugin..."
-    ARCH=$(uname -m)
-    case "$ARCH" in
-        x86_64) BUILDX_ARCH="amd64" ;;
-        aarch64) BUILDX_ARCH="arm64" ;;
-        *) BUILDX_ARCH="$ARCH" ;;
-    esac
-    BUILDX_TAG=$(curl -sI https://github.com/docker/buildx/releases/latest | grep -i '^Location:' | sed -E 's/.*tag\/(.*)/\1/' | tr -d '\r\n' || true)
-    [ -z "$BUILDX_TAG" ] && BUILDX_TAG="v0.38.0"
-    sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins "$HOME/.docker/cli-plugins"
-    sudo curl -sSL "https://github.com/docker/buildx/releases/download/${BUILDX_TAG}/buildx-${BUILDX_TAG}.linux-${BUILDX_ARCH}" -o /usr/local/lib/docker/cli-plugins/docker-buildx
-    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
-    sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-buildx /usr/local/bin/docker-buildx
-    sudo cp -f /usr/local/lib/docker/cli-plugins/docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx 2>/dev/null || true
-    cp -f /usr/local/lib/docker/cli-plugins/docker-buildx "$HOME/.docker/cli-plugins/docker-buildx" 2>/dev/null || true
-fi
+# Install latest Docker Buildx (Force update to >= 0.17.0 for Compose Build)
+echo "  -> Installing latest Docker Buildx..."
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64) BUILDX_ARCH="amd64" ;;
+    aarch64) BUILDX_ARCH="arm64" ;;
+    *) BUILDX_ARCH="$ARCH" ;;
+esac
+BUILDX_TAG=$(curl -sI https://github.com/docker/buildx/releases/latest | grep -i '^Location:' | sed -E 's/.*tag\/(.*)/\1/' | tr -d '\r\n' || true)
+[ -z "$BUILDX_TAG" ] && BUILDX_TAG="v0.38.0"
 
-# Ensure directories exist
+sudo curl -sSL "https://github.com/docker/buildx/releases/download/${BUILDX_TAG}/buildx-${BUILDX_TAG}.linux-${BUILDX_ARCH}" -o /tmp/docker-buildx
+sudo chmod +x /tmp/docker-buildx
+sudo cp -f /tmp/docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx
+sudo cp -f /tmp/docker-buildx /usr/lib/docker/cli-plugins/docker-buildx 2>/dev/null || true
+sudo cp -f /tmp/docker-buildx /usr/local/lib/docker/cli-plugins/docker-buildx
+sudo cp -f /tmp/docker-buildx /usr/local/bin/docker-buildx
+cp -f /tmp/docker-buildx "$HOME/.docker/cli-plugins/docker-buildx" 2>/dev/null || true
+
+# Install latest Docker Compose
+echo "  -> Ensuring latest Docker Compose..."
+COMPOSE_ARCH=$(uname -m)
+sudo curl -sSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-${COMPOSE_ARCH}" -o /tmp/docker-compose
+sudo chmod +x /tmp/docker-compose
+sudo cp -f /tmp/docker-compose /usr/libexec/docker/cli-plugins/docker-compose
+sudo cp -f /tmp/docker-compose /usr/lib/docker/cli-plugins/docker-compose 2>/dev/null || true
+sudo cp -f /tmp/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+sudo cp -f /tmp/docker-compose /usr/local/bin/docker-compose
+cp -f /tmp/docker-compose "$HOME/.docker/cli-plugins/docker-compose" 2>/dev/null || true
+
+# Ensure local directories exist
 mkdir -p data/processed models
 
 # 3. Verify Perception Model Weights
