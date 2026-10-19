@@ -23,8 +23,15 @@ if [ -z "$TOTAL_SWAP" ] || [ "$TOTAL_SWAP" -lt 1024 ]; then
     else
         sudo swapon /swapfile 2>/dev/null || true
     fi
+    # Tune swappiness and cache pressure
+    sudo sysctl -w vm.swappiness=10 >/dev/null 2>&1 || true
+    sudo sysctl -w vm.vfs_cache_pressure=50 >/dev/null 2>&1 || true
+    echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-flowsense-swap.conf >/dev/null 2>&1 || true
+    echo 'vm.vfs_cache_pressure=50' | sudo tee -a /etc/sysctl.d/99-flowsense-swap.conf >/dev/null 2>&1 || true
 else
-    echo "[1/5] Swap memory already present: ${TOTAL_SWAP}MB. Skipping."
+    echo "[1/5] Swap memory already present: ${TOTAL_SWAP}MB. Ensuring kernel swappiness=10..."
+    sudo sysctl -w vm.swappiness=10 >/dev/null 2>&1 || true
+    sudo sysctl -w vm.vfs_cache_pressure=50 >/dev/null 2>&1 || true
 fi
 
 # 2. Check and Install Docker

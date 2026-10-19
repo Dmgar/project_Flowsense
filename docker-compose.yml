@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: flowsense-backend
     restart: unless-stopped
+    mem_limit: 850m
     ports:
       - "8000:8000"
     environment:
@@ -25,12 +26,14 @@ services:
       dockerfile: Dockerfile
     container_name: flowsense-frontend
     restart: unless-stopped
+    mem_limit: 150m
     ports:
       - "80:80"
       - "443:443"
       - "5173:80"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./logs/nginx:/var/log/nginx
     depends_on:
       - backend
     networks:
