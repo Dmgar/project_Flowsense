@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
 # FlowSense - AWS EC2 Free Tier Automated Deployment Script
-# Targets: Ubuntu 22.04 / 24.04 LTS, Amazon Linux 2023 on t2.micro / t3.micro
+# Supports: Ubuntu 22.04 / 24.04 LTS & Amazon Linux 2023 (t2.micro / t3.micro)
 # ==============================================================================
 set -e
 
@@ -11,10 +11,10 @@ echo "=========================================================="
 
 # 1. Configure 2GB Swap Memory (Prevents OOM crashes on 1GB RAM EC2 instances)
 TOTAL_SWAP=$(free -m | awk '/^Swap:/ {print $2}')
-if [ "$TOTAL_SWAP" -lt 1024 ]; then
+if [ -z "$TOTAL_SWAP" ] || [ "$TOTAL_SWAP" -lt 1024 ]; then
     echo "[1/5] Configuring 2GB SWAP memory for RAM resilience..."
     if [ ! -f /swapfile ]; then
-        sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+        sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
         sudo swapon /swapfile
@@ -27,24 +27,39 @@ else
     echo "[1/5] Swap memory already present: ${TOTAL_SWAP}MB. Skipping."
 fi
 
-# 2. Check and Install Docker & Docker Compose
+# 2. Check and Install Docker & Docker Compose (Ubuntu/Debian and Amazon Linux/RHEL)
 echo "[2/5] Checking Docker & Docker Compose installation..."
 if ! command -v docker &> /dev/null; then
-    echo "  -> Docker not detected. Installing Docker Engine..."
-    sudo apt-get update -y
-    sudo apt-get install -y ca-certificates curl gnupg lsb-release
-    sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    echo "  -> Docker not detected. Detecting OS package manager..."
+    if command -v apt-get &> /dev/null; then
+        echo "  -> Using apt (Ubuntu/Debian)..."
+        sudo apt-get update -y
+        sudo apt-get install -y ca-certificates curl gnupg lsb-release git
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg || true
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg || true
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update -y
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    elif command -v dnf &> /dev/null; then
+        echo "  -> Using dnf (Amazon Linux 2023)..."
+        sudo dnf update -y
+        sudo dnf install -y docker git
+        # Install Docker Compose plugin for Amazon Linux if missing
+        DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+        mkdir -p "$DOCKER_CONFIG/cli-plugins"
+        curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-$(uname -m) -o "$DOCKER_CONFIG/cli-plugins/docker-compose"
+        chmod +x "$DOCKER_CONFIG/cli-plugins/docker-compose"
+    fi
     sudo systemctl enable --now docker
-    sudo usermod -aG docker "$USER"
+    sudo usermod -aG docker "$USER" || true
     echo "  -> Docker installed successfully."
 fi
+
+# Ensure docker service is running
+sudo systemctl start docker 2>/dev/null || true
 
 # Ensure directories exist
 mkdir -p data/processed models
@@ -60,8 +75,8 @@ fi
 
 # 4. Build and Launch Containers
 echo "[4/5] Building and launching FlowSense Docker services..."
-docker compose down --remove-orphans 2>/dev/null || true
-docker compose up -d --build
+docker compose down --remove-orphans 2>/dev/null || sudo docker compose down --remove-orphans 2>/dev/null || true
+docker compose up -d --build || sudo docker compose up -d --build
 
 # 5. Verification & Health Check
 echo "[5/5] Verifying service health..."
