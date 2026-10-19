@@ -31,7 +31,12 @@ async def compute_emergency_route(
     """
     should_persist = persist_choke or simulate
     try:
-        route = routing_engine.calculate_emergency_route(request, simulate=simulate, persist_choke=should_persist)
+        route = await asyncio.to_thread(
+            routing_engine.calculate_emergency_route,
+            request,
+            simulate=simulate,
+            persist_choke=should_persist
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -88,7 +93,7 @@ async def compute_alternative_routes(
     with overlap percentage calculations.
     """
     try:
-        return routing_engine.calculate_alternative_routes(request, k=k)
+        return await asyncio.to_thread(routing_engine.calculate_alternative_routes, request, k=k)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -103,7 +108,7 @@ async def compute_fleet_dispatch(
     Computes coordinated multi-vehicle dispatch routes for emergency fleets.
     """
     try:
-        return routing_engine.optimize_fleet_routes(fleet_request)
+        return await asyncio.to_thread(routing_engine.optimize_fleet_routes, fleet_request)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -126,7 +131,7 @@ async def reroute_in_transit(
         priority=request.priority
     )
     try:
-        new_route = routing_engine.calculate_emergency_route(dispatch_req)
+        new_route = await asyncio.to_thread(routing_engine.calculate_emergency_route, dispatch_req)
         new_route.route_id = request.route_id
         new_route.recalculated = True
     except ValueError as e:

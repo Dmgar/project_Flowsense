@@ -51,7 +51,16 @@ class Settings(BaseSettings):
     NSGA2_GENERATIONS: int = 100
 
     # CORS
-    ALLOWED_ORIGINS: list[str] = ["*"]
+    ALLOWED_ORIGINS: list[str] = [
+        "https://flowsense.duckdns.org",
+        "http://flowsense.duckdns.org",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
 
     model_config = SettingsConfigDict(case_sensitive=True)
 

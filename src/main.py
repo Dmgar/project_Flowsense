@@ -1,6 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
@@ -86,12 +86,25 @@ async def telemetry_websocket(websocket: WebSocket):
     """
     WebSocket channel for the Leaflet.js dashboard.
     Streams real-time road congestion states and emergency vehicle mission telemetry.
+    Protects against Cross-Site WebSocket Hijacking (CSWSH) and frame flooding.
     """
+    origin = websocket.headers.get("origin")
+    if origin:
+        normalized_origin = origin.rstrip("/")
+        allowed_origins = [o.rstrip("/") for o in settings.ALLOWED_ORIGINS if o != "*"]
+        if allowed_origins and normalized_origin not in allowed_origins:
+            logger.warning(f"Rejected unauthorized WebSocket origin: {origin}")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
     await manager.connect(websocket)
     try:
         while True:
-            # Keep connection alive, listen for client messages / pings
+            # Keep connection alive, listen for client messages / pings with 64KB limit
             data = await websocket.receive_text()
+            if len(data) > 65536:
+                logger.warning("WebSocket client exceeded 64KB frame limit. Terminating.")
+                break
             logger.debug(f"Received from WebSocket client: {data}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
