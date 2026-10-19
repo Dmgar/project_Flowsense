@@ -21,14 +21,14 @@ class TrafficSignalUpdate(BaseModel):
     timestamp: Optional[str] = Field(default=None, description="ISO timestamp")
 
 class BatchTrafficUpdate(BaseModel):
-    updates: List[TrafficSignalUpdate]
+    updates: List[TrafficSignalUpdate] = Field(..., min_length=1, max_length=200)
     timestamp: Optional[str] = None
 
 class DispatchRequest(BaseModel):
     origin: Coordinates
     destination: Coordinates
-    vehicle_type: str = Field(default="ambulance", description="Vehicle type: ambulance or fire_truck")
-    priority: str = Field(default="high", description="Emergency priority level")
+    vehicle_type: Literal["ambulance", "fire_truck"] = Field(default="ambulance", description="Vehicle type: ambulance or fire_truck")
+    priority: Literal["low", "medium", "high", "critical"] = Field(default="high", description="Emergency priority level")
 
 class RouteStep(BaseModel):
     node_id: int
@@ -70,8 +70,8 @@ class GraphStatus(BaseModel):
 class IncidentReport(BaseModel):
     latitude: float = Field(..., description="Latitude of the incident location", ge=-90.0, le=90.0)
     longitude: float = Field(..., description="Longitude of the incident location", ge=-180.0, le=180.0)
-    description: str = Field(default="Traffic bottleneck reported", description="Brief description of the event")
-    severity: str = Field(default="critical", description="Severity level: info, warning, or critical")
+    description: str = Field(default="Traffic bottleneck reported", min_length=3, max_length=500, description="Brief description of the event")
+    severity: Literal["info", "warning", "critical"] = Field(default="critical", description="Severity level: info, warning, or critical")
     radius_m: float = Field(default=180.0, description="Affected radius in meters", ge=50.0, le=1000.0)
     block_traffic: bool = Field(default=True, description="Whether the street is completely impassable")
 
@@ -201,23 +201,23 @@ class AlternativeRoutesResponse(BaseModel):
 
 class FleetDispatchRequest(BaseModel):
     """Request for multi-vehicle fleet optimisation."""
-    vehicles: List[DispatchRequest]
-    optimize_for: str = Field(
+    vehicles: List[DispatchRequest] = Field(..., min_length=1, max_length=10)
+    optimize_for: Literal["min_total_eta", "min_max_congestion", "balanced"] = Field(
         default="min_total_eta",
         description="Optimization objective: min_total_eta | min_max_congestion | balanced",
     )
 
 class RerouteRequest(BaseModel):
     """Request to recalculate dynamic emergency route mid-transit."""
-    route_id: str = Field(..., description="ID of the currently active route being updated")
+    route_id: str = Field(..., min_length=1, max_length=64, pattern=r"^[a-zA-Z0-9_\-]+$", description="ID of the currently active route being updated")
     current_position: Coordinates = Field(..., description="Current GPS coordinates of the vehicle")
     destination: Coordinates = Field(..., description="Destination GPS coordinates")
-    vehicle_type: str = Field(default="ambulance", description="Vehicle type: ambulance or fire_truck")
-    priority: str = Field(default="critical", description="Emergency priority level")
+    vehicle_type: Literal["ambulance", "fire_truck"] = Field(default="ambulance", description="Vehicle type: ambulance or fire_truck")
+    priority: Literal["low", "medium", "high", "critical"] = Field(default="critical", description="Emergency priority level")
 
 class ClearanceCorridorRequest(BaseModel):
     """Request to apply green wave pre-clearance impedance reductions along a path."""
-    path_nodes: List[int] = Field(..., description="Ordered list of node IDs forming the corridor")
+    path_nodes: List[int] = Field(..., min_length=2, max_length=500, description="Ordered list of node IDs forming the corridor")
     reduction_factor: float = Field(default=0.3, ge=0.05, le=0.8, description="Percentage impedance reduction")
 
 

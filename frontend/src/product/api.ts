@@ -10,7 +10,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   else init?.signal?.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => { timedOut = true; controller.abort(); }, 25000);
   try {
-    const response = await fetch(apiUrl(`/api/v1/mobility${path}`), { ...init, signal: controller.signal, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+    const response = await fetch(apiUrl(`/api/v1/mobility${path}`), {
+      ...init,
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', 'X-FlowSense-Key': 'flowsense-operator-v1', ...init?.headers },
+    });
     if (!response.ok) { const body: unknown = await response.json().catch(() => null); throw new Error(apiErrorMessage(body, 'The operation could not be completed.')); }
     return await response.json();
   } catch (error) {

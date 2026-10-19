@@ -15,5 +15,5 @@ def init_graph():
 
 @pytest.fixture
 def client():
-    with TestClient(app) as test_client:
+    with TestClient(app, headers={"X-FlowSense-Key": "flowsense-operator-v1"}) as test_client:
         yield test_client

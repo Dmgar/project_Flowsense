@@ -180,7 +180,9 @@ async def restore_clearance_corridor(corridor_id: str = Query(...)):
     return {"status": "restored", "corridor_id": corridor_id, "edges_restored": restored}
 
 @router.post("/simulate/traffic/start")
-async def start_simulated_traffic(interval_seconds: float = 3.0):
+async def start_simulated_traffic(
+    interval_seconds: float = Query(default=3.0, ge=1.0, le=60.0, description="Interval in seconds between traffic variations")
+):
     """Starts background simulated traffic variations."""
     if not simulator.is_simulating_traffic:
         simulator._traffic_task = asyncio.create_task(

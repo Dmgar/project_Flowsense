@@ -43,5 +43,5 @@ EXPOSE 8000
 
 ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
 
-# Single worker minimizes RAM consumption on AWS t2.micro (1 GB RAM total)
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Single worker and hardened socket buffers minimize RAM consumption on AWS t3.micro (1 GB RAM total)
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--ws-max-size", "8192", "--ws-ping-interval", "20", "--ws-ping-timeout", "20", "--limit-concurrency", "80"]

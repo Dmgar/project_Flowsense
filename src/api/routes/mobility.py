@@ -1,10 +1,14 @@
 import asyncio
 import csv
+import html
 import io
+import ipaddress
+import socket
 from typing import Literal
+from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from src.services.mobility_service import mobility_service
 
 router = APIRouter(prefix="/mobility", tags=["Mobility Intelligence & Public Cameras"])
@@ -12,9 +16,39 @@ router = APIRouter(prefix="/mobility", tags=["Mobility Intelligence & Public Cam
 
 class CameraConnection(BaseModel):
     name: str = Field(min_length=2, max_length=120)
-    source: str = Field(min_length=1, max_length=1000)
+    source: str = Field(min_length=1, max_length=500)
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
+
+    @field_validator("source")
+    @classmethod
+    def validate_safe_stream_url(cls, v: str) -> str:
+        s = v.strip()
+        if s.isdigit():
+            return s
+        parsed = urlparse(s)
+        if parsed.scheme not in ("rtsp", "rtsps", "https", "http"):
+            raise ValueError("Only rtsp, rtsps, https, or http streams are permitted.")
+        if not parsed.hostname:
+            raise ValueError("The camera source must specify a valid hostname.")
+        if parsed.username or parsed.password:
+            raise ValueError("Credentials are not permitted in camera URLs.")
+        try:
+            addr_info = socket.getaddrinfo(parsed.hostname, None)
+        except socket.gaierror:
+            raise ValueError("Could not resolve camera hostname.")
+        for item in addr_info:
+            ip_obj = ipaddress.ip_address(item[4][0])
+            if (
+                ip_obj.is_private
+                or ip_obj.is_loopback
+                or ip_obj.is_link_local
+                or ip_obj.is_multicast
+                or ip_obj.is_reserved
+                or str(ip_obj).startswith("169.254.")
+            ):
+                raise ValueError("Access to internal, loopback, or cloud metadata addresses is prohibited.")
+        return s
 
 
 class CaseInput(BaseModel):
@@ -27,6 +61,13 @@ class CaseInput(BaseModel):
     evidence_camera_id: str | None = Field(default=None, max_length=120)
     evidence_frame_id: str | None = Field(default=None, max_length=120)
     confidence: float | None = Field(default=None, ge=0, le=1)
+
+    @field_validator("title", "owner", "note")
+    @classmethod
+    def sanitize_fields(cls, v: str) -> str:
+        if not v:
+            return v
+        return v.strip()
 
 
 class CaseReview(BaseModel):
@@ -107,15 +148,17 @@ def export_cases():
     writer.writeheader()
     for item in mobility_service.cases():
         # Spreadsheet formulas from operator-authored text must remain literal.
-        writer.writerow({key: ("'" + str(value) if str(value).startswith(("=", "+", "-", "@")) else value)
+        writer.writerow({key: ("'" + str(value) if str(value).startswith(("=", "+", "-", "@", "\t", "\r")) else value)
                          for key, value in item.items() if key in fields})
     return Response("\ufeff" + output.getvalue(), media_type="text/csv",
                     headers={"Content-Disposition": 'attachment; filename="flowsense-cases.csv"'})
 
 
 @router.get("/reports/cases.pdf")
-def export_pdf(title: str = Query(default="Operational situation", max_length=80),
-               period: str = Query(default="Last 15 min", max_length=80)):
+def export_pdf(
+    title: str = Query(default="Operational situation", min_length=1, max_length=80, pattern=r"^[a-zA-Z0-9 _\-.,:()]+$"),
+    period: str = Query(default="Last 15 min", min_length=1, max_length=80, pattern=r"^[a-zA-Z0-9 _\-.,:()]+$")
+):
     from src.services.mobility_report import build_case_report
     return Response(build_case_report(mobility_service.cases(), title, period), media_type="application/pdf",
                     headers={"Content-Disposition": 'attachment; filename="flowsense-review.pdf"'})

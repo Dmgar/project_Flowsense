@@ -19,7 +19,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     const res = await fetch(apiUrl(path), {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: { 'Content-Type': 'application/json', 'X-FlowSense-Key': 'flowsense-operator-v1', ...init?.headers },
       signal: controller.signal,
     });
     if (!res.ok) {

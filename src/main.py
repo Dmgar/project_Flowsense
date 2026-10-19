@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
@@ -97,20 +98,27 @@ async def telemetry_websocket(websocket: WebSocket):
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-    await manager.connect(websocket)
+    connected = await manager.connect(websocket)
+    if not connected:
+        return
+
     try:
         while True:
-            # Keep connection alive, listen for client messages / pings with 64KB limit
-            data = await websocket.receive_text()
-            if len(data) > 65536:
-                logger.warning("WebSocket client exceeded 64KB frame limit. Terminating.")
+            # Keep connection alive, listen for client messages / pings with 8KB limit and 45s idle timeout
+            data = await asyncio.wait_for(websocket.receive_text(), timeout=45.0)
+            if len(data.encode("utf-8")) > 8192:
+                logger.warning("WebSocket client exceeded 8KB frame limit. Terminating.")
+                await websocket.close(code=status.WS_1009_MESSAGE_TOO_BIG)
                 break
+            if data.strip() == "ping":
+                await websocket.send_text('{"type":"pong"}')
             logger.debug(f"Received from WebSocket client: {data}")
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+    except (WebSocketDisconnect, asyncio.TimeoutError):
+        pass
     except Exception as e:
         logger.warning(f"WebSocket client terminated with error: {e}")
-        manager.disconnect(websocket)
+    finally:
+        await manager.disconnect(websocket)
 
 @app.get("/", tags=["Health Check"])
 async def root():

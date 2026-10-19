@@ -12,6 +12,7 @@ services:
       - PILOT_CITY=New York (Manhattan)
       - CONGESTION_ALPHA=3.0
       - ROUTING_ALGORITHM=astar
+      - FLOWSENSE_API_KEY=flowsense-operator-v1
     volumes:
       - ./data/processed:/app/data/processed
       - ./models:/app/models

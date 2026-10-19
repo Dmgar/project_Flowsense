@@ -1,8 +1,8 @@
-"""
-API routes for the FlowSense Perception Engine and advanced dispatch operations.
-"""
+import ipaddress
 import logging
-from typing import List
+import socket
+from typing import List, Literal
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -46,19 +46,64 @@ async def get_perception_status():
     status_code=status.HTTP_200_OK,
 )
 async def start_perception_pipeline(
-    camera_id: str = Query(default="CAM-NYC-MID-01", description="Camera ID to bind the pipeline to"),
-    video_source: str = Query(default="0", description="Video file path, RTSP URL, or webcam index"),
-    skip_frames: int = Query(default=3, ge=0, le=30, description="Detection every N frames"),
-    backend: str = Query(default="opencv_dnn", description="Inference backend: opencv_dnn | onnxruntime"),
+    camera_id: str = Query(
+        default="CAM-NYC-MID-01",
+        min_length=3,
+        max_length=64,
+        pattern=r"^[a-zA-Z0-9_\-]+$",
+        description="Camera ID to bind the pipeline to"
+    ),
+    video_source: str = Query(
+        default="0",
+        min_length=1,
+        max_length=500,
+        description="Webcam index (0), safe demo key, or verified RTSP/HTTPS stream"
+    ),
+    skip_frames: int = Query(default=3, ge=1, le=30, description="Detection every N frames"),
+    backend: Literal["opencv_dnn", "onnxruntime"] = Query(default="opencv_dnn", description="Inference backend: opencv_dnn | onnxruntime"),
 ):
     """
     Start an OpenCV perception pipeline for a specified camera.
-
-    .. note::
-        This endpoint initialises the pipeline but does **not** block.
-        The actual frame processing runs asynchronously and pushes telemetry
-        to ``/api/v1/cameras/{camera_id}/telemetry`` automatically.
+    Includes strict validation to block SSRF, AWS metadata inspection, and local file inclusion.
     """
+    s = video_source.strip()
+    if s.isdigit():
+        pass
+    elif s in {"demo_midtown", "demo_bridge", "cam_sim_01"}:
+        pass
+    else:
+        parsed = urlparse(s)
+        if parsed.scheme not in ("rtsp", "rtsps", "https"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid video source. Only webcams (0, 1), safe demo keys, or rtsp/https streams are allowed."
+            )
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid video source URL format."
+            )
+        try:
+            addr_info = socket.getaddrinfo(parsed.hostname, None)
+            for item in addr_info:
+                ip_obj = ipaddress.ip_address(item[4][0])
+                if (
+                    ip_obj.is_private
+                    or ip_obj.is_loopback
+                    or ip_obj.is_link_local
+                    or ip_obj.is_multicast
+                    or ip_obj.is_reserved
+                    or str(ip_obj).startswith("169.254.")
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="Access to private, loopback, or cloud metadata addresses is prohibited."
+                    )
+        except socket.gaierror:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Could not resolve video stream hostname."
+            )
     if camera_id in _active_pipelines:
         return {
             "status": "already_running",
