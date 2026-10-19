@@ -3,7 +3,10 @@ import os
 import sys
 import httpx
 import websockets
-from websockets.exceptions import InvalidStatus, InvalidStatusCode
+try:
+    from websockets.exceptions import InvalidStatus
+except ImportError:
+    from websockets.exceptions import InvalidStatusCode as InvalidStatus
 
 BASE_URL = os.getenv("FLOWSENSE_URL", "https://flowsense.duckdns.org").rstrip("/")
 WS_URL = BASE_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/telemetry"
@@ -12,7 +15,7 @@ VALID_API_KEY = os.getenv("FLOWSENSE_API_KEY", "flowsense-operator-v1")
 
 
 def print_result(test_name: str, passed: bool, detail: str):
-    icon = "✅ [OK]" if passed else "❌ [FAIL]"
+    icon = "[OK]" if passed else "[FAIL]"
     print(f"{icon} {test_name}: {detail}")
 
 
@@ -118,7 +121,7 @@ async def test_5_websocket_origin_and_size():
         async with websockets.connect(WS_URL, origin="https://malicious-attacker.com", open_timeout=5) as ws:
             await ws.recv()
             print_result("5A. CSWSH Protection (Foreign Origin rejected)", False, "Accepted foreign origin")
-    except (InvalidStatus, InvalidStatusCode, websockets.exceptions.ConnectionClosedError, websockets.exceptions.ConnectionClosed) as e:
+    except (InvalidStatus, websockets.exceptions.ConnectionClosedError, websockets.exceptions.ConnectionClosed) as e:
         print_result("5A. CSWSH Protection (Foreign Origin rejected)", True, f"Connection rejected ({type(e).__name__})")
     except Exception as e:
         print_result("5A. CSWSH Protection (Foreign Origin rejected)", True, f"Connection rejected: {e}")
@@ -154,10 +157,10 @@ async def test_6_nginx_rate_limit(client: httpx.AsyncClient):
 
 
 async def main():
-    print(f"==========================================================")
-    print(f"  🔒 FlowSense Security Verification Suite")
+    print("==========================================================")
+    print("  [SEC] FlowSense Security Verification Suite")
     print(f"  Target: {BASE_URL}")
-    print(f"==========================================================\n")
+    print("==========================================================\n")
     async with httpx.AsyncClient(timeout=10.0, verify=True) as client:
         await test_1_security_headers(client)
         await asyncio.sleep(0.3)
