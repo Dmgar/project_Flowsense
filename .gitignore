@@ -19,11 +19,13 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/*.graphml
 
 # Pesos de modelos
 *.weights
 *.pt
 *.onnx
+!models/.gitkeep
 
 # Archivos temporales de sistema y editores
 .vscode/
