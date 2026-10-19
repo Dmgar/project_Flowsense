@@ -1,7 +1,8 @@
-# FlowSense: City Mobility Intelligence [![OpenCV 5](https://img.shields.io/badge/Computer_Vision-OpenCV_5-green?logo=opencv)](https://opencv.org/) [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green?logo=fastapi)](https://fastapi.tiangolo.com/)
+# FlowSense: City Mobility Intelligence [![Live Demo](https://img.shields.io/badge/Live_Demo-flowsense.duckdns.org-blue?logo=amazon-aws)](https://flowsense.duckdns.org) [![OpenCV 5](https://img.shields.io/badge/Computer_Vision-OpenCV_5-green?logo=opencv)](https://opencv.org/) [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green?logo=fastapi)](https://fastapi.tiangolo.com/)
 
 > **Real-Time Computer Vision & Urban Graph Modeling for Emergency Vehicles (Ambulances & Fire Trucks)**
 > Proposal for the **OpenCV AI Competition 2026, powered by AWS**.
+> **Live Production Deployment**: [https://flowsense.duckdns.org](https://flowsense.duckdns.org)
 
 FlowSense connects public camera evidence, aggregate movement observations, corridor
 analytics, pedestrian context, prioritized review and emergency route support in one
@@ -167,10 +168,13 @@ source venv/bin/activate # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-To verify the Cartagena integration with an existing road graph and disposable
-incident databases, run `python -m scripts.verify_cartagena_integration`.
-On Windows, `scripts/run_cartagena_pilot.ps1` uses `.venv` when available and starts
-the Cartagena API on port 8002, matching the frontend proxy.
+## AWS Cloud Deployment & Production SSL
+
+FlowSense is containerized with Docker and optimized for AWS Free Tier (EC2 `t3.micro`, Amazon Linux 2023):
+- **Live URL**: [https://flowsense.duckdns.org](https://flowsense.duckdns.org)
+- **Architecture**: Multi-stage Nginx Alpine frontend (< 15 MB RAM) acting as reverse proxy for the FastAPI backend, static SPA, and real-time WebSockets (`/ws/telemetry`).
+- **SSL**: Automatic Let's Encrypt TLS certificates via Certbot (`scripts/setup_ssl.sh`).
+- **Deployment Script**: One-step automated deployment via `scripts/deploy_aws.sh` (configures swap memory, Docker buildx, and container orchestration).
 
 ## License
 
