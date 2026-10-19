@@ -123,10 +123,11 @@ Designed for practical, low-cost execution within AWS Free Tier limits:
 
 For deep technical dives into the specific modules, check the versioned documentation:
 
-- [Frontend Iteration 1](docs/FLOWSENSE_FRONTEND_V1.md)
-- [Backend Green Wave Simulation](docs/FLOWSENSE_BACKEND_V3.md)
-- [Perception Engine & Advanced Routing](docs/FLOWSENSE_PERCEPTION_AND_ROUTING_V4.md)
+- [AWS Cloud Deployment & Operational Runbook](docs/AWS_DEPLOYMENT.md)
 - [Backend v5.0: Advanced Dispatch, Docker AWS & CI](docs/FLOWSENSE_BACKEND_V5.md)
+- [Perception Engine & Advanced Routing](docs/FLOWSENSE_PERCEPTION_AND_ROUTING_V4.md)
+- [Backend Green Wave Simulation](docs/FLOWSENSE_BACKEND_V3.md)
+- [Frontend Iteration 1](docs/FLOWSENSE_FRONTEND_V1.md)
 
 ## Roadmap (Aug 26 – Oct 26)
 
@@ -135,8 +136,8 @@ For deep technical dives into the specific modules, check the versioned document
 | 1–2 | Graph & Base Vision | Extract pilot city graph via osmnx. Implement initial vehicle detection with OpenCV 5. | ✅ Done |
 | 3–4 | Density Metrics | Build road segment impedance algorithm based on vehicle counts and flow velocity. | ✅ Done |
 | 5–6 | Emergency Routing Engine | Dynamic weight integration on networkx (A* Multi-criteria). Emergency clearance path selection. | ✅ Done |
-| 7–8 | Real-Time Dispatch Dashboard | FastAPI WebSocket pipeline connected to interactive Leaflet.js command map. | 🚧 In Progress |
-| 9–10 | Benchmarking & Submission | Simulated response time reduction benchmarks, project video, and final documentation. | 🚧 In Progress |
+| 7–8 | Real-Time Dispatch Dashboard | FastAPI WebSocket pipeline connected to interactive Leaflet.js command map. | ✅ Done |
+| 9–10 | Cloud Deployment & Benchmarking | AWS EC2 production deployment, simulated response time benchmarks, and complete test suites. | ✅ Done |
 
 ## Engineering Team
 

@@ -61,18 +61,18 @@ Use separate ports for simultaneously running city profiles. The Cartagena
 launcher configures API connectivity; the current product presentation still
 contains Los Angeles-specific defaults and labels.
 
-## Docker Compose
+## Production Docker & Cloud
 
 From the repository root:
 
-```powershell
+```bash
 docker compose up --build
 ```
 
-Open `http://localhost:5173`. The frontend Dockerfile runs Vite on
-`0.0.0.0:5173`. Compose sets `FLOWSENSE_API_URL=http://backend:8000`, so both
-HTTP and WebSocket are forwarded through the Docker service network.
-The backend is also exposed on host port 8000. This is a development setup.
+The production `frontend/Dockerfile` uses a multi-stage Nginx build (`< 15 MB RAM`).
+It serves the compiled Vite SPA on port 80 (and port 5173 for backwards compatibility)
+and reverse-proxies `/api`, `/docs`, `/openapi.json` and `/ws` to `http://backend:8000`.
+See [AWS Cloud Deployment & Operational Runbook](../docs/AWS_DEPLOYMENT.md) for AWS EC2 details.
 
 ## Language
 
