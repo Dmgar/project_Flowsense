@@ -4,10 +4,10 @@ from src.api.routes.dispatch import router as dispatch_router
 from src.api.routes.graph import router as graph_router
 from src.api.routes.benchmark import router as benchmark_router
 from src.api.routes.replay import router as replay_router
-
 from src.api.routes.signals import router as signals_router
 from src.api.routes.cameras import router as cameras_router
 from src.api.routes.perception import router as perception_router
+from src.api.routes.mobility import router as mobility_router
 
 __all__ = [
     "traffic_router",
@@ -18,4 +18,5 @@ __all__ = [
     "signals_router",
     "cameras_router",
     "perception_router",
+    "mobility_router",
 ]

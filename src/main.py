@@ -5,7 +5,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
-from src.api.routes.mobility import router as mobility_router
 from src.services.graph_service import graph_service
 from src.services.incident_intelligence import incident_intelligence
 from src.services.mock_simulator import simulator
@@ -19,6 +18,7 @@ from src.api.routes import (
     signals_router,
     cameras_router,
     perception_router,
+    mobility_router,
 )
 
 # Configure logging
