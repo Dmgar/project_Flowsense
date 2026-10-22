@@ -146,6 +146,7 @@ if ($ExistingApi) {
     [int]$ApiSummary.video_evidence.encoding_crf -ne $ExpectedEvidenceCrf
   if ($ExistingApi -and (-not $ApiSummary.PSObject.Properties['capture_status'] -or
       -not $ApiSummary.capture_status.PSObject.Properties['reconnect_attempts'] -or
+      -not $ApiSummary.capture_status.PSObject.Properties['supplemental_detail_status'] -or
       [int]$ApiSummary.capture_status.restart_drain_version -ne 1 -or
       -not $ApiSummary.PSObject.Properties['minute_video_coverage'] -or
       -not $ApiSummary.PSObject.Properties['minute_timeline_sorted'] -or
