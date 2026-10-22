@@ -522,6 +522,40 @@ def test_unfinished_clips_are_preserved_but_marked_interrupted_after_restart(tmp
     assert evidence["interrupted_clips"] == 1
 
 
+def test_missing_ready_video_is_marked_unavailable_without_deleting_observations(tmp_path):
+    store = DetectionStore(tmp_path)
+    clip_id = "e" * 32
+    metrics = sample(1)
+    clip_path = store.clips / f"{clip_id}.mp4"
+    store.clip_started(clip_id, "camera", "session", metrics["media_time_seconds"],
+                       observed_at=metrics["observed_at"], generation=metrics["generation"],
+                       start_sequence=metrics["sequence"])
+    clip_path.write_bytes(b"saved-video")
+    store.clip_finished(clip_id, 1.0)
+    store.save("camera", "session", "test-model", metrics, clip_id)
+    clip_path.unlink()
+
+    reopened = DetectionStore(tmp_path)
+    evidence = reopened.summary("camera", "2026-10-20T00:00:00+00:00")["video_evidence"]
+    with closing(reopened.connect()) as db:
+        clip_row = db.execute("SELECT id,state FROM clips WHERE id=?", (clip_id,)).fetchone()
+        track_count = db.execute("SELECT COUNT(*) FROM tracks WHERE session=?", ("session",)).fetchone()[0]
+        sample_count = db.execute("SELECT COUNT(*) FROM samples WHERE session=?", ("session",)).fetchone()[0]
+
+    assert clip_row == (clip_id, "unavailable")
+    assert reopened.clip_path(clip_id) is None
+    assert evidence["ready_clips"] == 0
+    assert evidence["unavailable_clips"] == 1
+    assert track_count == 1
+    assert sample_count == 1
+
+    clip_path.write_bytes(b"restored-video")
+    restored = DetectionStore(tmp_path)
+    with closing(restored.connect()) as db:
+        assert db.execute("SELECT state FROM clips WHERE id=?", (clip_id,)).fetchone()[0] == "ready"
+    assert restored.clip_path(clip_id) == clip_path
+
+
 def test_evidence_recording_pause_history_survives_capacity_recovery(tmp_path):
     store = DetectionStore(tmp_path)
     store.evidence_pause_changed("camera", "session", "Video evidence paused: disk reserve reached.",
