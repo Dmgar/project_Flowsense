@@ -94,3 +94,22 @@ Cuando se decida realizar la migración completa del backend hacia Los Ángeles 
    - Cambiar el valor por defecto en `src/core/config.py` a `los_angeles`.
 4. **Limpieza de Archivos en `data/processed/`:**
    - Eliminar `manhattan_graph.graphml` y los archivos `.sqlite3` de Manhattan una vez que los tests ya no dependan de ellos.
+
+---
+
+## 4. Sistema de Retención y Desalojo de Video Evidencia (Ring Buffer FIFO con Pinning Activo)
+
+Para evitar que los videos grabados saturen el disco del servidor (evitando costos innecesarios en AWS EC2/EBS o bloqueos por espacio):
+
+### A. Principios de Diseño
+1. **Desalojo FIFO Inteligente:** Los fragmentos de video MP4 antiguos no revisados se eliminan en orden cronológico (más viejos primero) cuando se supera la marca de agua (`VIDEO_EVIDENCE_PRUNE_WATERMARK`, 85% de la cuota) o el espacio en disco baja de la reserva de seguridad (`VIDEO_EVIDENCE_MIN_FREE_BYTES`), reduciendo el almacenamiento hasta la meta (`VIDEO_EVIDENCE_PRUNE_TARGET`, 70%).
+2. **Pinning de Operador Activo (Protección en Vivo):** Si un operador está visualizando una cámara mediante WebRTC o monitoreo en segundo plano, sus videos **NUNCA** se eliminan y el archivo se preserva y actualiza continuamente mientras la cámara esté en uso.
+3. **Pinning de Auditoría Humana (`track_feedback`):** Todo clip vinculado a una revisión manual de detección u operador humano queda permanentemente protegido de la eliminación.
+4. **Preservación Total del Ledger Numérico:** Las tablas SQLite `samples` y `tracks` **no se tocan ni se borran**. Los registros históricos de tráfico, cruces, métricas y gráficas se mantienen al 100%, marcando únicamente el estado del archivo multimedia del clip como `'unavailable'` en la tabla `clips`.
+5. **Configuración en `src/core/config.py`:**
+   - `VIDEO_EVIDENCE_AUTO_PRUNE: bool = True`
+   - `VIDEO_EVIDENCE_RETENTION_HOURS: float = 24.0` (clips más antiguos de 24h son candidatos a desalojo)
+   - `VIDEO_EVIDENCE_PRUNE_WATERMARK: float = 0.85` (gatillo de cuota al 85%)
+   - `VIDEO_EVIDENCE_PRUNE_TARGET: float = 0.70` (objetivo de reducción al 70%)
+6. **Endpoints y Monitoreo:**
+   - `POST /api/v1/mobility/video/prune-evidence`: Endpoint administrativo para forzar o auditar el proceso de limpieza.

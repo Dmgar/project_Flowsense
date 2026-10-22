@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import sqlite3
 from contextlib import closing
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from src.services.detection_store import (DetectionStore, EvidenceRecorder, EvidenceStorageGate,
@@ -1152,3 +1152,150 @@ def test_external_clip_directory_appears_in_storage_summary_and_uses_its_free_sp
     assert summary["video_evidence"]["external_clip_storage"] is True
     assert summary["video_evidence"]["free_disk_bytes"] == 1_250_000_000
     assert checked_paths == [external_path]
+
+
+def test_prune_unprotected_evidence_evicts_oldest_clips_down_to_target(tmp_path):
+    store = DetectionStore(tmp_path, max_video_bytes=1000, prune_watermark=0.80, prune_target=0.40)
+    now_dt = datetime.now(timezone.utc)
+    clips_data = [
+        ("clip1", "cam1", (now_dt - timedelta(minutes=15)).isoformat(), 300),
+        ("clip2", "cam2", (now_dt - timedelta(minutes=10)).isoformat(), 300),
+        ("clip3", "cam3", (now_dt - timedelta(minutes=5)).isoformat(), 300),
+    ]
+    with closing(store.connect()) as db, db:
+        for cid, cam, created, size in clips_data:
+            db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES (?,?,?,?,10.0,'ready',0.0)",
+                       (cid, cam, "sess", created))
+            (store.clips / f"{cid}.mp4").write_bytes(b"x" * size)
+
+    assert store._video_bytes() == 900
+
+    res = store.prune_unprotected_evidence()
+    assert res["pruned_clips_count"] == 2
+    assert res["freed_bytes"] == 600
+    assert store._video_bytes() == 300
+
+    assert not (store.clips / "clip1.mp4").exists()
+    assert not (store.clips / "clip2.mp4").exists()
+    assert (store.clips / "clip3.mp4").exists()
+
+    assert store.clip_path("clip1") is None
+    assert store.clip_path("clip2") is None
+    assert store.clip_path("clip3") is not None
+
+
+def test_prune_unprotected_evidence_protects_active_cameras(tmp_path):
+    store = DetectionStore(tmp_path, max_video_bytes=1000, prune_watermark=0.80, prune_target=0.40)
+    now_dt = datetime.now(timezone.utc)
+    clips_data = [
+        ("clip1", "cam_active", (now_dt - timedelta(minutes=15)).isoformat(), 300),
+        ("clip2", "cam_idle", (now_dt - timedelta(minutes=10)).isoformat(), 300),
+        ("clip3", "cam_idle", (now_dt - timedelta(minutes=5)).isoformat(), 300),
+    ]
+    with closing(store.connect()) as db, db:
+        for cid, cam, created, size in clips_data:
+            db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES (?,?,?,?,10.0,'ready',0.0)",
+                       (cid, cam, "sess", created))
+            (store.clips / f"{cid}.mp4").write_bytes(b"x" * size)
+
+    store.active_cameras_provider = lambda: {"cam_active"}
+
+    res = store.prune_unprotected_evidence()
+    assert (store.clips / "clip1.mp4").exists()
+    assert not (store.clips / "clip2.mp4").exists()
+    assert not (store.clips / "clip3.mp4").exists()
+    assert store.clip_path("clip1") is not None
+    assert store.clip_path("clip2") is None
+
+
+def test_prune_unprotected_evidence_protects_operator_reviewed_tracks(tmp_path):
+    store = DetectionStore(tmp_path, max_video_bytes=1000, prune_watermark=0.80, prune_target=0.40)
+    now_dt = datetime.now(timezone.utc)
+    clips_data = [
+        ("clip_reviewed", "cam_idle", (now_dt - timedelta(minutes=15)).isoformat(), 300),
+        ("clip_unreviewed", "cam_idle", (now_dt - timedelta(minutes=10)).isoformat(), 300),
+        ("clip3", "cam_idle", (now_dt - timedelta(minutes=5)).isoformat(), 300),
+    ]
+    with closing(store.connect()) as db, db:
+        for cid, cam, created, size in clips_data:
+            db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES (?,?,?,?,10.0,'ready',0.0)",
+                       (cid, cam, "sess", created))
+            (store.clips / f"{cid}.mp4").write_bytes(b"x" * size)
+
+        db.execute("""INSERT INTO tracks (session, generation, track, camera, class, first_seen, last_seen, confidence, observations, model, clip, bbox)
+                      VALUES ('sess', 1, 10, 'cam_idle', 'car', '2026-10-20T01:00:00+00:00', '2026-10-20T01:00:05+00:00', 0.9, 5, 'yolo', 'clip_reviewed', '[]')""")
+        db.execute("""INSERT INTO track_feedback (session, generation, track, camera, original_class, reviewed_class, reviewed_at)
+                      VALUES ('sess', 1, 10, 'cam_idle', 'car', 'car', '2026-10-20T01:05:00+00:00')""")
+
+    res = store.prune_unprotected_evidence(force=True, target_bytes=300)
+    assert (store.clips / "clip_reviewed.mp4").exists()
+    assert store.clip_path("clip_reviewed") is not None
+    assert not (store.clips / "clip_unreviewed.mp4").exists()
+
+
+def test_prune_unprotected_evidence_preserves_numeric_samples_and_tracks(tmp_path):
+    store = DetectionStore(tmp_path, max_video_bytes=1000)
+    with closing(store.connect()) as db, db:
+        db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES ('clip1', 'cam1', 'sess', '2026-10-20T01:00:00+00:00', 10.0, 'ready', 0.0)")
+        (store.clips / "clip1.mp4").write_bytes(b"x" * 200)
+        db.execute("INSERT INTO tracks (session, generation, track, camera, class, first_seen, last_seen, confidence, observations, model, clip, bbox, counted, crossed_at) VALUES ('sess', 1, 1, 'cam1', 'car', '2026-10-20T01:00:00+00:00', '2026-10-20T01:00:05+00:00', 0.9, 5, 'yolo', 'clip1', '[]', 1, '2026-10-20T01:00:02+00:00')")
+        db.execute("INSERT INTO samples (session, sequence, camera, observed_at, media_time, counts, model) VALUES ('sess', 1, 'cam1', '2026-10-20T01:00:00+00:00', 0.0, '{}', 'yolo')")
+
+    store.prune_unprotected_evidence(force=True, target_bytes=0)
+    assert not (store.clips / "clip1.mp4").exists()
+
+    with closing(store.connect()) as db:
+        track_row = db.execute("SELECT track, camera, class, clip FROM tracks WHERE track=1").fetchone()
+        assert track_row == (1, 'cam1', 'car', 'clip1')
+        sample_row = db.execute("SELECT sequence, camera FROM samples WHERE sequence=1").fetchone()
+        assert sample_row == (1, 'cam1')
+        clip_row = db.execute("SELECT state FROM clips WHERE id='clip1'").fetchone()
+        assert clip_row == ('unavailable',)
+
+
+def test_prune_by_age_retention_hours(tmp_path):
+    store = DetectionStore(tmp_path, max_video_bytes=100000, retention_hours=2.0)
+    now_dt = datetime.now(timezone.utc)
+    old_time = (now_dt - timedelta(hours=3)).isoformat()
+    recent_time = (now_dt - timedelta(minutes=30)).isoformat()
+
+    with closing(store.connect()) as db, db:
+        db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES ('old_clip', 'cam1', 'sess', ?, 10.0, 'ready', 0.0)", (old_time,))
+        db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES ('new_clip', 'cam1', 'sess', ?, 10.0, 'ready', 0.0)", (recent_time,))
+        (store.clips / "old_clip.mp4").write_bytes(b"x" * 100)
+        (store.clips / "new_clip.mp4").write_bytes(b"x" * 100)
+
+    res = store.prune_unprotected_evidence()
+    assert res["pruned_clips_count"] == 1
+    assert not (store.clips / "old_clip.mp4").exists()
+    assert (store.clips / "new_clip.mp4").exists()
+
+
+def test_video_service_wires_active_cameras_provider_to_detection_store(tmp_path):
+    store = DetectionStore(tmp_path)
+    from src.services.video_service import VideoService
+    service = VideoService(store)
+    assert store.active_cameras_provider == service.active_camera_ids
+    assert service.active_camera_ids() == set()
+
+    service.monitor_leases[("cam_monitored", "client_1")] = time.monotonic()
+    assert "cam_monitored" in service.active_camera_ids()
+
+
+def test_prune_evidence_api_endpoint(client, tmp_path, monkeypatch):
+    from src.services.video_service import video_service
+    store = DetectionStore(tmp_path)
+    monkeypatch.setattr(video_service, "observation_store", store)
+
+    now_dt = datetime.now(timezone.utc)
+    old_time = (now_dt - timedelta(hours=30)).isoformat()
+    with closing(store.connect()) as db, db:
+        db.execute("INSERT INTO clips (id, camera, session, created_at, duration, state, start_media_time) VALUES ('old_api_clip', 'cam1', 'sess', ?, 10.0, 'ready', 0.0)", (old_time,))
+        (store.clips / "old_api_clip.mp4").write_bytes(b"x" * 150)
+
+    res = client.post("/api/v1/mobility/video/prune-evidence")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["pruned_clips_count"] == 1
+    assert data["freed_bytes"] == 150
+    assert not (store.clips / "old_api_clip.mp4").exists()

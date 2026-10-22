@@ -22,6 +22,15 @@ async def cancel_restart():
     return await video_service.cancel_restart()
 
 
+@router.post("/prune-evidence")
+async def prune_evidence(force: bool = False):
+    """Trigger video evidence retention cleanup while protecting active viewers and reviewed tracks."""
+    import asyncio
+    if not video_service.observation_store:
+        raise HTTPException(503, "Observation store is unavailable.")
+    return await asyncio.to_thread(video_service.observation_store.prune_unprotected_evidence, force=force)
+
+
 @router.get("/road-observations")
 async def observed_roads():
     import asyncio

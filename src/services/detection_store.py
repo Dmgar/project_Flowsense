@@ -10,6 +10,8 @@ import sqlite3
 import threading
 import time
 
+from src.core.config import settings
+
 EVIDENCE_H264_PRESET = "veryfast"
 EVIDENCE_H264_CRF = "28"
 EVIDENCE_QUEUE_WARNING = "Evidence writer fell behind; a few clip frames may be missing. Camera analysis continues."
@@ -125,11 +127,30 @@ def evidence_h264_crf(video_bytes, max_video_bytes, free_disk_bytes=None,
 
 class DetectionStore:
     def __init__(self, root, max_video_bytes=6_000_000_000, record_video=True,
-                 min_free_bytes=EVIDENCE_DISK_RESERVE_BYTES, clip_directory=None):
+                 min_free_bytes=EVIDENCE_DISK_RESERVE_BYTES, clip_directory=None,
+                 auto_prune=None, retention_hours=None,
+                 prune_watermark=None, prune_target=None):
         self.root = Path(root)
         self.max_video_bytes = max_video_bytes
         self.record_video = record_video
         self.min_free_bytes = max(0, int(min_free_bytes))
+        self.auto_prune = (
+            auto_prune if auto_prune is not None
+            else getattr(settings, "VIDEO_EVIDENCE_AUTO_PRUNE", True)
+        )
+        self.retention_hours = (
+            float(retention_hours) if retention_hours is not None
+            else getattr(settings, "VIDEO_EVIDENCE_RETENTION_HOURS", 24.0)
+        )
+        self.prune_watermark = (
+            float(prune_watermark) if prune_watermark is not None
+            else getattr(settings, "VIDEO_EVIDENCE_PRUNE_WATERMARK", 0.85)
+        )
+        self.prune_target = (
+            float(prune_target) if prune_target is not None
+            else getattr(settings, "VIDEO_EVIDENCE_PRUNE_TARGET", 0.70)
+        )
+        self.active_cameras_provider = None
         self._video_bytes_lock = threading.Lock()
         self._video_bytes_cached = None
         self._video_bytes_cached_at = 0.0
@@ -356,6 +377,155 @@ class DetectionStore:
             self._video_bytes_cached = total
             self._video_bytes_cached_at = now
             return total
+
+    def prune_unprotected_evidence(
+        self,
+        protected_cameras=None,
+        target_bytes=None,
+        min_free_bytes=None,
+        max_age_hours=None,
+        force=False,
+    ):
+        """Prune old video evidence clips (FIFO) while preserving protected cameras and reviewed tracks.
+
+        - Protects clips belonging to cameras in `protected_cameras` or reported by `active_cameras_provider`.
+        - Protects clips associated with operator-reviewed tracks (`track_feedback`).
+        - Protects clips currently in 'recording' state.
+        - Deletes physical files from disk and marks clip state as 'unavailable' in SQLite.
+        - Numerical observations in `tracks` and `samples` are 100% preserved.
+        """
+        effective_protected = set(protected_cameras or ())
+        if callable(self.active_cameras_provider):
+            try:
+                active_from_provider = self.active_cameras_provider()
+                if active_from_provider:
+                    effective_protected.update(active_from_provider)
+            except Exception:
+                pass
+
+        max_bytes = self.max_video_bytes
+        target = (
+            int(target_bytes)
+            if target_bytes is not None
+            else int(max_bytes * self.prune_target)
+        )
+        min_free = (
+            int(min_free_bytes)
+            if min_free_bytes is not None
+            else self.min_free_bytes
+        )
+        retention = (
+            float(max_age_hours)
+            if max_age_hours is not None
+            else self.retention_hours
+        )
+
+        current_bytes = self._video_bytes()
+        free_disk = shutil.disk_usage(self.clips).free
+        usage = current_bytes / max_bytes if max_bytes > 0 else 0.0
+
+        is_above_watermark = usage >= self.prune_watermark
+        is_disk_constrained = free_disk < min_free
+
+        should_prune_quota = force or is_above_watermark or is_disk_constrained
+        now_ts = datetime.now(timezone.utc).timestamp()
+
+        pruned_count = 0
+        freed_bytes = 0
+
+        with closing(self.connect()) as db, db:
+            reviewed_rows = db.execute("""
+                SELECT DISTINCT tracks.clip FROM tracks
+                JOIN track_feedback ON track_feedback.session=tracks.session
+                    AND track_feedback.generation=tracks.generation
+                    AND track_feedback.track=tracks.track
+                WHERE tracks.clip IS NOT NULL
+            """).fetchall()
+            reviewed_clips = {row[0] for row in reviewed_rows if row[0]}
+
+            candidate_rows = db.execute("""
+                SELECT id, camera, created_at, state FROM clips
+                WHERE state IN ('ready', 'short', 'interrupted')
+                ORDER BY julianday(created_at) ASC, id ASC
+            """).fetchall()
+
+            clips_to_mark_unavailable = []
+
+            for clip_id, camera, created_at, state in candidate_rows:
+                if camera in effective_protected:
+                    continue
+                if clip_id in reviewed_clips:
+                    continue
+
+                try:
+                    clip_ts = _iso_timestamp(created_at)
+                    age_seconds = max(0.0, now_ts - clip_ts)
+                except Exception:
+                    age_seconds = 0.0
+
+                is_expired = retention > 0 and age_seconds >= (retention * 3600.0)
+                needs_space = should_prune_quota and (
+                    current_bytes > target or free_disk < min_free
+                )
+
+                if not is_expired and not needs_space:
+                    break
+
+                if is_expired or needs_space:
+                    removed_size = 0
+                    for directory in self.clip_directories:
+                        file_path = directory / f"{clip_id}.mp4"
+                        if file_path.is_file():
+                            try:
+                                size = file_path.stat().st_size
+                                file_path.unlink(missing_ok=True)
+                                removed_size += size
+                            except OSError:
+                                pass
+
+                    clips_to_mark_unavailable.append(clip_id)
+                    pruned_count += 1
+                    freed_bytes += removed_size
+                    current_bytes = max(0, current_bytes - removed_size)
+                    free_disk += removed_size
+
+                    if not is_expired and current_bytes <= target and free_disk >= min_free:
+                        should_prune_quota = False
+
+            if clips_to_mark_unavailable:
+                db.executemany(
+                    "UPDATE clips SET state='unavailable' WHERE id=?",
+                    ((cid,) for cid in clips_to_mark_unavailable),
+                )
+
+            if should_prune_quota and (current_bytes > target or free_disk < min_free):
+                orphan_placeholders = ",".join("?" * len(effective_protected)) if effective_protected else "''"
+                orphan_query = f"SELECT id FROM clips WHERE state='unavailable' AND camera NOT IN ({orphan_placeholders})"
+                orphan_rows = db.execute(orphan_query, tuple(effective_protected)).fetchall()
+                for (orphan_id,) in orphan_rows:
+                    if orphan_id in reviewed_clips:
+                        continue
+                    for directory in self.clip_directories:
+                        file_path = directory / f"{orphan_id}.mp4"
+                        if file_path.is_file():
+                            try:
+                                size = file_path.stat().st_size
+                                file_path.unlink(missing_ok=True)
+                                freed_bytes += size
+                                current_bytes = max(0, current_bytes - size)
+                                free_disk += size
+                            except OSError:
+                                pass
+
+        if pruned_count > 0 or freed_bytes > 0:
+            self._invalidate_video_bytes_cache()
+
+        return {
+            "pruned_clips_count": pruned_count,
+            "freed_bytes": freed_bytes,
+            "remaining_video_bytes": self._video_bytes(),
+            "protected_cameras": list(effective_protected),
+        }
 
     def history(self, camera, limit=100, include_legacy=False):
         analysis_zone = self.zone(camera)
@@ -906,6 +1076,11 @@ class EvidenceRecorder:
                 self.current_clip = None
                 self.evidence_fps = None
                 self._recent_encoded_media_times.clear()
+                if getattr(self.store, "auto_prune", True):
+                    try:
+                        self.store.prune_unprotected_evidence(protected_cameras={self.camera})
+                    except Exception:
+                        pass
                 storage_full = storage_gate.refresh(force=True)
 
         def write_frame(frame, media_time):
@@ -967,9 +1142,15 @@ class EvidenceRecorder:
                 try:
                     storage_full = storage_gate.refresh()
                     if storage_full:
+                        if getattr(self.store, "auto_prune", True):
+                            try:
+                                self.store.prune_unprotected_evidence(protected_cameras={self.camera})
+                                storage_full = storage_gate.refresh(force=True)
+                            except Exception:
+                                pass
                         # Finalize an open MP4 immediately at the configured
                         # capacity boundary; the observation path stays alive.
-                        if container is not None:
+                        if container is not None and storage_full:
                             finish()
                     elif container is not None and (last - start >= 10 or last < start or clip_revision != revision):
                         finish()

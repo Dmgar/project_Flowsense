@@ -883,11 +883,36 @@ class VideoService:
         self.high_res_detail_road_detector = None
         self.high_res_detail_retry_after = 0.0
         self.expiry = {}
+        self._observation_store = None
         self.observation_store = observation_store
         self.started_at = datetime.now(timezone.utc).isoformat()
         self.monitor_leases = {}
         self.monitor_tasks = {}
         self.restart_drain_active = False
+
+    @property
+    def observation_store(self):
+        return self._observation_store
+
+    @observation_store.setter
+    def observation_store(self, store):
+        self._observation_store = store
+        if store is not None and hasattr(store, "active_cameras_provider"):
+            store.active_cameras_provider = self.active_camera_ids
+
+    def active_camera_ids(self) -> set[str]:
+        now = time.monotonic()
+        active = set()
+        for (leased_camera, _), stamp in self.monitor_leases.items():
+            if now - stamp < MONITOR_LEASE_SECONDS:
+                active.add(leased_camera)
+        for _, peer_session, _ in self.peers.values():
+            if peer_session and getattr(peer_session, "camera", None) and peer_session.camera.get("id"):
+                active.add(peer_session.camera["id"])
+        for camera_id, session in self.sessions.items():
+            if not session.stop_event.is_set() and session.state not in {"Video unavailable", "Recorded playback ended"}:
+                active.add(camera_id)
+        return active
 
     async def monitor(self, camera, client_id):
         async with self.lock:
