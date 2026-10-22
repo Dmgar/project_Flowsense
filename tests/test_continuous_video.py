@@ -14,7 +14,7 @@ from src.perception.models import Detection
 from src.api.routes.video import Filters
 from src.services.video_service import (HIGH_RES_MIN_FREE_MEMORY_BYTES, PROVISIONAL_COLOR,
     VideoService, VideoSession, aligned_boxes, confirmed_boxes, detection_overlay_label,
-    detection_overlay_text, has_high_res_memory_headroom, place_detection_label,
+    detection_overlay_text, has_high_res_memory_headroom, supplemental_detail_status, place_detection_label,
     probe_video, project_boxes)
 
 
@@ -22,6 +22,20 @@ def test_supplemental_high_resolution_inference_requires_memory_headroom():
     assert not has_high_res_memory_headroom(None)
     assert not has_high_res_memory_headroom(HIGH_RES_MIN_FREE_MEMORY_BYTES - 1)
     assert has_high_res_memory_headroom(HIGH_RES_MIN_FREE_MEMORY_BYTES)
+
+
+@pytest.mark.parametrize(("profile", "zone", "provider", "sessions", "memory", "model", "expected"), [
+    ("standard", True, "CUDAExecutionProvider", 1, 3_000_000_000, True, None),
+    ("low_light", False, "CUDAExecutionProvider", 1, 3_000_000_000, True, "road_zone_required"),
+    ("low_light", True, "CUDAExecutionProvider", 1, 3_000_000_000, False, "model_unavailable"),
+    ("low_light", True, "CPU", 1, 3_000_000_000, True, "cuda_required"),
+    ("low_light", True, "CUDAExecutionProvider", 2, 3_000_000_000, True, "multiple_sessions"),
+    ("low_light", True, "CUDAExecutionProvider", 1, 1_000_000_000, True, "memory_limited"),
+    ("low_light", True, "CUDAExecutionProvider", 1, 3_000_000_000, True, "eligible"),
+])
+def test_supplemental_detail_diagnostics_name_the_limiting_condition(
+        profile, zone, provider, sessions, memory, model, expected):
+    assert supplemental_detail_status(profile, zone, provider, sessions, memory, model) == expected
 
 
 @pytest.fixture

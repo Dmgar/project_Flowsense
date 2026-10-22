@@ -5,6 +5,7 @@ import { CameraThumb } from './CameraThumb';
 import { useProduct } from './store';
 import { Badge, EmptyState, Icon, Panel } from './ui';
 import { apiUrl } from '../api/urls';
+import { loadCameraCoverage } from './cameraCoverageRequest';
 import { calibrationCorridorProgress, calibrationPlaybackCoverage, calibrationProgress, calibrationQueue, hasPreviouslyVerifiedVideo, isCurrentlyPlaying, type CameraZoneStatus } from './cameraCalibration';
 
 interface ZoneCoverage extends CameraZoneStatus {
@@ -20,11 +21,7 @@ export function CoverageDashboard() {
   const [loadingCoverage, setLoadingCoverage] = useState(true);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(apiUrl('/api/v1/mobility/video/analysis-zones'), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]) })
-      .then(async response => {
-        if (!response.ok) throw new Error('Road-zone coverage is temporarily unavailable.');
-        return response.json() as Promise<{ cameras: ZoneCoverage[] }>;
-      })
+    void loadCameraCoverage<{ cameras: ZoneCoverage[] }>(apiUrl('/api/v1/mobility/video/analysis-zones'), controller.signal)
       .then(result => { setZoneCoverage(result.cameras); setZoneCoverageError(''); })
       .catch(reason => { if (!controller.signal.aborted) setZoneCoverageError(reason instanceof Error ? reason.message : 'Could not load road-zone coverage.'); })
       .finally(() => { if (!controller.signal.aborted) setLoadingCoverage(false); });
@@ -36,6 +33,15 @@ export function CoverageDashboard() {
   const calibratedCount = calibration?.ready ?? 0;
   const queue = zoneCoverage ? calibrationQueue(scopedVideo, zoneCoverage) : [];
   const playbackCoverage = calibrationPlaybackCoverage(queue);
+  const liveVideoCount = zoneCoverage
+    ? scopedVideo.filter(camera => isCurrentlyPlaying(zoneCoverage.find(item => item.camera_id === camera.id))).length
+    : 0;
+  const calibratedLiveCount = zoneCoverage
+    ? scopedVideo.filter(camera => {
+      const status = zoneCoverage.find(item => item.camera_id === camera.id);
+      return status?.ready_for_road_analysis && isCurrentlyPlaying(status);
+    }).length
+    : 0;
   const corridorProgress = zoneCoverage ? calibrationCorridorProgress(scopedVideo, zoneCoverage) : [];
   const nextCamera = queue[0];
   const coverageTotal = calibration?.total ?? null;
@@ -45,16 +51,18 @@ export function CoverageDashboard() {
     <Panel title="Coverage by city" action={<Badge tone="green">{cameras.length}  sources</Badge>}>
       <p className="p-small-note">{linked} video sources registered in this area. Playback is checked when you open a camera; sources are not all running in the background.</p>
       <div className="p-road-calibration" aria-label="Road-zone calibration progress">
-        <div><div><b>Road analysis calibration</b><span>{loadingCoverage ? 'Loading…' : coverageTotal === null ? 'Unavailable' : `${calibratedCount} of ${coverageTotal} ready`}</span></div>
-          <progress max={Math.max(1, coverageTotal || 1)} value={calibratedCount} aria-label="Cameras ready for road analysis" /></div>
-        <p>{coverageTotal === null ? 'Camera tracks are not assigned to road conditions until each video source has an inbound road zone and direction.' : `${coverageTotal - calibratedCount} sources still need road-zone review. ${queue.filter(camera => isCurrentlyPlaying(zoneCoverage?.find(item => item.camera_id === camera.id))).length} are decoding fresh video now; ${playbackCoverage.previouslyVerified} pending URLs previously returned HLS 200 and still need live lane review; ${playbackCoverage.playbackCheckRequired} need playback verified before calibration.`}</p>
+        <div><div><b>Road analysis calibration</b><span>{loadingCoverage ? 'Loading…' : coverageTotal === null ? 'Unavailable' : `${calibratedCount} of ${coverageTotal} zones reviewed`}</span></div>
+          <progress max={Math.max(1, coverageTotal || 1)} value={calibratedCount} aria-label="Camera road zones reviewed" /></div>
+        <p>{coverageTotal === null
+          ? 'Camera tracks are not assigned to road conditions until each video source has an inbound road zone and direction.'
+          : `${coverageTotal - calibratedCount} sources need road-zone review. ${liveVideoCount} are streaming now; ${calibratedLiveCount} also have reviewed zones. Live estimates require fresh analysis as well as video. Inactive sources are unverified, not offline. Of the sources awaiting review, ${queue.filter(camera => isCurrentlyPlaying(zoneCoverage?.find(item => item.camera_id === camera.id))).length} are streaming; ${playbackCoverage.previouslyVerified} URLs responded previously but still need live lane review; ${playbackCoverage.playbackCheckRequired} need playback verified before calibration.`}</p>
         {zoneCoverageError && <p role="status" className="p-inline-error">{zoneCoverageError}</p>}
         {nextCamera && (nextCamera.route || nextCamera.direction) && <p>Next source reference: {[nextCamera.route, nextCamera.direction && `${nextCamera.direction}bound`].filter(Boolean).join(' · ')}. Confirm the inbound lanes against moving video before saving.</p>}
         <button className="p-button primary" disabled={!nextCamera || loadingCoverage} onClick={() => nextCamera && useProduct.getState().navigate(`/cameras/${encodeURIComponent(nextCamera.id)}?calibrate=road&queue=1`)}>
           <Icon name="route" />{nextCamera ? `Calibrate next camera · ${nextCamera.name}` : calibratedCount === coverageTotal && coverageTotal !== null ? 'All video sources calibrated' : 'Preparing calibration queue'}
         </button>
         {corridorProgress.length > 0 && <details className="p-road-queue p-corridor-coverage">
-          <summary>Directed road coverage · {corridorProgress.reduce((total, item) => total + item.ready, 0)} of {corridorProgress.reduce((total, item) => total + item.total, 0)} cameras ready across {corridorProgress.length} corridors</summary>
+          <summary>Directed road coverage · {corridorProgress.reduce((total, item) => total + item.ready, 0)} of {corridorProgress.reduce((total, item) => total + item.total, 0)} cameras calibrated across {corridorProgress.length} corridors</summary>
           <ol>{corridorProgress.map(corridor => <li key={corridor.key}>
             <div><b>{corridor.route} · {corridor.direction}{corridor.direction.endsWith('review') ? '' : 'bound'}</b>
               <small>{corridor.ready} of {corridor.total} cameras calibrated · {corridor.pending} pending</small></div>

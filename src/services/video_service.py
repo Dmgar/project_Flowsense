@@ -33,7 +33,7 @@ from src.services.detection_store import (DetectionStore, EvidenceRecorder,
 logger = logging.getLogger("flowsense.video")
 LOW_LIGHT_TRACK_CONFIDENCE = .10
 LOW_LIGHT_OBSERVATION_CONFIDENCE = .10
-CAMERA_DETECTION_POLICY_VERSION = 2
+CAMERA_DETECTION_POLICY_VERSION = 3
 RESTART_DRAIN_VERSION = 1
 EVIDENCE_PAUSE_ORDER_VERSION = 1
 MONITOR_LEASE_SECONDS = 120
@@ -67,6 +67,24 @@ def available_system_memory_bytes():
 def has_high_res_memory_headroom(available_bytes):
     """Skip supplemental high-resolution inference unless 2 GB remains free."""
     return isinstance(available_bytes, int) and available_bytes >= HIGH_RES_MIN_FREE_MEMORY_BYTES
+
+
+def supplemental_detail_status(profile, zone_enabled, provider, active_sessions,
+                                available_bytes, model_available):
+    """Explain why the optional small-vehicle detail pass is or is not eligible."""
+    if profile != "low_light":
+        return None
+    if not zone_enabled:
+        return "road_zone_required"
+    if not model_available:
+        return "model_unavailable"
+    if provider != "CUDAExecutionProvider":
+        return "cuda_required"
+    if active_sessions > 1:
+        return "multiple_sessions"
+    if not has_high_res_memory_headroom(available_bytes):
+        return "memory_limited"
+    return "eligible"
 
 
 def live_reconnect_delay_seconds(attempt):
@@ -597,8 +615,14 @@ class VideoSession:
             if getattr(self, "zone_aware_inference", False):
                 with self.lock:
                     zone = dict(self.zone)
+                    zone["_detail_crop_cursor"] = int(self.zone.get("_detail_crop_cursor", 0))
                 zone["_high_resolution_detail"] = (self.processed + 1) % 3 == 0
-                return sample, self.infer(sample[2], zone=zone)
+                detections = self.infer(sample[2], zone=zone)
+                with self.lock:
+                    # Keep this scheduling hint on the live session only; it
+                    # is not part of the saved, operator-reviewed road zone.
+                    self.zone["_detail_crop_cursor"] = int(zone.get("_detail_crop_cursor", 0)) % 3
+                return sample, detections
             return sample, self.infer(sample[2])
 
     def _inference(self):
@@ -1162,6 +1186,15 @@ class VideoService:
         active = lease_count > 0 or viewer_count > 0
         metrics = state.get("metrics") if state else None
         pipeline = metrics.get("analysis_pipeline", {}) if metrics else {}
+        zone = self.observation_store.zone(camera_id) if self.observation_store else {}
+        supplemental_status = supplemental_detail_status(
+            state.get("detection_profile") if state else None,
+            bool(zone.get("enabled")),
+            state.get("execution_provider") if state else None,
+            sum(not item.stop_event.is_set() for item in self.sessions.values()),
+            available_system_memory_bytes(),
+            settings.VIDEO_LOW_LIGHT_HIGH_RES_MODEL_PATH.is_file(),
+        )
         return {
             "active": active,
             "camera_detection_policy_version": CAMERA_DETECTION_POLICY_VERSION,
@@ -1177,6 +1210,7 @@ class VideoService:
             "inference_updates": state["inference_updates"] if state else 0,
             "model": state.get("model") if state else None,
             "detection_profile": state.get("detection_profile") if state else None,
+            "supplemental_detail_status": supplemental_status,
             "execution_provider": state.get("execution_provider") if state else None,
             "output_fps": state.get("output_fps", 0) if state else 0,
             "inference_fps": state.get("inference_fps", 0) if state else 0,

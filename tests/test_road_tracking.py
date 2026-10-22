@@ -394,6 +394,41 @@ def test_repeated_ten_to_fifteen_percent_night_detections_recover_an_inbound_tra
     assert observations[2][-1]["counted"] is False
 
 
+def test_weak_night_car_survives_one_missed_inference_then_appears_after_a_real_repeat():
+    tracker = RoadTracker()
+    frame = np.zeros((400, 600, 3), np.uint8)
+    zone = {"enabled": True, "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]],
+            "direction": [0, 1], "minimum_motion": .008, "counting_line_y": .95,
+            "low_light": True}
+    weak_car = lambda top: Detection((100, top, 40, 30), 2, "car", .12,
+                                     {"car": .20, "bus": .02, "truck": .01})
+
+    assert tracker.update([weak_car(150)], frame, 0.0, zone) == []
+    assert tracker.update([], frame, .2, zone) == []
+    assert tracker.update([weak_car(160)], frame, .4, zone) == []
+    recovered = tracker.update([weak_car(170)], frame, .6, zone)
+
+    assert len(recovered) == 1
+    assert recovered[0]["class"] == "vehicle"
+    assert recovered[0]["candidate_class"] == "car"
+    assert recovered[0]["observation_hits"] == 2
+    assert recovered[0]["counted"] is False
+
+
+def test_weak_night_car_does_not_survive_an_expired_detection_gap():
+    tracker = RoadTracker()
+    frame = np.zeros((400, 600, 3), np.uint8)
+    zone = {"enabled": True, "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]],
+            "direction": [0, 1], "minimum_motion": .008, "counting_line_y": .95,
+            "low_light": True}
+    weak_car = Detection((100, 150, 40, 30), 2, "car", .12,
+                         {"car": .20, "bus": .02, "truck": .01})
+
+    assert tracker.update([weak_car], frame, 0.0, zone) == []
+    assert tracker.update([], frame, .2, zone) == []
+    assert tracker.update([weak_car], frame, 1.0, zone) == []
+
+
 def test_single_weak_night_detection_cannot_start_a_track():
     tracker = RoadTracker()
     frame = np.zeros((400, 600, 3), np.uint8)

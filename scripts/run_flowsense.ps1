@@ -100,7 +100,7 @@ if ($ExistingApi) {
     [int]$ApiSummary.road.road_matching_version -eq 5
   $HasCurrentCameraDetectionPolicy = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_detection_policy_version'] -and
-    [int]$ApiSummary.capture_status.camera_detection_policy_version -eq 2
+    [int]$ApiSummary.capture_status.camera_detection_policy_version -eq 3
   $HasCurrentRoadCoveragePolicy = $null -ne $ApiSummary.PSObject.Properties['road_coverage_policy_version'] -and
     [int]$ApiSummary.road_coverage_policy_version -eq 2
   $HasCaptureDiagnostics = $null -ne $ApiSummary.capture_status -and
@@ -146,6 +146,7 @@ if ($ExistingApi) {
     [int]$ApiSummary.video_evidence.encoding_crf -ne $ExpectedEvidenceCrf
   if ($ExistingApi -and (-not $ApiSummary.PSObject.Properties['capture_status'] -or
       -not $ApiSummary.capture_status.PSObject.Properties['reconnect_attempts'] -or
+      -not $ApiSummary.capture_status.PSObject.Properties['supplemental_detail_status'] -or
       [int]$ApiSummary.capture_status.restart_drain_version -ne 1 -or
       -not $ApiSummary.PSObject.Properties['minute_video_coverage'] -or
       -not $ApiSummary.PSObject.Properties['minute_timeline_sorted'] -or
@@ -283,8 +284,8 @@ for ($Attempt = 0; $Attempt -lt 30; $Attempt++) {
   } catch { Start-Sleep -Seconds 1 }
 }
 if (-not $Ready) { throw 'Services did not respond. Check the local backend and frontend logs.' }
-$CameraHistory = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/history?limit=1" -TimeoutSec 5
-$CameraSummary = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/summary" -TimeoutSec 5
+$CameraHistory = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/history?limit=1" -TimeoutSec 20
+$CameraSummary = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/summary" -TimeoutSec 30
 $CameraOpenApi = Invoke-RestMethod "http://127.0.0.1:$ApiPort/openapi.json" -TimeoutSec 5
 $CameraClipPage = $null
 try { $CameraClipPage = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/clips?limit=1&include_earlier_zones=true" -TimeoutSec 5 }

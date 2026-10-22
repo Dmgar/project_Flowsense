@@ -179,15 +179,18 @@ def retain_repeated_low_light_candidates(candidates, previous, instant, minimum=
     """
     retained = [item for item in candidates if item.confidence >= tracker_threshold]
     weak = [item for item in candidates if minimum <= item.confidence < tracker_threshold]
+    recent_previous = [
+        (index, entry) for index, entry in enumerate(previous)
+        if 0 <= instant - entry[1] <= maximum_gap
+    ]
     next_history = []
     used_previous = set()
     for detection in weak:
         matches = [
             (index, entry, _iou(entry[0].bbox, detection.bbox))
-            for index, entry in enumerate(previous)
+            for index, entry in recent_previous
             if index not in used_previous
             and entry[0].class_name == detection.class_name
-            and 0 <= instant - entry[1] <= maximum_gap
         ]
         match = max(matches, key=lambda item: item[2], default=None)
         if match and match[2] >= minimum_iou:
@@ -195,12 +198,19 @@ def retain_repeated_low_light_candidates(candidates, previous, instant, minimum=
             used_previous.add(index)
             hits = entry[2] + 1
             mean_confidence = (entry[3] * entry[2] + detection.confidence) / hits
+            previous_detection, previous_instant = entry[0], entry[1]
         else:
             hits = 1
             mean_confidence = detection.confidence
-        next_history.append((detection, instant, hits, mean_confidence))
+            previous_detection, previous_instant = None, None
+        next_history.append((detection, instant, hits, mean_confidence,
+                             previous_detection, previous_instant))
         if hits >= 2 and mean_confidence >= minimum + .01:
             retained.append(detection)
+    # A detector miss is not a new observation, but it also must not erase a
+    # still-fresh weak hit. Preserve unmatched evidence only for the bounded
+    # matching window so a later real detection can confirm it.
+    next_history.extend(entry for index, entry in recent_previous if index not in used_previous)
     return retained, next_history
 
 
@@ -368,6 +378,7 @@ class RoadTracker:
         for group in sorted(groups):
             candidates = [d for d in detections if ("road" if d.class_name in ROAD_CLASSES else d.class_name) == group]
             activation_threshold = .10 if profile.get("low_light") else .30
+            current_weak = []
             if profile.get("low_light"):
                 prior_weak_time, prior_weak = self.previous_weak_candidates.get(group, (instant, []))
                 if instant - prior_weak_time > .75:
@@ -441,13 +452,30 @@ class RoadTracker:
                                      "tracker_key": key}
                             self.next_id += 1
                     else:
-                        state = {"id": self.next_id, "classifier": ClassConsensus(low_light=profile.get("low_light", False)),
-                                 "origin": point, "last": point, "instant": instant, "seen": instant,
-                                 "bbox": detection.bbox,
-                                 "approaching": False, "score": detection.confidence, "hits": 0,
-                                 "crossing_pending": None,
-                                 "trail": deque(maxlen=20), "counted": False, "crossing_instant": None,
-                                 "tracker_key": key}
+                        weak_seed = next((entry for entry in current_weak
+                                          if entry[0] is detection and entry[2] >= 2), None)
+                        if weak_seed:
+                            _, _, weak_hits, mean_confidence, previous_detection, previous_instant = weak_seed
+                            classifier = ClassConsensus(low_light=True)
+                            classifier.update(previous_detection, frame.shape)
+                            previous_box = previous_detection.bbox
+                            previous_point = np.array(((previous_box[0] + previous_box[2] / 2) / frame.shape[1],
+                                                       (previous_box[1] + previous_box[3]) / frame.shape[0]))
+                            state = {"id": self.next_id, "classifier": classifier,
+                                     "origin": previous_point, "last": previous_point,
+                                     "instant": previous_instant, "seen": previous_instant,
+                                     "bbox": previous_box, "approaching": False,
+                                     "score": mean_confidence, "hits": weak_hits - 1,
+                                     "crossing_pending": None, "trail": deque(maxlen=20),
+                                     "counted": False, "crossing_instant": None, "tracker_key": key}
+                        else:
+                            state = {"id": self.next_id, "classifier": ClassConsensus(low_light=profile.get("low_light", False)),
+                                     "origin": point, "last": point, "instant": instant, "seen": instant,
+                                     "bbox": detection.bbox,
+                                     "approaching": False, "score": detection.confidence, "hits": 0,
+                                     "crossing_pending": None,
+                                     "trail": deque(maxlen=20), "counted": False, "crossing_instant": None,
+                                     "tracker_key": key}
                         self.next_id += 1
                     self.states[key] = state
                 else:

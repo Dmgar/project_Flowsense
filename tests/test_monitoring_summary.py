@@ -143,7 +143,7 @@ def test_capture_status_exposes_counts_and_state_without_client_ids():
     from src.services.video_service import VideoService
 
     service = VideoService()
-    session = SimpleNamespace(camera={"id": "camera"}, status=lambda: {
+    session = SimpleNamespace(camera={"id": "camera"}, stop_event=threading.Event(), status=lambda: {
         "state": "Live", "sample_age_seconds": .4, "frames_decoded": 245,
         "inference_updates": 18, "reconnect_attempts": 3, "retry_in_seconds": 4.2,
         "error": "", "inference_error": "", "storage_error": "Observation history writer fell behind; recent road analysis may be delayed. Live video and inference continue.", "model": "bdd-yolo11n.onnx",
@@ -159,12 +159,13 @@ def test_capture_status_exposes_counts_and_state_without_client_ids():
     status = service.capture_status("camera")
 
     assert status == {
-        "active": True, "camera_detection_policy_version": 2,
+        "active": True, "camera_detection_policy_version": 3,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
         "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
         "session_state": "Live", "monitoring_lease_count": 1,
         "live_viewer_count": 1, "sample_age_seconds": .4, "frames_decoded": 245,
         "inference_updates": 18, "model": "bdd-yolo11n.onnx", "detection_profile": "low_light",
+        "supplemental_detail_status": "road_zone_required",
         "execution_provider": "OpenCV DNN · CPU", "output_fps": 15.0, "inference_fps": 4.1, "evidence_fps": 10.0,
         "visible_tracks": 2, "confirmed_visible_tracks": 1, "provisional_visible_tracks": 1,
         "reconnect_attempts": 3, "retry_in_seconds": 4.2,
@@ -173,16 +174,37 @@ def test_capture_status_exposes_counts_and_state_without_client_ids():
     assert "private-client-token" not in str(status)
 
 
+def test_capture_status_explains_night_detail_memory_safeguard(tmp_path, monkeypatch):
+    import src.services.video_service as video_module
+
+    model = tmp_path / "night-detail.onnx"
+    model.write_bytes(b"model")
+    monkeypatch.setattr(video_module.settings, "VIDEO_LOW_LIGHT_HIGH_RES_MODEL_PATH", model)
+    monkeypatch.setattr(video_module, "available_system_memory_bytes", lambda: 1_000_000_000)
+    service = VideoService()
+    service.observation_store = SimpleNamespace(zone=lambda _: {"enabled": True})
+    session = SimpleNamespace(camera={"id": "camera"}, stop_event=threading.Event(), status=lambda: {
+        "state": "Live", "sample_age_seconds": 0, "frames_decoded": 1, "inference_updates": 1,
+        "detection_profile": "low_light", "execution_provider": "CUDAExecutionProvider",
+        "output_fps": 15, "inference_fps": 6, "reconnect_attempts": 0, "retry_in_seconds": None,
+        "error": "", "inference_error": "", "storage_error": "", "metrics": None,
+    })
+    service.sessions["camera"] = session
+
+    assert service.capture_status("camera")["supplemental_detail_status"] == "memory_limited"
+
+
 def test_capture_status_reports_when_no_camera_session_exists():
     from src.services.video_service import VideoService
 
     assert VideoService().capture_status("camera") == {
-        "active": False, "camera_detection_policy_version": 2,
+        "active": False, "camera_detection_policy_version": 3,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
         "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
         "session_state": "Not connected", "monitoring_lease_count": 0,
         "live_viewer_count": 0, "sample_age_seconds": None, "frames_decoded": 0,
         "inference_updates": 0, "model": None, "detection_profile": None,
+        "supplemental_detail_status": None,
         "execution_provider": None, "output_fps": 0, "inference_fps": 0, "evidence_fps": None,
         "visible_tracks": None, "confirmed_visible_tracks": None, "provisional_visible_tracks": None,
         "reconnect_attempts": 0, "retry_in_seconds": None,
