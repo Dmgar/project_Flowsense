@@ -1,11 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calibrationCorridorProgress, calibrationPlaybackCoverage, calibrationProgress, calibrationQueue, canSaveRoadZone, corridorCalibrationCoverage, directionDifferenceDegrees, hasPreviouslyVerifiedVideo, isCurrentlyPlaying, nextCalibrationCamera, retainRecentRoadRegionSuggestion, suggestObservedDirection, suggestObservedRoadRegion } from '../src/product/cameraCalibration.ts';
+import { loadCameraCoverage } from '../src/product/cameraCoverageRequest.ts';
 
 const camera = (id, name, hls_status, stream_url = 'https://example.test/live.m3u8') => ({
   id, name, hls_status, stream_url, district: 'Los Angeles', lat: 34, lng: -118,
   image_url: '', source_url: '', provider: 'Caltrans', status: 'unverified', refresh_seconds: 0,
   last_observed_at: null,
+});
+
+test('camera coverage retries one transient request failure', async () => {
+  let calls = 0;
+  const result = await loadCameraCoverage('/analysis-zones', new AbortController().signal, async () => {
+    calls += 1;
+    if (calls === 1) throw new Error('temporary network interruption');
+    return new Response(JSON.stringify({ cameras: [{ camera_id: 'one' }] }), { status: 200 });
+  }, 0);
+  assert.deepEqual(result, { cameras: [{ camera_id: 'one' }] });
+  assert.equal(calls, 2);
+});
+
+test('camera coverage stops retrying when its page is aborted', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let calls = 0;
+  await assert.rejects(loadCameraCoverage('/analysis-zones', controller.signal, async () => {
+    calls += 1;
+    return new Response('{}', { status: 200 });
+  }, 0));
+  assert.equal(calls, 0);
 });
 
 test('calibration queue prefers video-verified cameras, then route-ready cameras', () => {

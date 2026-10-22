@@ -5,6 +5,7 @@ import { CameraThumb } from './CameraThumb';
 import { useProduct } from './store';
 import { Badge, EmptyState, Icon, Panel } from './ui';
 import { apiUrl } from '../api/urls';
+import { loadCameraCoverage } from './cameraCoverageRequest';
 import { calibrationCorridorProgress, calibrationPlaybackCoverage, calibrationProgress, calibrationQueue, hasPreviouslyVerifiedVideo, isCurrentlyPlaying, type CameraZoneStatus } from './cameraCalibration';
 
 interface ZoneCoverage extends CameraZoneStatus {
@@ -20,11 +21,7 @@ export function CoverageDashboard() {
   const [loadingCoverage, setLoadingCoverage] = useState(true);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(apiUrl('/api/v1/mobility/video/analysis-zones'), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]) })
-      .then(async response => {
-        if (!response.ok) throw new Error('Road-zone coverage is temporarily unavailable.');
-        return response.json() as Promise<{ cameras: ZoneCoverage[] }>;
-      })
+    void loadCameraCoverage<{ cameras: ZoneCoverage[] }>(apiUrl('/api/v1/mobility/video/analysis-zones'), controller.signal)
       .then(result => { setZoneCoverage(result.cameras); setZoneCoverageError(''); })
       .catch(reason => { if (!controller.signal.aborted) setZoneCoverageError(reason instanceof Error ? reason.message : 'Could not load road-zone coverage.'); })
       .finally(() => { if (!controller.signal.aborted) setLoadingCoverage(false); });
