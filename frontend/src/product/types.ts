@@ -7,6 +7,7 @@ export interface Camera {
   status: 'online' | 'provider_notice' | 'stale' | 'unverified'; refresh_seconds: number; last_observed_at: string | null;
   observation_age_seconds?: number | null;
   hls_status?: number | string;
+  video_health?: { state: 'available' | 'unavailable' | 'temporary_error' | 'unchecked' | 'stale'; http_status: number | null; checked_at: string | null; message: string } | null;
   last_source_status?: 'provider_notice' | 'image' | null;
 }
 export interface Detection { className: string; confidence: number; bbox: { x: number; y: number; width: number; height: number } }

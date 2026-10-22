@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import sqlite3
 from contextlib import closing
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from src.services.detection_store import (DetectionStore, EvidenceRecorder, EvidenceStorageGate,
@@ -554,6 +554,34 @@ def test_missing_ready_video_is_marked_unavailable_without_deleting_observations
     with closing(restored.connect()) as db:
         assert db.execute("SELECT state FROM clips WHERE id=?", (clip_id,)).fetchone()[0] == "ready"
     assert restored.clip_path(clip_id) == clip_path
+
+
+def test_track_history_keeps_first_model_observation_before_direction_confirmation(tmp_path):
+    store = DetectionStore(tmp_path)
+    zone = store.set_zone("camera", {"enabled": True, "name": "Inbound",
+        "polygon": [[0, 0], [1, 0], [1, 1]], "direction": [0, 1], "minimum_motion": .008})
+    now = datetime.now(timezone.utc)
+    first_seen = (now - timedelta(seconds=4)).isoformat()
+    crossed_at = (now - timedelta(milliseconds=500)).isoformat()
+
+    def save(sequence, seen_at, observed_at):
+        store.save("camera", "session", "model", {
+            "sequence": sequence, "generation": 1, "observed_at": observed_at,
+            "media_time_seconds": sequence / 10, "counts": {"car": 1}, "analysis_zone": zone,
+            "detections": [{"id": 1, "class": "car", "confidence": .8,
+                "bbox": [20, 20, 40, 30], "counted": True, "crossed_at": crossed_at,
+                "first_seen_at": seen_at}],
+        })
+
+    save(1, first_seen, (now - timedelta(seconds=1)).isoformat())
+    save(2, (now - timedelta(seconds=3)).isoformat(), now.isoformat())
+
+    with closing(store.connect()) as db:
+        track = db.execute("SELECT first_seen,last_seen FROM tracks WHERE session='session' AND track=1").fetchone()
+    summary = store.summary("camera", (now - timedelta(minutes=1)).isoformat())
+
+    assert track == (first_seen, now.isoformat())
+    assert summary["track_quality"]["brief_track_count"] == 0
 
 
 def test_evidence_recording_pause_history_survives_capacity_recovery(tmp_path):

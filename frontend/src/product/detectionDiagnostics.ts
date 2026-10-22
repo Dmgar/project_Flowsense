@@ -69,6 +69,22 @@ export function formatOutsideZoneSummary(count: number, classes: Record<string, 
       const [singular, plural] = CLASS_LABELS[name] || [`${name} object`, `${name} objects`];
       return `${amount} ${amount === 1 ? singular : plural}`;
     });
-  const summary = kinds.length ? ` (${kinds.join(', ')})` : '';
-  return `${safeCount} outside-zone model ${safeCount === 1 ? 'observation' : 'observations'} in the last ${window} seconds${summary}. These are excluded from tracking and counts.`;
+  const summary = kinds.length ? ` (model labels: ${kinds.join(', ')})` : '';
+  return `${safeCount} outside-zone model ${safeCount === 1 ? 'candidate' : 'candidates'} in the last ${window} seconds${summary}. Labels are unverified; candidates are excluded from tracking and counts.`;
+}
+
+export function formatOutsideZoneFrameSummary(count: number, classes: Record<string, number> = {}, frameCount = 0) {
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  const safeFrames = Number.isFinite(frameCount) ? Math.max(0, Math.floor(frameCount)) : 0;
+  if (!safeCount) return '';
+  const labels = Object.entries(classes)
+    .filter(([, amount]) => Number.isFinite(amount) && amount > 0)
+    .sort((left, right) => right[1] - left[1])
+    .map(([name, amount]) => {
+      const [singular, plural] = CLASS_LABELS[name] || [`${name} object`, `${name} objects`];
+      return `${amount} ${amount === 1 ? singular : plural}`;
+    });
+  const summary = labels.length ? ` (model labels: ${labels.join(', ')})` : '';
+  const frames = safeFrames ? ` across ${safeFrames} ${safeFrames === 1 ? 'frame' : 'frames'}` : '';
+  return `The model proposed ${safeCount} outside-zone ${safeCount === 1 ? 'candidate' : 'candidates'}${frames}${summary}. Class labels are unverified; candidates are excluded from tracking and counts.`;
 }

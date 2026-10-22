@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { apiUrl } from '../api/urls';
 import { Badge, Icon } from './ui';
 import { RoadZoneEditor } from './RoadZoneEditor';
-import { automaticReconnectMessage, reconnectDelayMs, shouldRecoverDisconnectedWebRtcConnection, shouldWatchCameraFrames, WEBRTC_DISCONNECT_GRACE_MS } from './reconnectPolicy';
+import { automaticReconnectMessage, cameraConnectionMessage, reconnectDelayMs, shouldRecoverDisconnectedWebRtcConnection, shouldWatchCameraFrames, VIDEO_NEGOTIATION_TIMEOUT_MS, WEBRTC_DISCONNECT_GRACE_MS } from './reconnectPolicy';
 import { CameraFrameHealth } from './cameraFrameHealth';
 import { cameraMediaErrorMessage, shouldRetryCameraMediaError, shouldRetryCameraRequestStatus } from './cameraMediaError';
-import { detectionPipelineStatus, formatOutsideZoneSummary, visibleClassBreakdown, visibleDetectionCount } from './detectionDiagnostics';
+import { detectionPipelineStatus, formatOutsideZoneFrameSummary, formatOutsideZoneSummary, visibleClassBreakdown, visibleDetectionCount } from './detectionDiagnostics';
 import { acquireCameraViewer } from './monitoring';
 import { LiveTrackTrailBuffer } from './liveTrackTrails';
 import './liveVideo.css';
@@ -56,8 +56,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 }
 
-export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, compact = false, startZoneEditing = false, onZoneSaved, routeReference }: {
-  cameraId: string; name: string; supported?: boolean; onReading?: (reading: VideoReading | null) => void; compact?: boolean; startZoneEditing?: boolean; onZoneSaved?: () => void; routeReference?: string;
+export function LiveCameraPlayer({ cameraId, name, supported = true, providerOutOfService = false, sourceUnavailableMessage, sourceHealthTimedOut = false, onReading, compact = false, startZoneEditing = false, onZoneSaved, routeReference }: {
+  cameraId: string; name: string; supported?: boolean; providerOutOfService?: boolean; sourceUnavailableMessage?: string; sourceHealthTimedOut?: boolean; onReading?: (reading: VideoReading | null) => void; compact?: boolean; startZoneEditing?: boolean; onZoneSaved?: () => void; routeReference?: string;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -74,13 +74,17 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
   const [reading, setReading] = useState<VideoReading | null>(null);
   const [viewer, setViewer] = useState('');
   const [paused, setPaused] = useState(false);
+  const [providerOverride, setProviderOverride] = useState<{ cameraId: string; reason: string } | null>(null);
   const intentionallyPaused = useRef(false);
   const autoplayBlocked = useRef(false);
   const [editingZone, setEditingZone] = useState<boolean | null>(null);
   const zoneEditorOpen = editingZone ?? (startZoneEditing && state === 'Live');
   const [visible, setVisible] = useState(document.visibilityState === 'visible');
   const frameHealthRef = useRef<CameraFrameHealth | null>(null);
-  useEffect(() => supported && visible ? acquireCameraViewer(cameraId) : undefined, [cameraId, supported, visible]);
+  const unavailableReason = providerOutOfService ? 'provider-out-of-service' : sourceUnavailableMessage || '';
+  const manualUnavailableOverride = providerOverride?.cameraId === cameraId && providerOverride.reason === unavailableReason;
+  const sourceUnavailable = Boolean(unavailableReason) && !manualUnavailableOverride;
+  useEffect(() => supported && !sourceUnavailable && visible ? acquireCameraViewer(cameraId) : undefined, [cameraId, supported, sourceUnavailable, visible]);
   useEffect(() => {
     const changed = () => setVisible(document.visibilityState === 'visible');
     document.addEventListener('visibilitychange', changed);
@@ -95,7 +99,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
 
   useEffect(() => {
     const video = ref.current;
-    if (!video || !supported || !visible) return;
+    if (!video || !supported || sourceUnavailable || !visible) return;
     let active = true, failedOnce = false, polling = false;
     let viewerId = '';
     let lastTime = -1, lastAdvance = performance.now();
@@ -110,7 +114,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
     frameHealthRef.current = frameHealth;
     let lastPresentedFrames = -1;
     let frameCallback: number | undefined;
-    let retryTimer: number | undefined, disconnectedTimer: number | undefined;
+    let retryTimer: number | undefined, disconnectedTimer: number | undefined, negotiationTimer: number | undefined;
     let peer: RTCPeerConnection | undefined;
     const controller = new AbortController();
     const presented: VideoFrameRequestCallback = (now, metadata) => {
@@ -139,6 +143,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
       window.clearTimeout(disconnectedTimer);
       disconnectedTimer = undefined;
       failedOnce = true;
+      window.clearTimeout(negotiationTimer);
       lastFailure.current = message;
       setState('Video unavailable'); setError(message); clearCounts();
       video.pause(); video.srcObject = null;
@@ -164,6 +169,8 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
         setViewer(''); setPaused(false); clearCounts();
         if (typeof RTCPeerConnection === 'undefined') throw new Error('This browser does not support WebRTC video.');
         peer = new RTCPeerConnection({ iceServers: [] });
+        // Bound negotiation even when ICE never emits a terminal state event.
+        negotiationTimer = window.setTimeout(() => failed('Video connection timed out.'), VIDEO_NEGOTIATION_TIMEOUT_MS);
         peer.addTransceiver('video', { direction: 'recvonly' });
         peer.ontrack = event => {
           if (!active) return;
@@ -224,6 +231,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
         if (!active) { closeViewer(viewerId); return; }
         setViewer(viewerId);
         await peer.setRemoteDescription({ sdp: answer.sdp, type: answer.type });
+        window.clearTimeout(negotiationTimer);
       } catch (reason) {
         if (active) failed(reason instanceof Error ? reason.message : 'Could not connect to video.',
           !(reason instanceof VideoRequestError) || shouldRetryCameraRequestStatus(reason.status));
@@ -275,7 +283,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
       } finally { polling = false; }
     }, 500);
     return () => {
-      active = false; controller.abort(); clearInterval(timer); clearTimeout(retryTimer); clearTimeout(disconnectedTimer);
+      active = false; controller.abort(); clearInterval(timer); clearTimeout(retryTimer); clearTimeout(disconnectedTimer); clearTimeout(negotiationTimer);
       video.removeEventListener('error', onMediaError);
       window.clearTimeout(trackSilenceTimer);
       if (receivedTrack && trackEndedHandler) receivedTrack.removeEventListener('ended', trackEndedHandler);
@@ -287,15 +295,16 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
       if (viewerId) closeViewer(viewerId);
       callback.current?.(null);
     };
-  }, [cameraId, supported, revision, visible]);
+  }, [cameraId, supported, sourceUnavailable, revision, visible]);
 
   const changeFilter = async (settings: VideoReading['settings']) => {
     if (!viewer) return;
     try { setReading(await request<VideoReading>(`/viewers/${viewer}/settings`, { method: 'PATCH', body: JSON.stringify(settings) })); }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not update camera settings.'); }
   };
-  const status = !supported ? 'Video not supported' : !visible ? 'Video suspended' : state;
-  const covered = !supported || !visible || ['Video unavailable', 'Connecting', 'Reconnecting', 'Buffering'].includes(status);
+  const status = sourceUnavailable ? providerOutOfService ? 'Provider out of service' : 'Video source unavailable' : !supported ? 'Video not supported' : !visible ? 'Video suspended' : state;
+  const covered = sourceUnavailable || !supported || !visible || ['Video unavailable', 'Connecting', 'Reconnecting', 'Buffering'].includes(status);
+  const reconnectMessage = cameraConnectionMessage(status, sourceHealthTimedOut, error);
   const pipeline = reading?.metrics?.analysis_pipeline
     ?? {} as NonNullable<NonNullable<VideoReading['metrics']>['analysis_pipeline']>;
   const pipelineStatus = detectionPipelineStatus(reading?.metrics, reading?.inference_fps,
@@ -312,11 +321,11 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
     : visibleNow > 0 ? `${visibleNow} ${visibleNow === 1 ? 'tracked object is' : 'tracked objects are'} visible now.`
     : (pipeline.inbound_tracks_peak || 0) > 0 ? `Inbound traffic was tracked in the last ${windowSeconds} seconds; waiting for the next visible frame.`
     : (pipeline.road_candidate_frames || 0) > 0 ? `Vehicle candidates appeared in ${pipeline.road_candidate_frames} of ${windowFrames} recent frames; tracking is checking consistent motion.`
-    : (pipeline.raw_candidate_frames || 0) > 0 ? `The model found ${pipeline.outside_zone_observations ?? pipeline.raw_candidates} vehicle candidates outside the inbound zone in ${pipeline.raw_candidate_frames} of ${windowFrames} recent frames${pipeline.outside_zone_classes && Object.keys(pipeline.outside_zone_classes).length ? ` (${Object.entries(pipeline.outside_zone_classes).map(([name, count]) => `${count} ${name}`).join(', ')})` : ''}. They may be traffic on another carriageway or vehicles missed by the current road boundary. Review the dashed gold boxes in Edit road zone before changing the polygon; these candidates are not tracked or counted.`
+    : (pipeline.raw_candidate_frames || 0) > 0 ? `${formatOutsideZoneFrameSummary(pipeline.outside_zone_observations ?? pipeline.outside_zone_candidates ?? pipeline.raw_candidates, pipeline.outside_zone_classes, pipeline.raw_candidate_frames)} They may be traffic on another carriageway or vehicles missed by the current road boundary. Review the dashed gold boxes in Edit road zone before changing the polygon.`
     : `No objects were detected in the last ${windowSeconds} seconds. Night glare, blur, and distant vehicles can hide traffic.`;
   return <div className="p-live-player" ref={stage}>
     <div className="p-live-stage" ref={setVideoStage}><video ref={ref} autoPlay muted playsInline aria-label={`Continuous video from ${name}`} />
-      {covered && <div className="p-live-cover" role="status"><Icon name="camera" size={34} /><strong>{status}</strong><span>{!supported ? 'This source does not provide continuous video.' : error || 'Waiting for the video source…'}</span></div>}
+      {covered && <div className="p-live-cover" role="status"><Icon name="camera" size={34} /><strong>{status}</strong><span>{sourceUnavailable ? providerOutOfService ? 'Caltrans currently lists this camera as out of service. Saved history and clips remain available below.' : `${sourceUnavailableMessage} Saved history and clips remain available below.` : !supported ? 'This source does not provide continuous video.' : reconnectMessage}</span></div>}
       <div className="p-live-badge"><Badge tone={status === 'Live' ? 'green' : 'amber'}>{status}</Badge></div>
     </div>
     {!compact && reading && <section className="p-detection-diagnostic" aria-label="Live detection pipeline" aria-live="polite">
@@ -332,7 +341,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
         {formatOutsideZoneSummary(pipeline.outside_zone_observations ?? pipeline.outside_zone_candidates ?? 0,
           pipeline.outside_zone_classes, pipeline.window_seconds ?? 2)}
       </p>}
-      <small className="p-detection-label-note">Percentages on provisional boxes show vehicle-detection confidence, not class probability. A “?” marks a provisional type; history keeps it as Vehicle until confirmed.</small>
+      <small className="p-detection-label-note">Amber Candidate boxes are raw model suggestions, not tracks or counts. Percentages show vehicle-detection confidence, not class probability. A “?” marks a provisional type; history keeps it as Vehicle until confirmed.</small>
     </section>}
     {zoneEditorOpen && <RoadZoneEditor cameraId={cameraId} stageElement={videoStage} onClose={() => setEditingZone(false)} onSaved={onZoneSaved} routeReference={routeReference}
       frameWidth={reading?.metrics?.width ?? 0} frameHeight={reading?.metrics?.height ?? 0}
@@ -345,7 +354,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, onReading, 
       if (video.paused) { intentionallyPaused.current = false; autoplayBlocked.current = false; void video.play().then(() => { frameHealthRef.current?.setWatching(performance.now(), shouldWatchCameraFrames(visible, intentionallyPaused.current)); setPaused(false); }).catch(() => { autoplayBlocked.current = true; setError('Press play to continue.'); }); }
       else { intentionallyPaused.current = true; autoplayBlocked.current = false; video.pause(); frameHealthRef.current?.setWatching(performance.now(), shouldWatchCameraFrames(visible, intentionallyPaused.current)); setPaused(true); setState('Video paused'); setReading(null); callback.current?.(null); }
     }}><Icon name={paused ? 'play' : 'pause'} />{paused ? 'Resume' : 'Pause'}</button>
-      <button className="p-button" disabled={!supported} onClick={() => { intentionallyPaused.current = false; autoplayBlocked.current = false; retries.current = 0; lastFailure.current = ''; setRevision(value => value + 1); }}><Icon name="refresh" />Reconnect</button>
+      <button className="p-button" disabled={!supported} onClick={() => { intentionallyPaused.current = false; autoplayBlocked.current = false; retries.current = 0; lastFailure.current = ''; if (sourceUnavailable) setProviderOverride({ cameraId, reason: unavailableReason }); setRevision(value => value + 1); }}><Icon name="refresh" />{sourceUnavailable ? 'Try video anyway' : 'Reconnect'}</button>
       {!compact && <button className="p-button" onClick={() => void stage.current?.requestFullscreen?.().catch(() => setError('Fullscreen is unavailable in this browser.'))}><Icon name="expand" />Fullscreen</button>}
       {!compact && <button className="p-button" disabled={state !== 'Live'} onClick={() => setEditingZone(open => !(open ?? (startZoneEditing && state === 'Live')))}>Edit road zone</button>}
       {!compact && <span className="p-small-note">{reading ? `${reading.rendered_fps ?? reading.output_fps} ${reading.rendered_fps == null ? 'server' : 'rendered'} FPS · ${reading.inference_fps} detection updates/s${reading.detection_profile === 'low_light' ? ' · Low-light analysis' : ''}` : 'Continuous video · vehicle tracking'}</span>}

@@ -106,6 +106,9 @@ def test_summary_reports_saved_video_pauses_and_session_changes(tmp_path):
     assert continuity["session_count"] == 2
     assert continuity["long_pause_count"] == 1
     assert continuity["longest_pause_seconds"] == 9.0
+    assert continuity["in_session_pause_count"] == 0
+    assert continuity["longest_in_session_pause_seconds"] == 0.0
+    assert continuity["session_boundary_gap_count"] == 1
     assert continuity["coverage_percent"] == 0.8
     assert continuity["recent_pauses"] == [{
         "from": stamps[1].isoformat(), "to": stamps[2].isoformat(),
@@ -160,8 +163,15 @@ def test_capture_status_exposes_counts_and_state_without_client_ids():
 
     assert status == {
         "active": True, "camera_detection_policy_version": 3,
+        "live_low_light_candidate_overlay_policy_version": 1,
+        "low_light_detail_enhancement_policy_version": 1,
+        "camera_metadata_policy_version": 2,
+        "camera_source_catalog_policy_version": 3,
+        "camera_health_monitor_policy_version": 3,
+        "road_correlation_performance_policy_version": 2,
+        "road_correlation_explainability_policy_version": 1,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
-        "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
+        "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4, "track_timing_policy_version": 1,
         "session_state": "Live", "monitoring_lease_count": 1,
         "live_viewer_count": 1, "sample_age_seconds": .4, "frames_decoded": 245,
         "inference_updates": 18, "model": "bdd-yolo11n.onnx", "detection_profile": "low_light",
@@ -199,8 +209,15 @@ def test_capture_status_reports_when_no_camera_session_exists():
 
     assert VideoService().capture_status("camera") == {
         "active": False, "camera_detection_policy_version": 3,
+        "live_low_light_candidate_overlay_policy_version": 1,
+        "low_light_detail_enhancement_policy_version": 1,
+        "camera_metadata_policy_version": 2,
+        "camera_source_catalog_policy_version": 3,
+        "camera_health_monitor_policy_version": 3,
+        "road_correlation_performance_policy_version": 2,
+        "road_correlation_explainability_policy_version": 1,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
-        "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
+        "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4, "track_timing_policy_version": 1,
         "session_state": "Not connected", "monitoring_lease_count": 0,
         "live_viewer_count": 0, "sample_age_seconds": None, "frames_decoded": 0,
         "inference_updates": 0, "model": None, "detection_profile": None,
@@ -362,9 +379,9 @@ def test_sparse_night_detections_do_not_color_the_whole_road_as_moving(tmp_path)
     estimate = store.summary("camera", (now - timedelta(minutes=1)).isoformat())["traffic_estimate"]
     assert estimate["level"] == "unknown"
     assert estimate["evidence_quality"] == "sparse"
-    assert estimate["label"] == "Vehicle movement · sparse view"
+    assert estimate["label"] == "Vehicle movement · low footprint"
     summary = store.summary("camera", (now - timedelta(minutes=1)).isoformat())
-    assert summary["road_coverage_policy_version"] == 2
+    assert summary["road_coverage_policy_version"] == 3
 
 
 def test_low_light_road_condition_is_withheld_until_coverage_reaches_night_threshold(tmp_path):
@@ -390,7 +407,7 @@ def test_low_light_road_condition_is_withheld_until_coverage_reaches_night_thres
     assert estimate["image_coverage_percent"] == 15.1
     assert estimate["level"] == "unknown"
     assert estimate["evidence_quality"] == "sparse"
-    assert estimate["label"] == "Vehicle movement · sparse view"
+    assert estimate["label"] == "Vehicle movement · low footprint"
 
 
 def test_low_light_road_condition_can_be_estimated_when_coverage_meets_night_threshold(tmp_path):
@@ -444,6 +461,38 @@ def test_sparse_camera_view_reports_verified_inbound_flow_without_claiming_conge
     assert estimate["label"] == "Inbound vehicle flow · congestion unknown"
 
 
+def test_sparse_night_footprint_with_repeated_slow_motion_can_report_moving_not_unknown(tmp_path):
+    store = DetectionStore(tmp_path)
+    zone = store.set_zone("camera", {"enabled": True, "name": "Inbound",
+        "polygon": [[0, 0], [1, 0], [1, 1]], "direction": [0, 1],
+        "minimum_motion": .008, "counting_line_y": .64})
+    now = datetime.now(timezone.utc)
+    for index in range(12):
+        stamp = (now - timedelta(seconds=11 - index)).isoformat()
+        detections = ([{"id": index + 1, "class": "car", "confidence": .6,
+            "bbox": [10, 20, 30, 20], "counted": True, "crossed_at": stamp,
+            "direction": "approaching"}] if index < 6 else [])
+        store.save("camera", "session", "night-model", {
+            "sequence": index, "generation": 1, "observed_at": stamp,
+            "media_time_seconds": index, "counts": {"car": len(detections)},
+            "detections": detections,
+            "traffic": {"analysis_available": True, "object_count": 1,
+                "image_coverage": .11, "slow_fraction": .256,
+                "median_motion": .2, "visibility": "low_light"},
+            "analysis_zone": zone,
+        })
+
+    estimate = store.summary("camera", (now - timedelta(minutes=1)).isoformat())["traffic_estimate"]
+
+    assert estimate["image_coverage_percent"] == 11.0
+    assert estimate["track_crossings_last_minute"] == 6
+    assert estimate["movement_sample_count"] == 12
+    assert estimate["level"] == "moving"
+    assert estimate["label"] == "Traffic moving · low footprint"
+    assert estimate["score"] == .15
+    assert estimate["evidence_quality"] == "sparse"
+
+
 def test_unconfigured_camera_hides_full_scene_counts_and_traffic_estimates(tmp_path):
     store = DetectionStore(tmp_path)
     now = datetime.now(timezone.utc)
@@ -478,6 +527,7 @@ def test_live_detection_diagnostic_aggregates_recent_frames_without_crossing_gen
     result = summarize_detection_window(history, 10.0, generation=4)
     assert result == {"window_seconds": 2.0, "window_frames": 2, "raw_candidate_frames": 2,
         "road_candidate_frames": 1, "road_candidate_observations": 1,
+        "road_candidate_boxes": [],
         "outside_zone_observations": 2, "outside_zone_classes": {"car": 1, "truck": 1},
         "outside_zone_boxes": [{"bbox": [50, 60, 70, 80], "class": "truck", "confidence": .6}],
         "directional_outside_tracks": [],
@@ -508,11 +558,16 @@ def test_mapping_uses_catalog_route_and_direction_not_just_nearest_road(tmp_path
     store = DetectionStore(tmp_path)
     road = road_context(camera, graph, store)
     assert road["matched"] and (road["u"], road["v"]) == (1, 2)
-    assert road["road_matching_version"] == 5
+    assert road["road_matching_version"] == 7
     assert road_context(camera, graph, DetectionStore(tmp_path)) == road
     roads = road_observations(store)
     assert len(roads) == 1 and roads[0]["estimate"]["level"] == "unknown"
-    assert roads[0]["estimate"]["label"] == "No active feed"
+    assert roads[0]["estimate"]["label"] == "Direction zone required"
+    assert roads[0]["source_estimates"][0]["zone_enabled"] is False
+    assert roads[0]["estimate"]["calibrated_camera_count"] == 0
+    assert roads[0]["estimate"]["zone_required_camera_count"] == 1
+    assert roads[0]["source_estimates"][0]["feed_active"] is False
+    assert "inbound lane and direction have not been calibrated" in roads[0]["estimate"]["basis"]
 
     camera["route"] = "I-5"
     changed_route = road_context(camera, graph, store)
@@ -523,6 +578,135 @@ def test_mapping_uses_catalog_route_and_direction_not_just_nearest_road(tmp_path
     changed_direction = road_context(camera, graph, store)
     assert changed_direction["matched"] is True
     assert (changed_direction["u"], changed_direction["v"]) == (2, 1)
+
+
+def test_camera_road_match_uses_a_cached_graph_for_the_camera_location(tmp_path, monkeypatch):
+    from src.core import config
+    import importlib
+    graph_module = importlib.import_module("src.services.graph_service")
+    from src.services.graph_service import GraphService
+
+    location = nx.MultiDiGraph()
+    location.add_node(1, y=34.001, x=-118.0)
+    location.add_node(2, y=33.999, x=-118.0)
+    location.add_edge(1, 2, 0, highway="motorway", ref="I 110", name="Harbor Freeway")
+    nx.write_graphml(location, tmp_path / "regional.graphml")
+    monkeypatch.setattr(config.settings, "DATA_PROCESSED_DIR", tmp_path)
+    monkeypatch.setattr(graph_module, "CAMERA_GRAPH_CATALOG", ({
+        "profile": "los_angeles",
+        "bounds": (33.65, 34.30, -118.65, -117.75),
+        "files": ("regional.graphml",),
+    },))
+
+    service = GraphService()
+    manhattan = nx.MultiDiGraph()
+    manhattan.add_node(10, y=40.75, x=-73.98)
+    service.graph = manhattan
+    camera = {"id": "caltrans-camera", "lat": 34.0, "lng": -118.0,
+              "route": "I-110", "direction": "South"}
+    selected = service.get_graph_for_camera(camera)
+    store = DetectionStore(tmp_path / "observations")
+
+    road = road_context(camera, selected, store)
+
+    assert selected is service.get_graph_for_camera(camera)
+    assert selected is not manhattan
+    assert selected.graph["flowsense_location_profile"] == "los_angeles"
+    assert road["matched"] is True
+    assert road["name"] == "Harbor Freeway"
+    assert road["distance_m"] == 0
+
+
+def test_camera_graph_bounds_cache_reuses_and_refreshes_after_node_changes():
+    from src.services.graph_service import GraphService
+
+    service = GraphService()
+    graph = nx.MultiDiGraph()
+    graph.add_node(1, y=34.0, x=-118.0)
+    graph.add_node(2, y=34.01, x=-117.99)
+
+    assert service._graph_contains_location(graph, 34.005, -117.995)
+    cached = service._graph_bounds_cache[graph]
+    assert service._graph_contains_location(graph, 34.005, -117.995)
+    assert service._graph_bounds_cache[graph] is cached
+
+    graph.add_node(3, y=35.0, x=-116.0)
+    assert service._graph_contains_location(graph, 35.0, -116.0)
+    assert service._graph_bounds_cache[graph] is not cached
+
+
+def test_camera_graph_candidates_are_loaded_once_and_selected_by_coverage(tmp_path, monkeypatch):
+    from src.core import config
+    import importlib
+    graph_module = importlib.import_module("src.services.graph_service")
+    from src.services.graph_service import GraphService
+
+    regional = nx.MultiDiGraph()
+    regional.add_node(1, y=34.0, x=-118.0)
+    nx.write_graphml(regional, tmp_path / "regional.graphml")
+    city = nx.MultiDiGraph()
+    city.add_node(2, y=34.2, x=-117.9)
+    nx.write_graphml(city, tmp_path / "city.graphml")
+    monkeypatch.setattr(config.settings, "DATA_PROCESSED_DIR", tmp_path)
+    monkeypatch.setattr(graph_module, "CAMERA_GRAPH_CATALOG", ({
+        "profile": "los_angeles", "bounds": (33.65, 34.30, -118.65, -117.75),
+        "files": ("regional.graphml", "city.graphml"),
+    },))
+
+    service = GraphService()
+    active = nx.MultiDiGraph()
+    active.add_node(10, y=40.75, x=-73.98)
+    service.graph = active
+    load_count = 0
+    original_load = service._load_location_graph
+
+    def counted_load(profile, path):
+        nonlocal load_count
+        load_count += 1
+        return original_load(profile, path)
+
+    monkeypatch.setattr(service, "_load_location_graph", counted_load)
+    first = service.get_graph_for_camera({"lat": 34.0, "lng": -118.0})
+    second = service.get_graph_for_camera({"lat": 34.2, "lng": -117.9})
+    outside = service.get_graph_for_camera({"lat": 33.8, "lng": -118.3})
+
+    assert first.graph["flowsense_location_profile"] == "los_angeles"
+    assert first is not second
+    assert outside is active
+    assert load_count == 2
+
+
+def test_graph_signature_is_cached_per_unchanged_graph():
+    from src.services.camera_traffic import _graph_signature
+
+    graph = nx.MultiDiGraph()
+    graph.add_edge(1, 2, 0)
+    calls = 0
+    original_count = graph.number_of_edges
+
+    def count_edges():
+        nonlocal calls
+        calls += 1
+        return original_count()
+
+    graph.number_of_edges = count_edges
+    signature = _graph_signature(graph)
+
+    assert _graph_signature(graph) == signature
+    assert calls == 1
+
+
+def test_camera_zone_batch_matches_single_zone_reads(tmp_path):
+    store = DetectionStore(tmp_path / "observations")
+    saved = store.set_zone("saved-camera", {
+        "enabled": True, "name": "Inbound", "polygon": [[0, 0], [1, 0], [1, 1]],
+        "direction": [0, 1], "minimum_motion": .008,
+    })
+
+    zones = store.zones(["saved-camera", "preset-or-full-scene-camera"])
+
+    assert zones["saved-camera"] == saved
+    assert zones["preset-or-full-scene-camera"] == store.zone("preset-or-full-scene-camera")
 
 
 def test_road_direction_match_uses_local_tangent_on_curved_segment(tmp_path):
@@ -626,6 +810,8 @@ def test_configured_active_camera_can_publish_only_its_directional_summary(tmp_p
 
 def test_route_matching_uses_exact_osm_references_and_los_angeles_freeway_names():
     assert route_matches_camera("I-5", "Interstate 5")
+    assert not route_matches_camera("I-5", "West 5th Street")
+    assert not route_matches_camera("I-5", "5th Street")
     assert not route_matches_camera("I-5", "Interstate 405")
     assert route_matches_camera("I-405", "San Diego Freeway")
     assert route_matches_camera("I-710", "Long Beach Freeway")
@@ -646,7 +832,10 @@ def test_catalog_camera_road_link_is_visible_without_a_live_traffic_estimate(tmp
 
     assert len(roads) == 1
     assert roads[0]["matched"] is True
-    assert roads[0]["estimate"]["label"] == "No active feed"
+    assert roads[0]["estimate"]["label"] == "Direction zone required"
+    assert roads[0]["source_estimates"][0]["zone_enabled"] is False
+    assert roads[0]["estimate"]["calibrated_camera_count"] == 0
+    assert "inbound lane and direction have not been calibrated" in roads[0]["estimate"]["basis"]
 
 
 def test_inactive_camera_retains_recent_saved_flow_without_claiming_fresh_congestion(tmp_path):
@@ -689,6 +878,39 @@ def test_inactive_camera_retains_recent_saved_flow_without_claiming_fresh_conges
     assert "video feed is inactive" in road["estimate"]["basis"]
 
 
+def test_confirmed_unavailable_source_invalidates_current_road_estimate_but_keeps_saved_rows(tmp_path):
+    graph = nx.MultiDiGraph()
+    graph.add_node(1, y=34.001, x=-118)
+    graph.add_node(2, y=33.999, x=-118)
+    graph.add_edge(1, 2, highway="motorway", ref="I 110", name="Harbor Freeway")
+    camera = {"id": "unavailable-camera", "lat": 34, "lng": -118, "route": "I-110",
+              "direction": "South", "stream_url": "https://camera.example/live.m3u8"}
+    store = DetectionStore(tmp_path)
+    zone = store.set_zone(camera["id"], {"enabled": True, "name": "Inbound",
+        "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]], "direction": [0, 1],
+        "minimum_motion": .008, "counting_line_y": .64})
+    stamp = datetime.now(timezone.utc).isoformat()
+    store.save(camera["id"], "saved-session", "test-model", {
+        "sequence": 1, "generation": 1, "observed_at": stamp, "media_time_seconds": 1,
+        "counts": {"car": 1}, "analysis_zone": zone,
+        "traffic": {"analysis_available": True, "object_count": 1, "image_coverage": .1,
+                    "slow_fraction": .8, "visibility": "standard"},
+        "detections": []})
+
+    roads = road_observations(store, {camera["id"]: camera}, graph, (),
+        source_health={camera["id"]: {"state": "unavailable", "http_status": 404,
+                                      "checked_at": stamp}})
+
+    road = roads[0]
+    assert road["estimate"]["level"] == "unknown"
+    assert road["estimate"]["label"] == "Camera source unavailable"
+    assert road["estimate"]["sample_count"] == 0
+    assert road["estimate"]["source_health"] == "unavailable"
+    assert road["estimate"]["source_http_status"] == 404
+    assert road["source_estimates"][0]["source_health"] == "unavailable"
+    assert store.summary(camera["id"], (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat())["video_continuity"]["sample_count"] == 1
+
+
 def test_cameras_on_one_directed_segment_are_aggregated_with_disagreement_visible(tmp_path, monkeypatch):
     graph = nx.MultiDiGraph()
     graph.add_node(1, y=34.001, x=-118)
@@ -721,6 +943,8 @@ def test_cameras_on_one_directed_segment_are_aggregated_with_disagreement_visibl
     assert road["measured_camera_count"] == 3
     assert road["estimate"]["level"] == "moving"
     assert road["estimate"]["sample_count"] == 60
+    assert road["source_estimates"][0]["distance_m"] == 0
+    assert road["source_estimates"][0]["association"] == "Approximate catalog route/direction and OSM geometry match"
 
 
 def test_equal_conflicting_camera_estimates_are_not_collapsed_to_a_false_consensus():
@@ -742,7 +966,7 @@ def test_sparse_road_aggregation_preserves_coverage_without_claiming_traffic_lev
     from src.services.camera_traffic import _aggregate_road_observations
     row = {"u": 1, "v": 2, "key": 0, "matched": True, "camera_id": "camera-a",
            "coordinates": [], "route": "I-110", "direction": "South", "name": "Harbor Freeway",
-           "estimate": {"level": "unknown", "label": "Sparse road coverage", "sample_count": 119,
+           "estimate": {"level": "unknown", "label": "Sparse vehicle footprint", "sample_count": 119,
                         "image_coverage_percent": 1.2, "evidence_quality": "sparse",
                         "updated_at": datetime.now(timezone.utc).isoformat()}}
 
@@ -751,7 +975,7 @@ def test_sparse_road_aggregation_preserves_coverage_without_claiming_traffic_lev
     assert len(roads) == 1
     estimate = roads[0]["estimate"]
     assert estimate["level"] == "unknown"
-    assert estimate["label"] == "Sparse road coverage"
+    assert estimate["label"] == "Sparse vehicle footprint"
     assert estimate["sample_count"] == 119
     assert estimate["image_coverage_percent"] == 1.2
 
@@ -770,6 +994,27 @@ def test_road_aggregation_preserves_missing_motion_instead_of_implying_moving_tr
     assert estimate["label"] == "Vehicle movement · motion unavailable"
     assert estimate["evidence_quality"] == "motion_unavailable"
     assert estimate["movement_sample_count"] == 0
+
+
+def test_missing_zone_on_neighbor_camera_does_not_hide_stale_calibrated_source():
+    from src.services.camera_traffic import _aggregate_road_observations
+    base = {"u": 1, "v": 2, "key": 0, "matched": True, "camera_id": "camera-a",
+            "coordinates": [], "route": "I-110", "direction": "South", "name": "Harbor Freeway",
+            "estimate": {"level": "unknown", "label": "No recent estimate", "sample_count": 21,
+                         "zone_enabled": True, "feed_active": False,
+                         "basis": "Saved evidence is stale."}}
+    other = {**base, "camera_id": "camera-b", "estimate": {
+        "level": "unknown", "label": "Direction zone required", "sample_count": 0,
+        "zone_enabled": False, "feed_active": False,
+        "basis": "A direction zone is required."}}
+
+    estimate = _aggregate_road_observations([base, other])[0]["estimate"]
+
+    assert estimate["label"] == "No recent estimate"
+    assert estimate["calibrated_camera_count"] == 1
+    assert estimate["zone_required_camera_count"] == 1
+    assert "stale" in estimate["basis"]
+    assert "direction zone" in estimate["basis"]
 
 
 def test_background_lease_keeps_capture_alive_without_viewers(monkeypatch):

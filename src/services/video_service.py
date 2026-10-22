@@ -29,13 +29,20 @@ from src.perception.traffic_detector import TrafficDetector, DetectionBatch, det
 from src.perception.road_tracking import ROAD_CLASSES, RoadTracker, in_road_zone
 from src.services.detection_store import (DetectionStore, EvidenceRecorder,
     EVIDENCE_FRAME_POLICY_VERSION, VIDEO_CAPACITY_SCAN_VERSION)
+from src.services.camera_metadata import CAMERA_METADATA_POLICY_VERSION, CAMERA_SOURCE_CATALOG_POLICY_VERSION
 
 logger = logging.getLogger("flowsense.video")
 LOW_LIGHT_TRACK_CONFIDENCE = .10
 LOW_LIGHT_OBSERVATION_CONFIDENCE = .10
 CAMERA_DETECTION_POLICY_VERSION = 3
+LIVE_LOW_LIGHT_CANDIDATE_OVERLAY_POLICY_VERSION = 1
+LOW_LIGHT_DETAIL_ENHANCEMENT_POLICY_VERSION = 1
+CAMERA_HEALTH_MONITOR_POLICY_VERSION = 3
+ROAD_CORRELATION_PERFORMANCE_POLICY_VERSION = 2
+ROAD_CORRELATION_EXPLAINABILITY_POLICY_VERSION = 1
 RESTART_DRAIN_VERSION = 1
 EVIDENCE_PAUSE_ORDER_VERSION = 1
+TRACK_TIMING_POLICY_VERSION = 1
 MONITOR_LEASE_SECONDS = 120
 MAX_LIVE_RECONNECT_DELAY_SECONDS = 30
 HIGH_RES_MIN_FREE_MEMORY_BYTES = 2_000_000_000
@@ -107,6 +114,7 @@ def summarize_detection_window(history, instant, generation, window_seconds=2.0)
         "raw_candidate_frames": sum(item.get("raw_candidates", 0) > 0 for item in recent),
         "road_candidate_frames": sum(item.get("road_candidates", 0) > 0 for item in recent),
         "road_candidate_observations": sum(item.get("road_candidates", 0) for item in recent),
+        "road_candidate_boxes": (recent[-1].get("road_candidate_boxes", [])[:12] if recent else []),
         "outside_zone_observations": sum(item.get("outside_zone_candidates", 0) for item in recent),
         "outside_zone_classes": outside_classes,
         "outside_zone_boxes": (recent[-1].get("outside_zone_boxes", [])[:12] if recent else []),
@@ -668,8 +676,12 @@ class VideoSession:
                     outside_zone_boxes = [{"bbox": list(candidate.bbox), "class": candidate.class_name,
                                            "confidence": round(candidate.confidence, 3)}
                                           for candidate in outside_zone_candidates[:12]]
+                    road_candidate_boxes = [{"bbox": list(candidate.bbox), "class": candidate.class_name,
+                                             "confidence": round(candidate.confidence, 3)}
+                                            for candidate in road_candidates[:12]]
                     diagnostics = {"raw_candidates": len(detections),
                         "road_candidates": len(road_candidates),
+                        "road_candidate_boxes": road_candidate_boxes,
                         "outside_zone_candidates": len(outside_zone_candidates),
                         "outside_zone_classes": outside_zone_classes,
                         "outside_zone_boxes": outside_zone_boxes,
@@ -747,6 +759,50 @@ class VideoSession:
             provisional_ids = {box["id"] for box in provisional_boxes}
             counts = {name: 0 for name in [*CLASSES.values(), "rider", "vehicle"]}
             visible_boxes = boxes + provisional_boxes
+            # In low light, show current in-zone model candidates even before
+            # the tracker has enough repeated evidence to create a track. The
+            # amber styling and label keep these review hints separate from
+            # tracks, crossings, saved observations, and road estimates.
+            candidate_boxes = []
+            if (self.detection_profile == "low_light" and filters.get("show_candidates", True)
+                    and age is not None and age <= .25):
+                for candidate in pipeline.get("road_candidate_boxes", [])[:6]:
+                    if (candidate.get("class") not in filters["classes"]
+                            or candidate.get("confidence", 0) < LOW_LIGHT_TRACK_CONFIDENCE):
+                        continue
+                    candidate_bbox = tuple(int(value) for value in candidate.get("bbox", ()))
+                    if len(candidate_bbox) != 4 or candidate_bbox[2] <= 0 or candidate_bbox[3] <= 0:
+                        continue
+                    x, y, width, height = candidate_bbox
+                    if x >= frame.shape[1] or y >= frame.shape[0] or x + width <= 0 or y + height <= 0:
+                        continue
+                    candidate_area = max(1, width * height)
+                    shadowed = False
+                    for tracked in visible_boxes:
+                        tx, ty, tw, th = tracked["bbox"]
+                        intersection = max(0, min(x + width, tx + tw) - max(x, tx)) * max(
+                            0, min(y + height, ty + th) - max(y, ty))
+                        if intersection / min(candidate_area, max(1, tw * th)) >= .40:
+                            shadowed = True
+                            break
+                    if not shadowed:
+                        candidate_boxes.append({**candidate, "bbox": candidate_bbox})
+            for candidate in candidate_boxes:
+                x, y, width, height = candidate["bbox"]
+                draw_dashed_rectangle(rendered, (x, y, width, height), PROVISIONAL_COLOR, 1)
+                label = f"Candidate {candidate['class'].title()} · {round(candidate['confidence'] * 100)}%"
+                font = max(.42, min(.65, frame.shape[1] / 2000))
+                (label_w, label_h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font, 2)
+                obstacles = [(other["bbox"][0], other["bbox"][1],
+                              other["bbox"][0] + other["bbox"][2], other["bbox"][1] + other["bbox"][3])
+                             for other in visible_boxes]
+                lx, ly, label_rect = place_detection_label((x, y, width, height), (label_w, label_h),
+                                                            frame.shape, placed_labels, obstacles)
+                placed_labels.append(label_rect)
+                cv2.rectangle(rendered, (lx, ly - label_h - 5), (lx + label_w + 8, ly + 4),
+                              PROVISIONAL_COLOR, -1)
+                cv2.putText(rendered, label, (lx + 4, ly), cv2.FONT_HERSHEY_SIMPLEX,
+                            font, (15, 22, 16), 2, cv2.LINE_AA)
             compact_labels = len(visible_boxes) >= 10
             label_order = sorted(visible_boxes, key=lambda item: (
                 item.get("track_confidence", item.get("confidence", 0)),
@@ -782,10 +838,12 @@ class VideoSession:
         title = "Inbound monitoring" if zone.get("enabled") else "Traffic monitoring"
         cv2.rectangle(rendered, (8, 8), (215, 35), (26, 39, 33), -1)
         cv2.putText(rendered, title, (16, 27), 0, .5, (220, 238, 226), 1, cv2.LINE_AA)
+        observed_at = datetime.now(timezone.utc) - timedelta(seconds=max(0, time.monotonic() - instant))
         def reading(box):
             crossing = box.get("crossing_instant")
             return {"id": box["id"], "class": box["class"], "bbox": box["bbox"],
                 "confidence": round(box["confidence"], 3), "track_confidence": round(box.get("track_confidence", box["confidence"]), 3),
+                "first_seen_at": (observed_at - timedelta(seconds=max(0, box.get("track_age_seconds", 0)))).isoformat(),
                 "class_status": box.get("class_status"),
                 "candidate_class": box.get("candidate_class") if box.get("class_status") == "uncertain" else None,
                 "trail": [(int(x), int(y)) for x, y in box.get("trail", ())],
@@ -811,7 +869,7 @@ class VideoSession:
             "visibility": "low_light" if self.detection_profile.startswith("low_light") else "standard",
             **traffic_motion_metrics(movement), "analysis_available": counts is not None}
         return rendered, {"sequence": sequence, "counts": counts, "track_ids": [box["id"] for box in visible_boxes],
-                          "observed_at": (datetime.now(timezone.utc) - timedelta(seconds=max(0, time.monotonic() - instant))).isoformat(),
+                          "observed_at": observed_at.isoformat(),
                           "detections": [reading(box) for box in visible_boxes], "observed_detections": [reading(box) for box in observed],
                           "traffic": traffic,
                           "model": self.model_name, "detection_profile": self.detection_profile,
@@ -1043,7 +1101,7 @@ class VideoService:
                     # inbound crops as supplemental small-vehicle evidence;
                     # replacing the base boxes with a different scale reduced
                     # track continuity in the paired night-video comparison.
-                    detections = (road_detector.detect(frame, zone)
+                    detections = (road_detector.detect(frame, zone, enhance_detail=True)
                                   if zone and zone.get("enabled")
                                   else detector.detect(frame))
                     if can_use_high_res and self.low_light_high_res_detector is not None:
@@ -1198,10 +1256,18 @@ class VideoService:
         return {
             "active": active,
             "camera_detection_policy_version": CAMERA_DETECTION_POLICY_VERSION,
+            "live_low_light_candidate_overlay_policy_version": LIVE_LOW_LIGHT_CANDIDATE_OVERLAY_POLICY_VERSION,
+            "low_light_detail_enhancement_policy_version": LOW_LIGHT_DETAIL_ENHANCEMENT_POLICY_VERSION,
+            "camera_metadata_policy_version": CAMERA_METADATA_POLICY_VERSION,
+            "camera_source_catalog_policy_version": CAMERA_SOURCE_CATALOG_POLICY_VERSION,
+            "camera_health_monitor_policy_version": CAMERA_HEALTH_MONITOR_POLICY_VERSION,
+            "road_correlation_performance_policy_version": ROAD_CORRELATION_PERFORMANCE_POLICY_VERSION,
+            "road_correlation_explainability_policy_version": ROAD_CORRELATION_EXPLAINABILITY_POLICY_VERSION,
             "restart_drain_version": RESTART_DRAIN_VERSION,
             "evidence_pause_order_version": EVIDENCE_PAUSE_ORDER_VERSION,
             "video_capacity_scan_version": VIDEO_CAPACITY_SCAN_VERSION,
             "evidence_frame_policy_version": EVIDENCE_FRAME_POLICY_VERSION,
+            "track_timing_policy_version": TRACK_TIMING_POLICY_VERSION,
             "session_state": state["state"] if state else "Not connected",
             "monitoring_lease_count": lease_count,
             "live_viewer_count": viewer_count,

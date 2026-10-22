@@ -63,7 +63,9 @@ export function RoadZoneEditor({ cameraId, onClose, onSaved, stageElement, frame
     ? directionDifferenceDegrees(zone.direction, observedDirection.direction) : null;
   const previewCandidates = outsideCandidates.filter(candidate => candidate.confidence >= .10).slice(0, 6);
   const previewDirectional = directionalOutsideTracks.slice(0, 6);
-  const directionAudit = !zone?.enabled
+  const directionAudit = zone === null
+    ? 'Loading the saved road zone and travel direction…'
+    : !zone.enabled
     ? 'Road and direction filtering is disabled; no outside-zone direction audit is active.'
     : previewDirectional.length > 0
     ? `${directionalOutsideTracks.length} outside-zone object${directionalOutsideTracks.length === 1 ? '' : 's'} matched the selected travel direction across repeated detections. Their cyan trails are diagnostic only; review the moving video before changing the polygon.`

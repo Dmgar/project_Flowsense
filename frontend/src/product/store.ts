@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Camera, MobilityCase } from './types';
+import { updateProviderAvailability } from './monitoring.ts';
 
 interface ProductState {
   path: string; navigate: (path: string) => void; cameras: Camera[]; setCameras: (v: Camera[]) => void;
+  setCameraVideoHealth: (id: string, health: NonNullable<Camera['video_health']>) => void;
   cameraCatalogLoaded: boolean; cameraCatalogFailed: boolean; setCameraCatalogStatus: (loaded: boolean, failed: boolean) => void;
   cases: MobilityCase[]; setCases: (v: MobilityCase[]) => void; selectedSignal: string; selectSignal: (v: string) => void;
   district: string; setDistrict: (v: string) => void; period: string; setPeriod: (v: string) => void;
@@ -19,7 +21,12 @@ interface ProductState {
 export const useProduct = create<ProductState>()(persist((set) => ({
   path: window.location.pathname === '/' ? '/overview' : window.location.pathname,
   navigate: (path) => { window.history.pushState({}, '', path); set({ path: path.split('?')[0], query: new URLSearchParams(path.split('?')[1]).get('q') || '' }); },
-  cameras: [], setCameras: (cameras) => set({ cameras }), cameraCatalogLoaded: false, cameraCatalogFailed: false,
+  cameras: [], setCameras: (cameras) => { updateProviderAvailability(cameras); set({ cameras }); },
+  setCameraVideoHealth: (id, health) => set(state => {
+    const cameras = state.cameras.map(camera => camera.id === id ? { ...camera, video_health: health } : camera);
+    updateProviderAvailability(cameras);
+    return { cameras };
+  }), cameraCatalogLoaded: false, cameraCatalogFailed: false,
   setCameraCatalogStatus: (cameraCatalogLoaded, cameraCatalogFailed) => set({ cameraCatalogLoaded, cameraCatalogFailed }),
   cases: [], setCases: (cases) => set({ cases }),
   selectedSignal: 'SIG-001', selectSignal: (selectedSignal) => set({ selectedSignal }),

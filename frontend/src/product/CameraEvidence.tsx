@@ -53,6 +53,29 @@ export function CameraEvidence({ cameraId, onRetry }: { cameraId?: string; onRet
       });
     return () => controller.abort();
   }, [camera, cameras, queueMode]);
+  useEffect(() => {
+    const selectedCamera = camera;
+    if (!selectedCamera || selectedCamera.provider !== 'Caltrans' || selectedCamera.provider_in_service === false
+        || !selectedCamera.stream_url.toLowerCase().includes('.m3u8')) return;
+    let stopped = false, pending = false;
+    const controller = new AbortController();
+    const check = async () => {
+      if (stopped || pending || document.visibilityState !== 'visible') return;
+      pending = true;
+      try {
+        const response = await fetch(apiUrl(`/api/v1/mobility/cameras/${encodeURIComponent(selectedCamera.id)}/video-health`), {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]),
+        });
+        if (!response.ok) throw new Error('Live source health is temporarily unavailable.');
+        const health = await response.json() as NonNullable<Camera['video_health']>;
+        if (!stopped) useProduct.getState().setCameraVideoHealth(selectedCamera.id, health);
+      } catch { /* A temporary check failure never marks a source offline. */ }
+      finally { pending = false; }
+    };
+    void check();
+    const timer = window.setInterval(() => void check(), 30000);
+    return () => { stopped = true; controller.abort(); clearInterval(timer); };
+  }, [camera]);
   if (!camera) return <EmptyState
     title={cameras.length ? 'Video camera not available' : catalogStatus === 'error' ? 'Camera catalog unavailable' : catalogStatus === 'empty' ? 'No video cameras available' : 'Loading video cameras'}
     detail={catalogStatus === 'error' ? 'The camera catalog could not be refreshed. Retry the connection to load registered video sources.' : catalogStatus === 'empty' ? 'No registered video sources currently provide continuous video.' : 'Choose a registered video source to start continuous vehicle detection.'}
@@ -108,7 +131,7 @@ export function CameraEvidence({ cameraId, onRetry }: { cameraId?: string; onRet
       <button className="p-button" onClick={() => { useProduct.getState().setDistrict(camera.district); useProduct.getState().setMapFocus([camera.lat, camera.lng]); useProduct.getState().navigate('/map'); }}><Icon name="pin" />View on map</button>
     </div></div>
     <div className="p-camera-layout"><div className="p-camera-main">
-      <LiveCameraPlayer key={camera.id} cameraId={camera.id} name={camera.name} supported={!!camera.stream_url} onReading={setReading} startZoneEditing={startZoneEditing} onZoneSaved={handleZoneSaved} routeReference={camera.route && camera.direction ? `${camera.route} · ${camera.direction}bound source reference` : undefined} />
+      <LiveCameraPlayer key={camera.id} cameraId={camera.id} name={camera.name} supported={!!camera.stream_url} providerOutOfService={camera.provider_in_service === false} sourceUnavailableMessage={camera.video_health?.state === 'unavailable' ? camera.video_health.message : undefined} sourceHealthTimedOut={camera.video_health?.state === 'temporary_error'} onReading={setReading} startZoneEditing={startZoneEditing} onZoneSaved={handleZoneSaved} routeReference={camera.route && camera.direction ? `${camera.route} · ${camera.direction}bound source reference` : undefined} />
       <div className="p-camera-tools"><button className="p-button" disabled={!camera.stream_url} aria-pressed={watched.includes(camera.id)} onClick={() => useProduct.getState().toggleWatch(camera.id)}><Icon name="grid" />{watched.includes(camera.id) ? 'On the observation desk' : 'Add to desk'}</button><button className="p-button" disabled={!current} onClick={exportSession}><Icon name="download" />Export session metadata</button>{camera.source_url && <a className="p-button" href={camera.source_url} target="_blank" rel="noreferrer">Official source <Icon name="arrow" /></a>}</div>
       <button className="p-button" disabled={!current?.metrics} onClick={() => {
         if (!current?.metrics) return;

@@ -8,6 +8,7 @@ from src.core.config import settings
 from src.api.routes.video import router as video_router
 from src.services.video_service import video_service
 from src.services.graph_service import graph_service
+from src.services.mobility_service import mobility_service
 from src.services.incident_intelligence import incident_intelligence
 from src.services.mock_simulator import simulator
 from src.api.websockets.connection_manager import manager
@@ -34,6 +35,7 @@ logger = logging.getLogger("flowsense.main")
 async def lifespan(app: FastAPI):
     logger.info("Initializing FlowSense Urban Graph Engine...")
     graph_service.initialize()
+    mobility_service.start_video_health_monitor()
     # Restore active, human-verified incidents after a backend restart.
     for candidate in incident_intelligence.list():
         if candidate.status == "validated" and not candidate.demo:
@@ -48,6 +50,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Graph initialized: {status.node_count} nodes, {status.edge_count} edges for {status.city}.")
     yield
     logger.info("Shutting down FlowSense services...")
+    mobility_service.stop_video_health_monitor()
     await video_service.shutdown()
     simulator.stop_traffic_simulation()
     try:

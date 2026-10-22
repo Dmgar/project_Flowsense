@@ -5,6 +5,7 @@ let memoryClient: string = crypto.randomUUID();
 let monitored: string[] = [];
 let registered: string[] = [];
 const activeViewers = new Map<string, Set<string>>();
+const providerUnavailable = new Set<string>();
 try {
   memoryStart = sessionStorage.getItem('flowsense-monitoring-start') || memoryStart;
   memoryClient = sessionStorage.getItem('flowsense-monitoring-client') || memoryClient;
@@ -16,8 +17,17 @@ try {
 
 export const monitoringStartedAt = () => memoryStart;
 export const isMonitoring = (camera: string) => monitored.includes(camera);
+export function updateProviderAvailability(cameras: Iterable<{ id: string; provider_in_service?: boolean; video_health?: { state?: string } | null }>) {
+  let changedAvailability = false;
+  for (const camera of cameras) {
+    const unavailable = camera.provider_in_service === false || camera.video_health?.state === 'unavailable';
+    if (unavailable && !providerUnavailable.has(camera.id)) { providerUnavailable.add(camera.id); changedAvailability = true; }
+    else if (!unavailable && providerUnavailable.delete(camera.id)) changedAvailability = true;
+  }
+  if (changedAvailability) changed.dispatchEvent(new Event('change'));
+}
 export const transientMonitoringCameraIds = (cameras: Iterable<string>) =>
-  [...new Set(cameras)].filter(camera => !monitored.includes(camera));
+  [...new Set(cameras)].filter(camera => !monitored.includes(camera) && !providerUnavailable.has(camera));
 export function registerMonitoring(camera: string) {
   if (registered.includes(camera)) return;
   registered.push(camera);
@@ -46,4 +56,4 @@ export function acquireCameraViewer(camera: string) {
 
 export const monitoringEvents = changed;
 export const monitoringClientId = () => memoryClient;
-export const monitoringCameraIds = () => [...new Set([...monitored, ...activeViewers.keys()])];
+export const monitoringCameraIds = () => [...new Set([...monitored, ...activeViewers.keys()])].filter(camera => !providerUnavailable.has(camera));
