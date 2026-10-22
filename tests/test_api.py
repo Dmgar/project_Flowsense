@@ -1,4 +1,6 @@
+import pytest
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 def test_health_check_root(client: TestClient):
     response = client.get("/")
@@ -71,5 +73,16 @@ def test_dispatch_route_endpoint(client: TestClient):
     assert route["geojson"]["type"] == "FeatureCollection"
 
 def test_websocket_telemetry_channel(client: TestClient):
-    with client.websocket_connect("/ws/telemetry") as websocket:
+    with client.websocket_connect(
+        "/ws/telemetry",
+        headers={"origin": "http://127.0.0.1:3002"},
+    ) as websocket:
         websocket.send_text("client_ping")
+
+def test_websocket_telemetry_rejects_untrusted_origin(client: TestClient):
+    with pytest.raises(WebSocketDisconnect):
+        with client.websocket_connect(
+            "/ws/telemetry",
+            headers={"origin": "http://127.0.0.1:3003"},
+        ):
+            pass
