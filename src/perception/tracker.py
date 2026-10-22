@@ -76,12 +76,14 @@ class VehicleTracker:
         pixels_per_meter: float = 12.0,
         fps: float = 30.0,
         use_optical_flow: bool = False,
+        new_track_threshold: float = 0.0,
     ):
         self.max_age = max_age
         self.iou_threshold = iou_threshold
         self.pixels_per_meter = pixels_per_meter
         self.fps = fps
         self.use_optical_flow = use_optical_flow
+        self.new_track_threshold = new_track_threshold
 
         self._next_id: int = 1
         self._tracks: Dict[int, TrackedVehicle] = {}
@@ -150,12 +152,14 @@ class VehicleTracker:
         matches: List[Tuple[int, int, float]] = []  # (track_id, det_idx, iou)
         for tid, track in self._tracks.items():
             for d_idx, det in enumerate(detections):
+                if track.class_name != det.class_name:
+                    continue
                 score = _iou(track.bbox, det.bbox)
                 if score >= self.iou_threshold:
                     matches.append((tid, d_idx, score))
 
         # Sort by IoU descending for greedy assignment
-        matches.sort(key=lambda m: m[2], reverse=True)
+        matches.sort(key=lambda m: (detections[m[1]].confidence >= self.new_track_threshold, m[2]), reverse=True)
 
         for tid, d_idx, score in matches:
             if tid in matched_tracks or d_idx in matched_dets:
@@ -176,13 +180,22 @@ class VehicleTracker:
                 track = self._tracks[tid]
                 tcx, tcy = track.centroid
                 for d_idx in unmatched_d_idxs:
+                    if track.class_name != detections[d_idx].class_name:
+                        continue
+                    tw, th = track.bbox[2:]
+                    dw, dh = detections[d_idx].bbox[2:]
+                    if max(tw / max(1, dw), dw / max(1, tw), th / max(1, dh), dh / max(1, th)) > 2:
+                        continue
                     dcx, dcy = det_centroids[d_idx]
                     dist = float(np.hypot(dcx - tcx, dcy - tcy))
-                    if dist <= max_centroid_dist:
+                    # Fixed 80–900 px gates can join different small distant
+                    # cars. Bound displacement by the actual object dimensions.
+                    object_limit = max(12.0, max(np.hypot(tw, th), np.hypot(dw, dh)))
+                    if dist <= min(max_centroid_dist, object_limit):
                         centroid_matches.append((tid, d_idx, dist))
 
             # Sort ascending by distance (closest first)
-            centroid_matches.sort(key=lambda m: m[2])
+            centroid_matches.sort(key=lambda m: (detections[m[1]].confidence < self.new_track_threshold, m[2]))
 
             for tid, d_idx, dist in centroid_matches:
                 if tid in matched_tracks or d_idx in matched_dets:
@@ -200,7 +213,7 @@ class VehicleTracker:
 
         # --- Create new tracks for unmatched detections ---
         for d_idx, det in enumerate(detections):
-            if d_idx not in matched_dets:
+            if d_idx not in matched_dets and det.confidence >= self.new_track_threshold:
                 cx, cy = det_centroids[d_idx]
                 new_track = TrackedVehicle(
                     track_id=self._next_id,

@@ -1,0 +1,9 @@
+{
+  "model": "yolov8s",
+  "input_size": 640,
+  "output": "1x84x8400",
+  "source": "https://huggingface.co/Kalray/yolov8/resolve/main/yolov8s.onnx",
+  "sha256": "1bd2afeed7a85188e295875b3936a6f08df5a7671457ece9077f3b9b8daee6d6",
+  "selection": "Paired real-road video comparison with YOLO11s and YOLO26s; not an accuracy benchmark.",
+  "license": "AGPL-3.0 (Ultralytics pretrained model)"
+}

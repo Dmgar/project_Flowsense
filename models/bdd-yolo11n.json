@@ -1,0 +1,26 @@
+{
+  "repository": "dronefreak/bdd100k-yolo11n",
+  "revision": "2b5554133522f96f50ce87a4df0a2de556e4b7ad",
+  "source": "https://huggingface.co/dronefreak/bdd100k-yolo11n",
+  "checkpoint_sha256": "c120d075bcc6aaf94523f9a2c9d681819ebd692f36eb5ea64656d1c5f1278a70",
+  "onnx_sha256": "76b72d3688e1d775dbe13b29fda0b3cc267d6b01f58242750a63e49420a448e1",
+  "input_size": 640,
+  "num_classes": 10,
+  "classes": {
+    "0": "person",
+    "1": "rider",
+    "2": "car",
+    "3": "truck",
+    "4": "bus",
+    "5": "train",
+    "6": "motor",
+    "7": "bike",
+    "8": "traffic light",
+    "9": "traffic sign"
+  },
+  "ultralytics_version": "8.4.183",
+  "runtime": "OpenCV DNN",
+  "export_only": "PyTorch restricted weights-only load",
+  "upstream_license": "AGPL-3.0; consult upstream model/dataset terms",
+  "validation": "Camera-specific prediction continuity; independently labeled precision/recall not measured."
+}

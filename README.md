@@ -6,11 +6,19 @@
 
 FlowSense connects public camera evidence, aggregate movement observations, corridor
 analytics, pedestrian context, prioritized review and emergency route support in one
-navigable operations interface. The current catalog includes 86 official Caltrans
-sources across seven Greater Los Angeles zones, with 61 distinct images checked
-in the latest review and a real OpenStreetMap road graph. Explore streets and
-nearby cameras, then compare up to four independent observations in the observation
-desk. Official video URLs are retained for retry; their availability varies.
+navigable operations interface. Cameras now use continuous, annotated WebRTC video
+with vehicle tracking, rather than periodically refreshed photos. The registered
+Caltrans catalog covers seven Greater Los Angeles zones; the video-only interface
+excludes sources without a video link. Explore streets and nearby cameras, then
+watch up to four video sessions on the observation desk. Playback availability and
+frame rate depend on the provider and processing capacity.
+See [continuous video delivery and measured verification](docs/CONTINUOUS_VIDEO_DELIVERY.md).
+See [road-user detection corrections and real-class verification](docs/DETECTION_CORRECTIONS.md)
+See [detection and persistence implementation](docs/DETECTION_PERSISTENCE_PLAN.md) for saved observations, replayable video evidence and the earlier YOLO26 configuration.
+See [current approaching-road tracking and YOLOv8 / YOLO11 comparison](docs/DIRECTIONAL_TRACKING.md) for the selected YOLOv8s detector, ByteTrack, editable road zones and stable type labels.
+See [current monitoring experience and passage history](docs/MONITORING_EXPERIENCE.md) for faster road-focused inference, persistent cumulative counts, background monitoring and camera-based road conditions. This supersedes the earlier display and automatic clip-recording defaults.
+See [nighttime detection diagnosis and measured limits](docs/NIGHT_DETECTION_DIAGNOSIS.md) for the adaptive YOLO11s low-light profile, optical-flow-assisted association and the remaining missed-vehicle problem at night.
+See [the current road-domain detector and paced-video comparison](docs/ROAD_DOMAIN_TRACKING.md) for the selected BDD100K YOLO11n model, faster analysis, motion-verified continuity and reproducible annotated videos. This supersedes the earlier COCO low-light model selection.
 See [the explorer and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
 and [the regional plan](docs/REGIONAL_EXPANSION_PLAN.md) for verification and limits.
 Historical indicators used for presentation are explicitly separated from observations.
@@ -25,9 +33,24 @@ Requires Python 3.13+ and Node.js 24 with npm:
 .\scripts\run_flowsense.ps1
 ```
 
-Open `http://127.0.0.1:3001/overview`. The API uses port 8002. Camera images require
+If the system drive is low on space, new MP4 evidence can be directed to a mounted
+volume without moving or deleting existing clips. Choose a quota that fits that
+volume; the existing clips remain linked and reviewable from the same camera history:
+
+```powershell
+.\scripts\run_flowsense.ps1 -EvidenceDirectory 'E:\FlowSense\Evidence' -EvidenceMaxGigabytes 50
+```
+
+The launcher drains active evidence before refreshing an already-running API. The
+configured disk safety reserve is checked on the volume receiving new clips, while
+the total clip quota includes both existing and new evidence.
+
+Open `http://127.0.0.1:3002/overview`. The Los Angeles API uses port 8004. Camera video requires
 internet access; no Caltrans account, payment or API key is required. Sources may be
 interrupted. The launcher downloads the LA graph and ONNX model when absent.
+Run `-Setup` when upgrading an existing installation to install the new aiortc/PyAV
+video dependencies. WebRTC is configured for local use; remote deployment needs
+an appropriate ICE/STUN/TURN configuration and network validation.
 
 - [Frontend V3: complete change log and verification](docs/FLOWSENSE_FRONTEND_V3.md)
 - [Street explorer, video recovery and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)

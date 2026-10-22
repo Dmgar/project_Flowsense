@@ -1,6 +1,7 @@
 # Entornos virtuales
 venv/
 .venv/
+.venv-model-tools/
 *.local.log
 *.local.err.log
 output/

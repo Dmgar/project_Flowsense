@@ -9,6 +9,92 @@ import type { GeoJsonEdgeFeature, RouteResponse } from '../types';
 import type { Camera, Signal } from './types';
 import { Icon } from './ui';
 import { matchesZone, regions } from './coverage';
+import { apiUrl } from '../api/urls';
+
+function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boolean }) {
+  const map = useMap();
+  const mode = useProduct(state => state.mode);
+  const visible = useProduct(state => state.layers.congestion);
+  useEffect(() => {
+    if (!visible || (!forceObserved && mode !== 'observed')) return;
+    const group = L.layerGroup().addTo(map);
+    const statusControl = new L.Control({ position: 'bottomright' });
+    let statusElement: HTMLDivElement | null = null;
+    let statusMessage: HTMLSpanElement | null = null;
+    statusControl.onAdd = () => {
+      statusElement = L.DomUtil.create('div', 'p-map-road-status');
+      statusElement.setAttribute('role', 'status');
+      statusElement.setAttribute('aria-live', 'polite');
+      statusMessage = L.DomUtil.create('span', 'p-map-road-status-message', statusElement);
+      statusMessage.textContent = 'Camera estimates are loading';
+      const close = L.DomUtil.create('button', 'p-map-road-status-close', statusElement);
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Hide map note');
+      close.textContent = '×';
+      L.DomEvent.disableClickPropagation(statusElement);
+      L.DomEvent.on(close, 'click', () => {
+        if (!statusElement) return;
+        const collapsed = statusElement.classList.toggle('is-collapsed');
+        close.textContent = collapsed ? 'i' : '×';
+        close.setAttribute('aria-label', collapsed ? 'Show map note' : 'Hide map note');
+      });
+      return statusElement;
+    };
+    statusControl.addTo(map);
+    const controller = new AbortController();
+    let stopped = false, pending = false;
+    const update = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const response = await fetch(apiUrl('/api/v1/mobility/video/road-observations'), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
+        if (!response.ok) throw new Error('Road observations unavailable');
+        const roads = await response.json() as { camera_id: string; camera_ids: string[]; active_camera_ids: string[]; camera_count: number; active_camera_count: number; measured_camera_count: number; coordinates: [number, number][]; name: string; route: string; direction: string; estimate: { level: string; label: string; updated_at: string | null; sample_count: number; track_crossings_last_minute?: number; image_coverage_percent?: number | null; evidence_quality?: string; visibility?: string } }[];
+        if (stopped) return;
+        if (statusMessage) statusMessage.textContent = 'Road colors show recent camera estimates. Gray roads have no current estimate.';
+        group.clearLayers();
+        for (const road of roads) {
+          const color = road.estimate.level === 'slow' ? '#d38e7e' : road.estimate.level === 'building' ? '#d6b274' : road.estimate.level === 'moving' ? '#82af94' : '#8b9690';
+          const measured = road.estimate.level !== 'unknown';
+          const line = L.polyline(road.coordinates.map(([x, y]) => [y, x]), { color, weight: measured ? 6 : 3, opacity: measured ? .85 : .4 });
+          const box = document.createElement('div');
+          const title = document.createElement('strong'); title.textContent = `${road.route} · ${road.direction}bound`; box.append(title);
+          const detail = document.createElement('div');
+          const sourceCoverage = `${road.measured_camera_count} of ${road.camera_count} linked camera estimates · ${road.active_camera_count} feeds live`;
+          const crossings = road.estimate.track_crossings_last_minute || 0;
+          const flow = crossings ? `${crossings} inbound camera-track crossings in the last minute` : '';
+          detail.textContent = measured
+            ? `${road.estimate.label} · ${sourceCoverage}${flow ? ` · ${flow}` : ''}`
+            : road.estimate.sample_count > 0
+              ? `${road.estimate.label} · ${road.estimate.image_coverage_percent == null ? '' : `${road.estimate.image_coverage_percent}% image coverage · `}${sourceCoverage}${flow ? ` · ${flow}` : ''}; congestion unmeasured`
+              : `${road.estimate.label} · ${road.camera_count} linked cameras, ${road.active_camera_count} active${flow ? ` · ${flow}` : ''}`;
+          box.append(detail);
+          const note = document.createElement('small'); note.textContent = `${road.camera_count} linked camera${road.camera_count === 1 ? '' : 's'} · track counts are per-camera events and overlapping views may count the same vehicle · approximate OSM association · no calibrated travel time.`; box.append(note);
+          line.bindTooltip(box, { sticky: true, className: 'p-map-tooltip' });
+          line.on('click', () => useProduct.getState().navigate(`/cameras/${road.camera_id}`));
+          group.addLayer(line);
+          const path = line.getElement();
+          path?.setAttribute('role', 'button');
+          path?.setAttribute('tabindex', '0');
+          const evidence = `${measured ? `, ${road.measured_camera_count} of ${road.camera_count} linked camera estimates, ${road.active_camera_count} feeds live` : road.estimate.sample_count > 0 ? `, ${road.estimate.sample_count} recent samples${road.estimate.image_coverage_percent == null ? '' : `, ${road.estimate.image_coverage_percent}% image coverage`}, congestion unmeasured, ${road.active_camera_count} feeds live` : ', road association only'}${crossings ? `, ${crossings} inbound camera-track crossings in the last minute` : ''}`;
+          path?.setAttribute('aria-label', `${road.route} ${road.direction}bound: ${road.estimate.label}${evidence}`);
+          path?.addEventListener('keydown', event => {
+            if ((event as KeyboardEvent).key === 'Enter') useProduct.getState().navigate(`/cameras/${road.camera_id}`);
+          });
+        }
+      } catch {
+        if (!stopped) {
+          group.clearLayers();
+          if (statusMessage) statusMessage.textContent = 'Road estimates are temporarily unavailable.';
+        }
+      }
+      finally { pending = false; }
+    };
+    void update(); const timer = window.setInterval(() => void update(), 10000);
+    return () => { stopped = true; clearInterval(timer); controller.abort(); group.remove(); statusControl.remove(); };
+  }, [map, mode, forceObserved, visible]);
+  return null;
+}
 
 function MapTools({ bounds, expanded, highlight, onExpand, forceObserved }: { forceObserved?: boolean; bounds?: L.LatLngBounds; expanded: boolean; highlight?: GeoJsonEdgeFeature; onExpand: () => void }) {
 
@@ -264,7 +350,7 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
   return <div ref={root} className={`p-city-map ${compact ? 'compact' : ''} ${expanded ? 'expanded' : ''}`} role={expanded ? 'dialog' : undefined} aria-modal={expanded || undefined} aria-label={expanded ? "Expanded map of Los Angeles" : "Mobility map"}>
     <MapContainer center={center} zoom={compact ? 14 : graphStatus?.default_zoom ?? 13} scrollWheelZoom={!compact} zoomControl={false} className="p-leaflet" attributionControl>
       <TileLayer key={effectiveStyle} eventHandlers={{ tileerror: () => { if (effectiveStyle === 'terrain') setTerrainFailed(true); } }} url={effectiveStyle === 'terrain' ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'} attribution={effectiveStyle === 'terrain' ? '&copy; OpenStreetMap · SRTM | &copy; OpenTopoMap (CC-BY-SA)' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'} maxZoom={effectiveStyle === 'terrain' ? 17 : 19} />
-      <Roads interactive={!onPick} forceObserved={forceObserved} onRoad={onRoad} /><MapEffects focus={focus} route={route} bounds={bounds} highlight={highlight} compact={compact} expanded={expanded} onPick={onPick} />
+      <Roads interactive={!onPick} forceObserved={forceObserved} onRoad={onRoad} /><ObservedRoadConditions forceObserved={forceObserved} /><MapEffects focus={focus} route={route} bounds={bounds} highlight={highlight} compact={compact} expanded={expanded} onPick={onPick} />
       <CorridorOverlay edges={viewEdges} />
       <SelectedSegment edge={highlight} />
       {!compact && <><ZoomControl position="topright" /><ScaleControl position="bottomleft" imperial={false} /><MapTools forceObserved={forceObserved} bounds={bounds} expanded={expanded} highlight={highlight} onExpand={() => setExpanded(v => !v)} /></>}
@@ -274,8 +360,14 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
     </MapContainer>
     {mapStyle === 'terrain' && terrainFailed && <div className="p-map-source-notice" role="status">Terrain unavailable · showing the street map</div>}
     <div className="p-map-atlas"><span className="p-compass">N<svg viewBox="0 0 20 25"><path d="M10 1L2 23l8-7 8 7z" fill="currentColor" /></svg></span><span>Greater Los Angeles<br /><b>California · US</b></span></div>
-    {!compact && <div className="p-map-legend">{viewEdges && <span><i style={{ background: '#477a53', height: 5 }} />Analyzed corridor</span>}{mode === 'presentation' ? <><span><i style={{ background: '#7fac85' }} />Free-flowing</span><span><i style={{ background: '#d8b363' }} />Moderate</span><span><i style={{ background: '#cf7b69' }} />High</span></> : <span><i style={{ background: '#7fac85' }} />Road network · no traffic counts</span>}<small>{mode === 'presentation' ? "Illustrative colors" : "No congestion measurements"}</small></div>}
-    {!compact && <div className="p-map-coverage">{district === "All districts" ? "Metropolitan coverage" : district} · {(cameraItems || cameras.filter(c => matchesZone(district, c.district))).length}  cameras <span>Zoom in to separate the cameras</span></div>}
+    {!compact && <div className="p-map-legend">{viewEdges && <span><i style={{ background: '#477a53', height: 5 }} />Analyzed corridor</span>}{mode === 'presentation' ? <><span><i style={{ background: '#7fac85' }} />Free-flowing</span><span><i style={{ background: '#d8b363' }} />Moderate</span><span><i style={{ background: '#cf7b69' }} />High</span></> : <><span><i style={{ background: '#82af94' }} />Moving</span><span><i style={{ background: '#d6b274' }} />Slowing</span><span><i style={{ background: '#d38e7e' }} />Possible queue</span></>}<small>{mode === 'presentation' ? "Illustrative colors" : "Colored segments: camera estimates · gray: unmeasured"}</small></div>}
+    {!compact && <MapCoverageNote district={district} cameraCount={(cameraItems || cameras.filter(c => matchesZone(district, c.district))).length} />}
   </div>;
 
+}
+
+function MapCoverageNote({ district, cameraCount }: { district: string; cameraCount: number }) {
+  const [visible, setVisible] = useState(true);
+  if (!visible) return <button className="p-map-coverage-show" onClick={() => setVisible(true)}>Show map tip</button>;
+  return <div className="p-map-coverage"><span><b>{district === 'All districts' ? 'Camera coverage' : district}</b><small>{cameraCount ? 'Zoom in to explore nearby camera feeds' : 'No cameras in this area'}</small></span><button type="button" aria-label="Hide map tip" onClick={() => setVisible(false)}>×</button></div>;
 }

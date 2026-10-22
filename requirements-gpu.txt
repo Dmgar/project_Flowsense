@@ -1,0 +1,4 @@
+# Optional CUDA replacement for the CPU-only onnxruntime package in requirements.txt.
+# Remove the CPU package before installing this file; both distributions use the
+# same Python import name.
+onnxruntime-gpu[cuda,cudnn]>=1.31.0,<1.32.0

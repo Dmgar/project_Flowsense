@@ -45,12 +45,16 @@ class VehicleDetector:
         nms_threshold: float = 0.5,
         backend: str = "opencv_dnn",
         class_names: Optional[dict[int, str]] = None,
+        num_classes: int = 80,
+        input_size: int = 640,
     ):
         self.model_path = model_path
         self.confidence_threshold = confidence_threshold
         self.nms_threshold = nms_threshold
         self.backend = backend
         self.class_names = class_names or VEHICLE_CLASS_IDS
+        self.num_classes = num_classes
+        self.input_size = input_size
 
         self._net: Optional[cv2.dnn.Net] = None
         self._ort_session = None  # onnxruntime.InferenceSession
@@ -78,6 +82,7 @@ class VehicleDetector:
         # OpenCV backend uses CPU by default; older engines need the explicit target.
         if int(cv2.__version__.split(".")[0]) < 5:
             self._net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+        self.execution_provider = "OpenCV DNN · CPU"
         logger.info("OpenCV DNN model loaded successfully.")
 
     def _load_onnxruntime(self) -> None:
@@ -89,19 +94,30 @@ class VehicleDetector:
                 "Install it with: pip install onnxruntime"
             ) from exc
 
-        logger.info(f"Loading ONNX model via ONNX Runtime: {self.model_path}")
-        self._ort_session = ort.InferenceSession(
-            self.model_path,
-            providers=["CPUExecutionProvider"],
-        )
-        logger.info("ONNX Runtime session created successfully.")
+        logger.info("Loading ONNX model via ONNX Runtime: %s", self.model_path)
+        available = ort.get_available_providers()
+        providers = ["CUDAExecutionProvider", "CPUExecutionProvider"] if "CUDAExecutionProvider" in available else ["CPUExecutionProvider"]
+        try:
+            if providers[0] == "CUDAExecutionProvider":
+                preload = getattr(ort, "preload_dlls", None)
+                if preload is not None:
+                    preload()
+            self._ort_session = ort.InferenceSession(self.model_path, providers=providers)
+        except Exception:
+            if providers[0] != "CUDAExecutionProvider":
+                raise
+            logger.warning("CUDA initialization failed for %s; retrying with the CPU provider.", self.model_path, exc_info=True)
+            self._ort_session = ort.InferenceSession(self.model_path, providers=["CPUExecutionProvider"])
+        active = self._ort_session.get_providers()
+        self.execution_provider = next((name for name in ("CUDAExecutionProvider", "CPUExecutionProvider") if name in active), active[0])
+        logger.info("ONNX Runtime model ready with %s.", self.execution_provider)
 
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _preprocess(frame: np.ndarray) -> tuple[np.ndarray, int, int, float, int, int]:
+    def _preprocess(frame: np.ndarray, input_size: int = _INPUT_SIZE) -> tuple[np.ndarray, int, int, float, int, int]:
         """
         Letterbox-resize and normalise a BGR frame for YOLOv8 input.
 
@@ -117,17 +133,17 @@ class VehicleDetector:
             Original frame width and height for coordinate clamping.
         """
         h, w = frame.shape[:2]
-        scale = min(_INPUT_SIZE / w, _INPUT_SIZE / h)
+        scale = min(input_size / w, input_size / h)
         new_w, new_h = int(w * scale), int(h * scale)
 
         resized = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
         # Pad to square canvas
-        canvas = np.full((_INPUT_SIZE, _INPUT_SIZE, 3), 114, dtype=np.uint8)
-        pad_y, pad_x = (_INPUT_SIZE - new_h) // 2, (_INPUT_SIZE - new_w) // 2
+        canvas = np.full((input_size, input_size, 3), 114, dtype=np.uint8)
+        pad_y, pad_x = (input_size - new_h) // 2, (input_size - new_w) // 2
         canvas[pad_y : pad_y + new_h, pad_x : pad_x + new_w] = resized
 
-        blob = cv2.dnn.blobFromImage(canvas, scalefactor=1.0 / 255.0, size=(_INPUT_SIZE, _INPUT_SIZE), swapRB=True)
+        blob = cv2.dnn.blobFromImage(canvas, scalefactor=1.0 / 255.0, size=(input_size, input_size), swapRB=True)
 
         return blob, pad_x, pad_y, scale, w, h
 
@@ -184,8 +200,10 @@ class VehicleDetector:
 
         # Squeeze batch dimension and transpose to (N, 84)
         output = raw_output.squeeze(0)
-        if output.ndim == 2 and output.shape[0] == 84:
+        if output.ndim == 2 and output.shape[0] == 4 + getattr(self, "num_classes", 80):
             output = output.T  # (8400, 84)
+        elif output.ndim == 2 and output.shape[1] != 4 + getattr(self, "num_classes", 80):
+            raise ValueError(f"Detector output {output.shape} does not match the configured class count.")
 
         if output.ndim != 2 or len(output) == 0:
             return []
@@ -236,18 +254,24 @@ class VehicleDetector:
         conf_list = cand_conf.astype(float).tolist()
         class_id_list = cand_class_ids.astype(int).tolist()
 
-        # OpenCV NMS
-        indices = cv2.dnn.NMSBoxes(boxes, conf_list, self.confidence_threshold, self.nms_threshold)
+        # Suppress duplicates within each class; riders must not erase bicycles.
+        indices = []
+        for class_id in sorted(set(class_id_list)):
+            group = [i for i, value in enumerate(class_id_list) if value == class_id]
+            kept = cv2.dnn.NMSBoxes([boxes[i] for i in group], [conf_list[i] for i in group],
+                                   self.confidence_threshold, self.nms_threshold)
+            indices.extend(group[int(i)] for i in np.asarray(kept).reshape(-1))
 
         detections: List[Detection] = []
         if len(indices) > 0:
-            for idx in indices.flatten():
+            for idx in indices:
                 detections.append(
                     Detection(
                         bbox=tuple(boxes[idx]),
                         class_id=class_id_list[idx],
                         class_name=names[class_id_list[idx]],
                         confidence=round(conf_list[idx], 3),
+                        class_scores={names[key]: float(cand_output[idx, 4 + key]) for key in names},
                     )
                 )
 
@@ -271,7 +295,7 @@ class VehicleDetector:
         List[Detection]
             Detected vehicles with bounding boxes mapped to original frame coordinates.
         """
-        blob, pad_x, pad_y, scale, orig_w, orig_h = self._preprocess(frame)
+        blob, pad_x, pad_y, scale, orig_w, orig_h = self._preprocess(frame, input_size=getattr(self, "input_size", 640))
 
         if self.backend == "opencv_dnn":
             raw = self._infer_opencv(blob)

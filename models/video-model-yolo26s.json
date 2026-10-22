@@ -1,0 +1,9 @@
+{
+  "model": "yolo26s",
+  "input_size": 640,
+  "output": "1x84x8400",
+  "source": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolo26s.pt",
+  "ultralytics_version": "8.4.183",
+  "sha256": "521694c6e0df3b0a937d63447812e62200f25c744135969aa7797c0a77636602",
+  "license": "AGPL-3.0 (Ultralytics pretrained model)"
+}

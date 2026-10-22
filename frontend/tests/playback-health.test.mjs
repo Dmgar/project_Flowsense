@@ -1,6 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { bufferedLiveTarget, PlaybackHealth } from '../src/product/playbackHealth.ts';
+import { automaticReconnectMessage, reconnectDelayMs, shouldRecoverDisconnectedWebRtcConnection, shouldWatchCameraFrames, WEBRTC_DISCONNECT_GRACE_MS } from '../src/product/reconnectPolicy.ts';
+
+test('live video retries keep recovering while their request rate stays bounded', () => {
+  assert.equal(reconnectDelayMs(1), 1000);
+  assert.equal(reconnectDelayMs(2), 2000);
+  assert.equal(reconnectDelayMs(3), 4000);
+  assert.equal(reconnectDelayMs(4), 4000);
+  assert.equal(reconnectDelayMs(100), 4000);
+  assert.equal(automaticReconnectMessage('The decoder stopped.'), 'The decoder stopped. Retrying automatically.');
+  assert.equal(automaticReconnectMessage(' '), 'The camera connection was interrupted. Retrying automatically.');
+});
+
+test('brief WebRTC disconnects keep their session open for recovery', () => {
+  assert.equal(WEBRTC_DISCONNECT_GRACE_MS, 8000);
+  assert.equal(shouldRecoverDisconnectedWebRtcConnection('disconnected', 1000, 8999), false);
+  assert.equal(shouldRecoverDisconnectedWebRtcConnection('disconnected', 1000, 9000), true);
+  assert.equal(shouldRecoverDisconnectedWebRtcConnection('connected', 1000, 20000), false);
+  assert.equal(shouldRecoverDisconnectedWebRtcConnection('failed', 1000, 1000), false);
+});
+
+test('frame watchdog runs during connection startup when the video element has no track and remains paused', () => {
+  assert.equal(shouldWatchCameraFrames(true, false), true);
+  assert.equal(shouldWatchCameraFrames(true, true), false);
+  assert.equal(shouldWatchCameraFrames(false, false), false);
+  assert.equal(shouldWatchCameraFrames(true, false, false, true), true);
+  assert.equal(shouldWatchCameraFrames(true, false, true, true), false);
+});
 
 test('a source that never yields a frame falls back after 35 seconds of active waiting', () => {
   const health = new PlaybackHealth(0);

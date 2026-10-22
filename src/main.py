@@ -5,6 +5,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.config import settings
+from src.api.routes.video import router as video_router
+from src.services.video_service import video_service
 from src.services.graph_service import graph_service
 from src.services.incident_intelligence import incident_intelligence
 from src.services.mock_simulator import simulator
@@ -46,11 +48,17 @@ async def lifespan(app: FastAPI):
     logger.info(f"Graph initialized: {status.node_count} nodes, {status.edge_count} edges for {status.city}.")
     yield
     logger.info("Shutting down FlowSense services...")
+    await video_service.shutdown()
     simulator.stop_traffic_simulation()
     try:
-        from src.api.routes.perception import _active_pipelines
-        for pipe in _active_pipelines.values():
+        import asyncio
+        from src.api.routes.perception import _active_pipelines, _pipeline_tasks
+        for pipe in list(_active_pipelines.values()):
             pipe.stop()
+        tasks = list(_pipeline_tasks.values())
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
     except Exception as e:
         logger.warning(f"Error stopping perception pipelines: {e}")
 
@@ -80,6 +88,7 @@ app.include_router(signals_router, prefix=settings.API_V1_STR)
 app.include_router(cameras_router, prefix=settings.API_V1_STR)
 app.include_router(perception_router, prefix=settings.API_V1_STR)
 app.include_router(mobility_router, prefix=settings.API_V1_STR)
+app.include_router(video_router, prefix=settings.API_V1_STR)
 
 # Real-Time WebSocket Telemetry Channel
 @app.websocket("/ws/telemetry")

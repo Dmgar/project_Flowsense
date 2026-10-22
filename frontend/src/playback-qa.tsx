@@ -30,7 +30,7 @@ export function PlaybackQA() {
       <button onClick={() => { setReason(''); setRevision(value => value + 1); }}>Start a new session</button>
     </div>
     <p>Recorded visibility: <output data-testid="visibility-history">{visibility.join(' → ')}</output></p>
-    {reason ? <p role="alert">Return to image: {reason}</p> : <PublicVideoPlayer key={revision} url="http://127.0.0.1:8003/playlist.m3u8" onUnavailable={unavailable} />}
+    {reason ? <p role="alert">Video unavailable: {reason}</p> : <PublicVideoPlayer key={revision} url="http://127.0.0.1:8003/playlist.m3u8" onUnavailable={unavailable} />}
     <style>{'video{width:100%;max-height:480px;background:#15231b}button,select{padding:9px}.p-video-health{display:flex;justify-content:space-between;padding:12px;background:#edf2e7}.p-video-health>div{display:flex;gap:12px}'}</style>
   </main>;
 }

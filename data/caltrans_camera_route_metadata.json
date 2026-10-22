@@ -1,0 +1,43 @@
+{
+  "source": "https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/CCTV/FeatureServer/0",
+  "supplemental_sources": [
+    "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json"
+  ],
+  "retrieved_at": "2026-10-21",
+  "match_policy": "Official Caltrans index must equal the camera ID suffix, exact location name, and coordinates within 100 meters. Existing catalog metadata is never overwritten.",
+  "cameras": {
+    "caltrans-d7-1002": {
+      "official_index": 1002,
+      "location_name": "I-110 : (186) Wilshire Blvd",
+      "route": "I-110",
+      "direction": "North",
+      "latitude": 34.0517,
+      "longitude": -118.2599
+    },
+    "caltrans-d7-1030": {
+      "official_index": 1030,
+      "location_name": "I-110 : (185) 7th St",
+      "route": "I-110",
+      "direction": "North",
+      "latitude": 34.0504,
+      "longitude": -118.2619
+    },
+    "caltrans-d7-1051": {
+      "official_index": 1051,
+      "location_name": "I-110 : (828) James M Wood Blvd Off-Ramp",
+      "route": "I-5",
+      "direction": "North",
+      "latitude": 34.047339,
+      "longitude": -118.26519
+    },
+    "caltrans-d7-1235": {
+      "official_index": 1235,
+      "location_name": "I-10: (99) Maple Ave",
+      "route": "I-10",
+      "direction": "East",
+      "latitude": 34.030974,
+      "longitude": -118.259944,
+      "source_url": "https://cwwp2.dot.ca.gov/data/d7/cctv/cctvStatusD07.json"
+    }
+  }
+}

@@ -60,7 +60,8 @@ class MockSimulator:
                             u=u, v=v, key=k,
                             congestion_factor=new_cg,
                             vehicle_count=count,
-                            average_speed_kmh=speed
+                            average_speed_kmh=speed,
+                            data_source="simulation",
                         )
                         updates.append({
                             "u": int(u),

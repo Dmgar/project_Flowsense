@@ -13,6 +13,7 @@ class Detection:
     class_id: int
     class_name: str
     confidence: float
+    class_scores: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass

@@ -1,0 +1,4 @@
+# Isolated export tooling; not required by the OpenCV inference server.
+ultralytics==8.4.183
+onnx>=1.20,<2
+onnxscript>=0.5,<1

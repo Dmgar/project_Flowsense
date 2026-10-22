@@ -1,0 +1,10 @@
+{
+  "model": "yolo11s",
+  "purpose": "Adaptive low-light CCTV inference",
+  "input_size": 640,
+  "output": "1x84x8400",
+  "source": "https://github.com/ultralytics/assets",
+  "export_command": "python scripts/prepare_video_model.py --model yolo11s",
+  "sha256": "69fc6bcd17992702601b1538cbffccf402829cac0935eea0cad14f03bd9fa18f",
+  "license": "AGPL-3.0 (Ultralytics pretrained model)"
+}

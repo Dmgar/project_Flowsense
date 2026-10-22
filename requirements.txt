@@ -13,3 +13,7 @@ httpx2>=2.13.1
 pytest>=9.1.0
 reportlab>=4.0.0
 pillow>=9.0.0
+aiortc>=1.15.0,<2
+av>=16.0.0,<18
+trackers==2.6.1
+supervision==0.31.1

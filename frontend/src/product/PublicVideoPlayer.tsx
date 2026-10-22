@@ -9,7 +9,7 @@ function liveTarget(instance: Hls | null, video: HTMLVideoElement) {
     Array.from({ length: video.buffered.length }, (_, index) => [video.buffered.start(index), video.buffered.end(index)] as [number, number]));
 }
 
-export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string; poster?: string; onUnavailable: (reason: string) => void }) {
+export function PublicVideoPlayer({ url, onUnavailable }: { url: string; onUnavailable: (reason: string) => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const hls = useRef<Hls | null>(null);
   const [quality, setQuality] = useState('stable');
@@ -24,14 +24,14 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
     let deferredRecovery: 'network' | 'media' | null = null;
     let lastIssue = '';
     const timers: number[] = [];
-    const unavailable = (reason?: string) => { if (active) { active = false; onUnavailable(reason || (lastIssue ? `${lastIssue} Showing the periodic image; you can retry the video.` : "Video did not advance after recovery attempts. Showing the periodic image; you can retry the video.")); } };
+    const unavailable = (reason?: string) => { if (active) { active = false; onUnavailable(reason || (lastIssue ? `${lastIssue} Video unavailable. Reconnect or choose another video source.` : "Video did not advance after recovery attempts. Video unavailable. Reconnect or choose another video source.")); } };
     const waitForUser = (error: unknown) => {
       if (!active) return;
       const name = error instanceof Error ? error.name : '';
       if (name === 'AbortError') return; // Reattachment can supersede an earlier play request.
       if (name === 'NotAllowedError') {
         health.setPaused(true, performance.now()); setStatus("Press play to continue");
-      } else unavailable("Could not start this video in the browser. Showing the periodic image; you can try another nearby source.");
+      } else unavailable("Could not start this video in the browser. Reconnect or choose another video source.");
     };
     const recover = (kind: 'network' | 'media') => {
       if (!active) return;
@@ -73,7 +73,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       if (deferredRecovery) recover(deferredRecovery);
       if (!active) return;
       const decision = health.poll(performance.now(), video.seeking);
-      if (decision === 'fallback') { unavailable(lastIssue ? undefined : "No first video frame arrived after 35 seconds of active waiting. Showing the periodic image; you can try another nearby camera."); return; }
+      if (decision === 'fallback') { unavailable(lastIssue ? undefined : "No first video frame arrived after 35 seconds of active waiting. Reconnect or choose another video camera."); return; }
       if (decision === 'recover') {
         const live = liveTarget(hls.current, video);
         if (live && live > video.currentTime + 3) video.currentTime = live;
@@ -101,7 +101,7 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
         if (data.details === HlsPlayer.ErrorDetails.BUFFER_ADD_CODEC_ERROR || data.details === HlsPlayer.ErrorDetails.FRAG_PARSING_ERROR) lastIssue = "This browser could not decode the received video.";
         if (!data.fatal) return;
         if (data.response?.code === 403 || data.response?.code === 404) {
-          unavailable(`The provider returned an error ${data.response.code} when requesting video. Showing the periodic image; availability depends on Caltrans.`); return;
+          unavailable(`The provider returned an error ${data.response.code} when requesting video. Video availability depends on Caltrans.`); return;
         }
         if (data.type === HlsPlayer.ErrorTypes.NETWORK_ERROR) recover('network');
         else if (data.type === HlsPlayer.ErrorTypes.MEDIA_ERROR) recover('media');
@@ -118,5 +118,5 @@ export function PublicVideoPlayer({ url, poster, onUnavailable }: { url: string;
       video.pause(); video.removeAttribute('src'); video.load();
     };
   }, [url, quality, revision, onUnavailable]);
-  return <div className="p-public-video"><video ref={ref} poster={poster} className="p-hls-video" controls muted autoPlay playsInline aria-label="Public video from camera" /><div className="p-video-health"><span role="status"><Badge tone={status === "Video playing" ? 'green' : 'amber'}>{status}</Badge></span><div><label>Quality<select value={quality} onChange={event => setQuality(event.target.value)}><option value="stable">Prioritize stability</option><option value="auto">Automatic</option></select></label><button className="p-text-button" onClick={() => { const video = ref.current; const live = video ? liveTarget(hls.current, video) : null; if (video && live !== null) video.currentTime = live; void video?.play().catch(() => setStatus("Press play to continue")); }}><Icon name="play" size={14} />Go live</button><button className="p-text-button" onClick={() => { setStatus("Reconnecting…"); setRevision(value => value + 1); }}><Icon name="refresh" size={14} />Reconnect</button></div></div></div>;
+  return <div className="p-public-video"><video ref={ref} className="p-hls-video" controls muted autoPlay playsInline aria-label="Public video from camera" /><div className="p-video-health"><span role="status"><Badge tone={status === "Video playing" ? 'green' : 'amber'}>{status}</Badge></span><div><label>Quality<select value={quality} onChange={event => setQuality(event.target.value)}><option value="stable">Prioritize stability</option><option value="auto">Automatic</option></select></label><button className="p-text-button" onClick={() => { const video = ref.current; const live = video ? liveTarget(hls.current, video) : null; if (video && live !== null) video.currentTime = live; void video?.play().catch(() => setStatus("Press play to continue")); }}><Icon name="play" size={14} />Go live</button><button className="p-text-button" onClick={() => { setStatus("Reconnecting…"); setRevision(value => value + 1); }}><Icon name="refresh" size={14} />Reconnect</button></div></div></div>;
 }

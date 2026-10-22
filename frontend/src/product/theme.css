@@ -50,6 +50,9 @@ html[data-theme="dark"] .p-platform .p-region-explorer button>b { background: #4
 html[data-theme="dark"] .p-platform .p-insight-list > div > b { background: #3e412a; color: #e5dfb2; }
 html[data-theme="dark"] .p-platform .p-signal-icon { background: #453228; color: #ebbd9f; }
 html[data-theme="dark"] .p-platform :is(.p-camera-thumb,.p-regional-summary,.p-coverage-cities>button,.p-favorite-button,.p-segmented,.p-zone-label,.p-zone-context,.p-pipeline-icon,.p-story-principle) { background: #2e2f32; color: #d4d5d8; border-color: #4a4b4e; }
+html[data-theme="dark"] .p-platform .p-calibration-banner { background: linear-gradient(110deg,#292f2a,#222326); border-color: #414a42; border-left-color: #89b48d; }
+html[data-theme="dark"] .p-platform .p-calibration-banner strong { color: #e0e2df; }
+html[data-theme="dark"] .p-platform .p-calibration-banner p { color: #b0b3b0; }
 html[data-theme="dark"] .p-platform :is(.p-favorite-button[aria-pressed="true"],.p-segmented>button.active,.p-navigation nav b,.p-coverage-cities b) { background: #494a4d; color: #e6e7ea; }
 html[data-theme="dark"] .p-platform :is(.p-coverage-bar,.p-confidence>span) { background: #434447; }
 html[data-theme="dark"] .p-platform .p-detail-rank { background: #4a352a; color: #efc3a7; }
@@ -80,7 +83,7 @@ html[data-theme="dark"] .p-platform .p-badge.amber { background: #463b23; color:
 html[data-theme="dark"] .p-platform .p-badge.red { background: #4b2d28; color: #f4b6a2; border-color: #795044; }
 html[data-theme="dark"] .p-platform .p-badge.gray { background: #303d32; color: #c0cdc0; }
 html[data-theme="dark"] .p-platform :is(.p-photo-empty,.p-donut>div) { background: #292a2d; color: #c0c1c4; }
-html[data-theme="dark"] .p-platform :is(.p-video-health,.p-map-layer-menu,.p-map-actions button,.p-map-story,.p-map-legend,.p-map-coverage,.p-corridor-caption,.p-risk-map-key,.p-map-tooltip) { background: #1a2a20ed !important; border-color: #4b6344 !important; color: #d2e0c8 !important; }
+html[data-theme="dark"] .p-platform :is(.p-video-health,.p-map-layer-menu,.p-map-actions button,.p-map-story,.p-map-legend,.p-map-coverage,.p-map-road-status,.p-corridor-caption,.p-risk-map-key,.p-map-tooltip) { background: #1a2a20ed !important; border-color: #4b6344 !important; color: #d2e0c8 !important; }
 html[data-theme="dark"] .p-platform :is(.p-layer-controls>button,.p-layer-controls>button.active) { background: #222326ee; color: #c0c1c4; border-color: #6f7073; }
 html[data-theme="dark"] .p-platform .p-layer-controls>button:not(.active) { color: #929396; border-color: #3e3f42; }
 html[data-theme="dark"] .p-platform .p-camera-pin>span { background: #2c2d30; color: #d1d2d5; border-color: #9fa0a3; }
@@ -104,3 +107,5 @@ html[data-theme="dark"] .p-platform .p-toast { background: #46474a; color: #eeef
   html[data-theme="dark"] .p-platform :is(h1,h2,h3,h4,p,small,b,strong) { color: #2d2e31 !important; }
   .p-theme-toggle,.p-theme-settings { display: none !important; }
 }
+
+html[data-theme="dark"] .p-platform .p-calibration-queue{background:#292f2a;border-color:#414a42;border-left-color:#89b48d}html[data-theme="dark"] .p-platform .p-calibration-queue p{color:#b0b3b0}

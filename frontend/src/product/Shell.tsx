@@ -5,7 +5,8 @@ import { cameraMatches } from './evidenceSearch';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { DataInitializer } from '../components/DataInitializer';
 import { useTelemetrySocket } from '../hooks/useTelemetrySocket';
-import { CameraEvidence } from './CameraEvidence';
+const CameraEvidence = lazy(() => import('./CameraEvidence').then(module => ({ default: module.CameraEvidence })));
+import { MonitoringHeartbeat } from './MonitoringHeartbeat';
 import { demoSteps, signals } from './data';
 import { getCameras, getCases } from './api';
 import { useProduct } from './store';
@@ -90,12 +91,47 @@ export default function ProductShell() {
       if (pending) return;
       const controller = new AbortController();
       pending = controller;
-      try {
-        const [cameras, cases] = await Promise.all([getCameras(controller.signal), getCases(controller.signal)]);
+      const catalog = useProduct.getState();
+      if (!catalog.cameraCatalogLoaded || catalog.cameraCatalogFailed) catalog.setCameraCatalogStatus(false, false);
+      let cameraFailure = '';
+      let casesFailure = '';
+      const updateConnection = () => {
         if (!active) return;
-        useProduct.getState().setCameras(cameras); useProduct.getState().setCases(cases);
-        useProduct.getState().setConnected(true); useProduct.getState().setError('');
-      } catch { if (active) { useProduct.getState().setConnected(false); useProduct.getState().setError("No connection to FlowSense. Sources and cases will load when the connection is restored."); } }
+        const product = useProduct.getState();
+        if (cameraFailure) {
+          product.setConnected(false);
+          product.setError(`Camera sources are temporarily unavailable: ${cameraFailure}`);
+        } else if (casesFailure) {
+          product.setConnected(true);
+          product.setError(`Camera sources are available, but saved cases are temporarily unavailable: ${casesFailure}`);
+        } else {
+          product.setConnected(true);
+          product.setError('');
+        }
+      };
+      const cameraLoad = getCameras(controller.signal).then(cameras => {
+        if (!active) return;
+        useProduct.getState().setCameras(cameras);
+        useProduct.getState().setCameraCatalogStatus(true, false);
+        cameraFailure = '';
+        updateConnection();
+      }).catch(reason => {
+        if (!active || controller.signal.aborted) return;
+        useProduct.getState().setCameraCatalogStatus(false, true);
+        cameraFailure = reason instanceof Error ? reason.message : 'The camera catalog could not be loaded.';
+        updateConnection();
+      });
+      const casesLoad = getCases(controller.signal).then(cases => {
+        if (!active) return;
+        useProduct.getState().setCases(cases);
+        casesFailure = '';
+        updateConnection();
+      }).catch(reason => {
+        if (!active || controller.signal.aborted) return;
+        casesFailure = reason instanceof Error ? reason.message : 'Saved cases could not be loaded.';
+        updateConnection();
+      });
+      try { await Promise.all([cameraLoad, casesLoad]); }
       finally { if (pending === controller) pending = null; }
     }
     void load();
@@ -120,14 +156,14 @@ export default function ProductShell() {
   const exploreSearch = () => { const query = state.query; state.setDistrict("All districts"); state.setMapFocus(null); go(`/explore?q=${encodeURIComponent(query)}`); };
   const step = state.demoIndex >= 0 ? demoSteps[state.demoIndex] : null;
   const parts = state.path.split('/').filter(Boolean);
-  const evidenceWorkspace = parts[0] === 'explore' || parts[0] === 'watch';
+  const evidenceWorkspace = ['explore', 'watch', 'cameras'].includes(parts[0]);
   let screen;
   switch (parts[0]) {
     case 'explore': screen = <EvidenceExplorer />; break;
     case 'watch': screen = <ObservationDesk />; break;
     case 'overview': case undefined: screen = <Overview />; break;
     case 'map': screen = <Overview mapOnly />; break;
-    case 'cameras': screen = parts[1] ? <CameraEvidence key={parts[1]} cameraId={parts[1]} /> : <Cameras onConnect={() => setConnect(true)} />; break;
+    case 'cameras': screen = parts[1] ? <CameraEvidence key={parts[1]} cameraId={parts[1]} onRetry={() => setReload(value => value + 1)} /> : <Cameras onConnect={() => setConnect(true)} onRetry={() => setReload(value => value + 1)} />; break;
     case 'corridors': screen = <CorridorAnalytics key={parts[1]} id={parts[1]} />; break;
     case 'hotspots': screen = <Hotspots />; break;
     case 'risk-signals': screen = <Hotspots risk />; break;
@@ -143,14 +179,14 @@ export default function ProductShell() {
     ...(state.mode === 'presentation' ? signals : []).filter((s) => `${s.location} ${s.title}`.toLowerCase().includes(state.query.toLowerCase())).slice(0, 3).map((s) => ({ name: s.location, type: s.title, path: '/hotspots', icon: 'pin', signal: s.id })),
     ...nav.filter(([, , label]) => label.toLowerCase().includes(state.query.toLowerCase())).map(([path, icon, name]) => ({ name, path, type: "Module", icon })),
   ] : [];
-  return <div className="p-platform">
+  return <div className="p-platform"><MonitoringHeartbeat />
     <a className="p-skip" href="#product-content">Skip to content</a><DataInitializer />
-    <aside ref={navigation} id="workspace-navigation" className={`p-navigation ${mobileNav ? 'open' : ''}`} inert={smallScreen && !mobileNav} aria-hidden={smallScreen && !mobileNav}><button className="p-navigation-close p-icon-button" aria-label="Close navigation" onClick={() => setMobileNav(false)}><Icon name="close" /></button><button className="p-brand" onClick={() => go('/overview')} aria-label="FlowSense home"><span className="p-brand-symbol"><BrandMark size={38} decorative /></span><span>Flow<span>Sense</span><small>MOBILITY INTELLIGENCE</small></span></button><div className="p-region"><span>OPERATING AREA</span><b><i />Greater Los Angeles, CA</b><small>United States</small></div><nav aria-label="Main navigation">{nav.map(([path, icon, label]) => <button key={path} aria-label={label} title={label} aria-current={state.path.split('/')[1] === path.split('/')[1] ? 'page' : undefined} className={state.path.split('/')[1] === path.split('/')[1] ? 'active' : ''} onClick={() => go(path)}><Icon name={icon} size={19} /><span>{label}</span>{path === '/risk-signals' && state.cases.filter((c) => !['resolved', 'dismissed'].includes(c.status)).length > 0 && <b>{state.cases.filter((c) => !['resolved', 'dismissed'].includes(c.status)).length}</b>}</button>)}</nav><div className="p-navigation-bottom"><button className={parts[0] === 'storyboard' ? 'active' : ''} onClick={() => go('/storyboard')}><BrandMark size={18} decorative />How it works</button><button className={parts[0] === 'settings' ? 'active' : ''} onClick={() => go('/settings')}><Icon name="settings" />Settings</button><div className="p-nav-note"><span>LESS NOISE.</span><b>Better decisions.</b><small>Evidence · context · review</small></div></div></aside>
+    <aside ref={navigation} id="workspace-navigation" className={`p-navigation ${mobileNav ? 'open' : ''}`} inert={smallScreen && !mobileNav} aria-hidden={smallScreen && !mobileNav}><button className="p-navigation-close p-icon-button" aria-label="Close navigation" onClick={() => setMobileNav(false)}><Icon name="close" /></button><button className="p-brand" onClick={() => go('/overview')} aria-label="FlowSense home"><span className="p-brand-symbol"><BrandMark size={38} decorative /></span><span>Flow<span>Sense</span><small>MOBILITY INTELLIGENCE</small></span></button><div className="p-region"><span>OPERATING AREA</span><b><i />Greater Los Angeles, CA</b><small>United States</small></div><nav aria-label="Main navigation">{nav.map(([path, icon, label]) => <button key={path} aria-label={label} title={label} aria-current={state.path.split('/')[1] === path.split('/')[1] ? 'page' : undefined} className={state.path.split('/')[1] === path.split('/')[1] ? 'active' : ''} onClick={() => go(path)}><Icon name={icon} size={19} /><span>{label}</span>{path === '/risk-signals' && state.cases.filter((c) => !['resolved', 'dismissed'].includes(c.status)).length > 0 && <b>{state.cases.filter((c) => !['resolved', 'dismissed'].includes(c.status)).length}</b>}</button>)}</nav><div className="p-navigation-bottom"><div className="p-navigation-secondary"><button className={parts[0] === 'storyboard' ? 'active' : ''} onClick={() => go('/storyboard')}><BrandMark size={18} decorative />How it works</button><button className={parts[0] === 'settings' ? 'active' : ''} onClick={() => go('/settings')}><Icon name="settings" />Settings</button></div><div className="p-nav-note"><span>LESS NOISE.</span><b>Better decisions.</b><small>Evidence · context · review</small></div></div></aside>
     <div className="p-workspace" inert={smallScreen && mobileNav}><header className="p-topbar"><button className="fs-mobile-brand" aria-label="FlowSense home" title="FlowSense home" onClick={() => go('/overview')}><BrandMark size={29} decorative /><span>FlowSense</span></button><button ref={menuButton} className="p-menu-button p-icon-button" onClick={() => setMobileNav(!mobileNav)} aria-label={mobileNav ? "Close navigation" : "Open navigation"} aria-expanded={mobileNav} aria-controls="workspace-navigation"><Icon name="grid" /></button><div className="p-search" role="search" onFocus={() => setSearchOpen(true)} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSearchOpen(false); }}><Icon name="search" size={19} /><input ref={input} aria-label="Search for a camera, place or module" placeholder="Search for a street, freeway or camera…" value={state.query} onChange={(event) => { setSearchOpen(true); state.setQuery(event.target.value); }} onKeyDown={(e) => { if (e.key === 'Escape') { state.setQuery(''); setSearchOpen(false); } if (e.key === 'Enter' && state.query.trim().length > 1) exploreSearch(); }} /><kbd>/</kbd>{searchOpen && state.query.length > 1 && <div className="p-search-results"><button className="p-search-all" onClick={exploreSearch}><Icon name="map" /><span><b>Explore “{state.query}” on the map</b><small>All matching cameras and cameras near the street</small></span><Icon name="arrow" size={14} /></button>{searchResults.length ? searchResults.map((r, i) => <button key={`${r.path}-${i}`} onClick={() => { if ('signal' in r) state.selectSignal(r.signal as string); go(r.path); }}><Icon name={r.icon} /><span><b>{r.name}</b><small>{r.type}</small></span><Icon name="arrow" size={14} /></button>) : <p>No matches. Try another search.</p>}</div>}</div><div className="p-topbar-filters"><select aria-label="District" value={state.district} onChange={(e) => { state.setMapFocus(null); state.setDistrict(e.target.value); }}>{zones.map((d) => <option key={d}>{d}</option>)}</select><select aria-label="Period" value={state.period} onChange={(e) => state.setPeriod(e.target.value)}>{["Last 15 min", "Last hour", "Last 24 h", "Last 7 days"].map((p) => <option key={p}>{p}</option>)}</select></div><span className={`p-system-state ${state.connected ? '' : 'offline'}`}><i /><span>{state.connected ? "Service connected" : "Offline"}<small>{time.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' })}</small></span></span><button className="p-mobile-filter-button p-icon-button" aria-label={mobileFilters ? "Hide filters" : "Show filters"} aria-expanded={mobileFilters} onClick={() => setMobileFilters(!mobileFilters)}><Icon name="layers" /></button><ThemeControl /><button className="p-profile" aria-label="Operator settings" onClick={() => go('/settings')}>OM</button></header>
-      <div className="p-context-bar"><span><Icon name={!evidenceWorkspace && state.mode === 'presentation' ? 'play' : 'camera'} size={14} />{evidenceWorkspace ? "Public evidence · independent queries per camera" : state.mode === 'presentation' ? "Presentation view · illustrative indicators" : "Available observations · no invented indicators"}</span><button onClick={() => evidenceWorkspace ? go('/storyboard') : state.setMode(state.mode === 'presentation' ? 'observed' : 'presentation')}>{evidenceWorkspace ? "How to compare evidence" : state.mode === 'presentation' ? "View observations" : "View scenario"}<Icon name="arrow" size={13} /></button><button className="p-tour-trigger" onClick={() => { state.setMode('presentation'); state.setDemoIndex(0); go('/overview'); }}><Icon name="play" size={12} />Guided tour</button></div>
+      <div className="p-context-bar"><span><Icon name={!evidenceWorkspace && state.mode === 'presentation' ? 'play' : 'camera'} size={14} />{evidenceWorkspace ? "Camera video · independent source timing" : state.mode === 'presentation' ? "Presentation view · illustrative indicators" : "Available observations · no invented indicators"}</span><button onClick={() => evidenceWorkspace ? go('/storyboard') : state.setMode(state.mode === 'presentation' ? 'observed' : 'presentation')}>{evidenceWorkspace ? "How to compare evidence" : state.mode === 'presentation' ? "View observations" : "View scenario"}<Icon name="arrow" size={13} /></button><button className="p-tour-trigger" onClick={() => { state.setMode('presentation'); state.setDemoIndex(0); go('/overview'); }}><Icon name="play" size={12} />Guided tour</button></div>
       <div className={`p-mobile-filters ${mobileFilters ? 'open' : ''}`}><label>District<select aria-label="District" value={state.district} onChange={(e) => { state.setMapFocus(null); state.setDistrict(e.target.value); }}>{zones.map((value) => <option key={value}>{value}</option>)}</select></label><label>Period<select aria-label="Period" value={state.period} onChange={(e) => state.setPeriod(e.target.value)}>{["Last 15 min", "Last hour", "Last 24 h", "Last 7 days"].map((value) => <option key={value}>{value}</option>)}</select></label></div><main ref={content} id="product-content" className="p-content" tabIndex={-1}>{state.error && <div className="p-connection-error" role="status"><Icon name="alert" /><span>{state.error}</span><button className="p-button" onClick={() => setReload(value => value + 1)}>Retry connection</button></div>}<Suspense fallback={<div className="p-screen" role="status"><EmptyState title="Preparing your workspace" detail="Loading exploration and evidence tools." /></div>}>{screen}</Suspense></main>
     </div>
-    {mobileNav && <button className="p-nav-backdrop" aria-label="Close navigation" onClick={() => setMobileNav(false)} />}
+    {mobileNav && <button className="p-nav-backdrop" aria-label="Close navigation" onClick={() => { setMobileNav(false); menuButton.current?.focus(); }} />}
     {state.toast && <div className="p-toast" role="status"><Icon name="check" />{state.toast}<button aria-label="Close notice" onClick={() => state.notify('')}><Icon name="close" size={14} /></button></div>}
     {step && <div className="p-tour"><div><Badge tone="green">{state.demoIndex + 1} / {demoSteps.length}</Badge><button aria-label="Close tour" onClick={() => state.setDemoIndex(-1)}><Icon name="close" size={15} /></button></div><h3>{step.title}</h3><p>{step.detail}</p><footer><button className="p-text-button" disabled={state.demoIndex === 0} onClick={() => { const index = state.demoIndex - 1; state.setDemoIndex(index); go(demoSteps[index].route); }}>Previous</button><button className="p-button primary" onClick={() => { if (state.demoIndex === demoSteps.length - 1) { state.setDemoIndex(-1); state.notify("Tour completed. You can keep exploring each module."); } else { const index = state.demoIndex + 1; state.setDemoIndex(index); go(demoSteps[index].route); } }}>{state.demoIndex === demoSteps.length - 1 ? "Finish" : "Next"}<Icon name="arrow" size={15} /></button></footer></div>}
     {connect && <ConnectDialog onClose={() => setConnect(false)} />}

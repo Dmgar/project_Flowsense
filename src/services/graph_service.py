@@ -537,7 +537,8 @@ class GraphService:
         key: int = 0,
         congestion_factor: float = 0.0,
         vehicle_count: int = 0,
-        average_speed_kmh: float = 30.0
+        average_speed_kmh: float = 30.0,
+        data_source: str = "external_input",
     ) -> bool:
         """
         Updates the congestion metrics of an edge and dynamically recomputes W_e.
@@ -552,6 +553,7 @@ class GraphService:
         edge_data["congestion_factor"] = clamped_congestion
         edge_data["vehicle_count"] = int(vehicle_count)
         edge_data["average_speed_kmh"] = float(average_speed_kmh)
+        edge_data["traffic_data_source"] = data_source
 
         self.recompute_edge_weight(u_int, v_int, key)
         return True
@@ -563,6 +565,7 @@ class GraphService:
         for u, v, k, data in G.edges(keys=True, data=True):
             data["congestion_factor"] = 0.0
             data["vehicle_count"] = 0
+            data["traffic_data_source"] = "unavailable"
             data["average_speed_kmh"] = settings.DEFAULT_SPEED_KMH
             data["incident_multiplier"] = 1.0
             data["corridor_multiplier"] = 1.0
@@ -637,6 +640,9 @@ class GraphService:
                 color = "#F59E0B"  # Amber
             else:
                 color = "#EF4444"  # Red
+            source = data.get("traffic_data_source", "unavailable")
+            if source == "unavailable":
+                color = "#8e9e82"
 
             features.append({
                 "type": "Feature",
@@ -654,6 +660,8 @@ class GraphService:
                     "length_m": round(float(data.get("length", 0.0)), 1),
                     "congestion_factor": round(cg, 2),
                     "vehicle_count": int(data.get("vehicle_count", 0)),
+                    "traffic_data_source": source,
+                    "camera_measurement_linked": False,
                     "average_speed_kmh": round(float(data.get("average_speed_kmh", settings.DEFAULT_SPEED_KMH)), 1),
                     "color": color,
                     "emergency_weight": round(float(data.get("emergency_weight", 0.0)), 1)
@@ -662,6 +670,7 @@ class GraphService:
 
         return {
             "type": "FeatureCollection",
+            "traffic_provenance": "Routing inputs remain separate from camera measurements. Fresh camera-based condition estimates appear in a separate directional road overlay; camera speed and travel time are not calibrated.",
             "features": features
         }
 

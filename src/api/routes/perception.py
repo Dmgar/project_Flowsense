@@ -1,5 +1,6 @@
 import ipaddress
 import logging
+import asyncio
 import socket
 from typing import List, Literal
 from urllib.parse import urlparse
@@ -24,6 +25,7 @@ router = APIRouter(tags=["Perception & Advanced Routing"])
 
 # In-memory pipeline registry (populated when a pipeline is started)
 _active_pipelines: dict = {}
+_pipeline_tasks: dict = {}
 
 
 @router.get(
@@ -141,13 +143,22 @@ async def start_perception_pipeline(
 
         _active_pipelines[camera_id] = pipeline
 
-        # Note: The actual video processing should be launched via asyncio.create_task
-        # in a production system.  For now we register the pipeline as ready.
+        async def run():
+            try:
+                await pipeline.process_video(video_source, skip_frames=skip_frames)
+            except Exception:
+                logger.exception("Perception processing failed for %s", camera_id)
+            finally:
+                if _active_pipelines.get(camera_id) is pipeline:
+                    _active_pipelines.pop(camera_id, None)
+                    _pipeline_tasks.pop(camera_id, None)
+
+        _pipeline_tasks[camera_id] = asyncio.create_task(run())
         return {
-            "status": "initialized",
+            "status": "starting",
             "camera_id": camera_id,
             "video_source": video_source,
-            "message": f"Pipeline registered for {camera_id}. Use scripts/run_perception.py for full video processing.",
+            "message": f"Continuous perception processing started for {camera_id}.",
         }
 
     except FileNotFoundError:
@@ -176,6 +187,10 @@ async def stop_perception_pipeline(
 
     pipeline = _active_pipelines.pop(camera_id)
     pipeline.stop()
+    task = _pipeline_tasks.pop(camera_id, None)
+    if task:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
     return {"status": "stopped", "camera_id": camera_id}
 
 

@@ -104,7 +104,15 @@ class PerceptionPipeline:
         """
         # Resolve source (webcam index vs file/url)
         cap_source = int(source) if source.isdigit() else source
-        cap = cv2.VideoCapture(cap_source)
+        from src.services.video_service import open_capture
+        opening = asyncio.create_task(asyncio.to_thread(open_capture, str(cap_source)))
+        try:
+            cap = await asyncio.shield(opening)
+        except asyncio.CancelledError:
+            # Native capture must finish opening before its handle is released.
+            cap = await opening
+            cap.release()
+            raise
 
         if not cap.isOpened():
             raise RuntimeError(f"Cannot open video source: {source}")
@@ -125,7 +133,12 @@ class PerceptionPipeline:
 
         try:
             while self._is_running:
-                ret, frame = cap.read()
+                reading = asyncio.create_task(asyncio.to_thread(cap.read))
+                try:
+                    ret, frame = await asyncio.shield(reading)
+                except asyncio.CancelledError:
+                    await reading
+                    raise
                 if not ret:
                     break
 

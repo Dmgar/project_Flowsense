@@ -27,10 +27,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 function resolveCamera(camera: Camera): Camera {
   return { ...camera, image_url: apiUrl(camera.image_url), stream_url: apiUrl(camera.stream_url) };
 }
-export const getCameras = async (signal?: AbortSignal) => (await request<Camera[]>('/cameras', { signal })).map(resolveCamera);
+export const getCameras = async (signal?: AbortSignal) => (await request<Camera[]>('/cameras?video_only=true', { signal })).filter(camera => camera.stream_url).map(resolveCamera);
 export const getObservation = (id: string, signal?: AbortSignal) => request<Observation>(`/cameras/${encodeURIComponent(id)}/observation`, { signal });
 export const getHistory = (id: string, signal?: AbortSignal) => request<Observation[]>(`/cameras/${encodeURIComponent(id)}/history`, { signal });
 export const getCases = (signal?: AbortSignal) => request<MobilityCase[]>('/cases', { signal });
 export const connectCamera = async (payload: { name: string; source: string; lat: number; lng: number }) => resolveCamera(await request<Camera>('/cameras', { method: 'POST', body: JSON.stringify(payload) }));
-export const openCase = (signal: Signal, owner: string) => request<MobilityCase>('/cases', { method: 'POST', body: JSON.stringify({ signal_id: signal.id, title: `${signal.title} · ${signal.location}`, severity: signal.severity, owner, note: signal.action, data_origin: signal.data_origin || 'presentation', evidence_camera_id: signal.evidence_camera_id, evidence_frame_id: signal.evidence_frame_id, confidence: signal.confidence }) });
+export const openCase = (signal: Signal, owner: string) => request<MobilityCase>('/cases', { method: 'POST', body: JSON.stringify({ signal_id: signal.id, title: `${signal.title} · ${signal.location}`, severity: signal.severity, owner, note: signal.action, data_origin: signal.data_origin || 'presentation', evidence_camera_id: signal.evidence_camera_id, evidence_frame_id: signal.evidence_frame_id, evidence_session_id: signal.evidence_session_id, evidence_media_time_seconds: signal.evidence_media_time_seconds, confidence: signal.confidence }) });
 export const reviewCase = (id: string, status: ReviewStatus, owner: string, note: string) => request<MobilityCase>(`/cases/${id}`, { method: 'PATCH', body: JSON.stringify({ status, owner, note }) });

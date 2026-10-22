@@ -25,6 +25,8 @@ class MobilityService:
     def __init__(self):
         catalog = Path(__file__).resolve().parents[2] / "data/public_cameras_los_angeles.json"
         self.cameras = {item["id"]: item for item in json.loads(catalog.read_text(encoding="utf-8"))}
+        self.route_metadata_path = Path(__file__).resolve().parents[2] / "data/caltrans_camera_route_metadata.json"
+        self._route_metadata_mtime_ns = None
         self._frames = {}
         self._history = {}
         self._history_images = {}
@@ -40,10 +42,32 @@ class MobilityService:
             for payload, in db.execute("SELECT payload FROM connected_cameras"):
                 item = json.loads(payload)
                 self.cameras[item["id"]] = item
+        self.refresh_route_metadata()
 
-    def list_cameras(self):
+    def refresh_route_metadata(self):
+        """Apply newly published, exact-match route metadata without restarting the API."""
+        try:
+            modified = self.route_metadata_path.stat().st_mtime_ns
+        except OSError:
+            return 0
+        with self._registry_lock:
+            if modified == self._route_metadata_mtime_ns:
+                return 0
+            try:
+                metadata = json.loads(self.route_metadata_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                return 0
+            from src.services.camera_metadata import enrich_caltrans_route_metadata
+            enriched = enrich_caltrans_route_metadata(self.cameras, metadata)
+            self._route_metadata_mtime_ns = modified
+            return enriched
+
+    def list_cameras(self, video_only=False):
+        self.refresh_route_metadata()
         result = []
         for item in list(self.cameras.values()):
+            if video_only and not item.get("stream_url"):
+                continue
             captured = self._frames.get(item["id"])
             age = max(0, time.monotonic() - captured["fetched_at"]) if captured else None
             recent = age is not None and age <= item.get("refresh_seconds", 120) + 30
@@ -59,23 +83,26 @@ class MobilityService:
         source = payload["source"]
         parsed = urlparse(source)
         if not source.isdigit() and parsed.scheme not in {"http", "https", "rtsp"}:
-            raise ValueError("Use an HTTP(S) image, an RTSP camera or a webcam index.")
+            raise ValueError("Use an HTTP(S) video stream, an RTSP camera or a webcam index.")
         if parsed.username or parsed.password:
             raise ValueError("Do not include credentials in the camera URL.")
+        if parsed.path.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
+            raise ValueError("Still images are not supported. Connect a continuous video source.")
+        from src.services.video_service import probe_video
+        probe_video(source)
         camera_id = "connected-" + uuid.uuid4().hex[:10]
         item = {"id": camera_id, "name": payload["name"], "district": "Connected source",
                 "lat": payload["lat"], "lng": payload["lng"], "image_url": source,
-                "stream_url": "", "source_url": source if parsed.scheme in {"http", "https"} else "",
+                "stream_url": source, "source_url": source if parsed.scheme in {"http", "https"} else "",
                 "provider": "Operator source", "refresh_seconds": 20}
-        # A saved connection must actually yield a decodable frame.
+        # Save only a source that was verified to yield consecutive video frames.
         self.cameras[camera_id] = item
         try:
-            self.capture(camera_id)
+            with closing(sqlite3.connect(self.db_path)) as db, db:
+                db.execute("INSERT INTO connected_cameras VALUES (?, ?)", (camera_id, json.dumps(item)))
         except Exception:
             self.cameras.pop(camera_id, None)
-            raise ValueError("Could not read an image from this source. Check its URL and availability.") from None
-        with closing(sqlite3.connect(self.db_path)) as db, db:
-            db.execute("INSERT INTO connected_cameras VALUES (?, ?)", (camera_id, json.dumps(item)))
+            raise
         return next(item for item in self.list_cameras() if item["id"] == camera_id)
 
     def capture(self, camera_id):

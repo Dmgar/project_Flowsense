@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getObservation } from '../src/product/api.ts';
+import { getCameras, getObservation, openCase } from '../src/product/api.ts';
 
 function hangingFetch(_url, { signal }) {
   return new Promise((_resolve, reject) => {
@@ -9,6 +9,30 @@ function hangingFetch(_url, { signal }) {
     else signal.addEventListener('abort', cancel, { once: true });
   });
 }
+
+test('camera discovery requests video-only sources and rejects image-only results', async t => {
+  t.mock.method(globalThis, 'fetch', async url => {
+    assert.match(url, /cameras\?video_only=true$/);
+    return new Response(JSON.stringify([
+      { id: 'video', stream_url: 'https://example.test/playlist.m3u8', image_url: '/legacy-image' },
+      { id: 'photo', stream_url: '', image_url: '/legacy-image' },
+    ]));
+  });
+  assert.deepEqual((await getCameras()).map(camera => camera.id), ['video']);
+});
+
+test('video review retains its session timestamp without inventing a saved image', async t => {
+  t.mock.method(globalThis, 'fetch', async (_url, init) => {
+    const body = JSON.parse(init.body);
+    assert.equal(body.evidence_session_id, 'session-test');
+    assert.equal(body.evidence_media_time_seconds, 14.25);
+    assert.equal(body.evidence_frame_id, undefined);
+    return new Response(JSON.stringify(body));
+  });
+  await openCase({ id: 'video-review', title: 'Review', location: 'Test', severity: 'medium',
+    action: 'Video is not stored.', evidence_camera_id: 'video', data_origin: 'observation',
+    evidence_session_id: 'session-test', evidence_media_time_seconds: 14.25 }, 'Traffic operations');
+});
 
 test('a stalled service cannot leave a camera request pending indefinitely', async t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });

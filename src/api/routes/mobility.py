@@ -60,6 +60,8 @@ class CaseInput(BaseModel):
     data_origin: Literal["presentation", "observation"] = "presentation"
     evidence_camera_id: str | None = Field(default=None, max_length=120)
     evidence_frame_id: str | None = Field(default=None, max_length=120)
+    evidence_session_id: str | None = Field(default=None, max_length=64)
+    evidence_media_time_seconds: float | None = Field(default=None, ge=0)
     confidence: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("title", "owner", "note")
@@ -77,8 +79,8 @@ class CaseReview(BaseModel):
 
 
 @router.get("/cameras")
-def cameras():
-    return mobility_service.list_cameras()
+def cameras(video_only: bool = False):
+    return mobility_service.list_cameras(video_only=video_only)
 
 
 @router.post("/cameras")
@@ -143,7 +145,7 @@ def review_case(case_id: str, payload: CaseReview):
 @router.get("/reports/cases.csv")
 def export_cases():
     output = io.StringIO()
-    fields = ["id", "title", "severity", "status", "owner", "data_origin", "evidence_camera_id", "evidence_frame_id", "created_at", "updated_at"]
+    fields = ["id", "title", "severity", "status", "owner", "data_origin", "evidence_camera_id", "evidence_frame_id", "evidence_session_id", "evidence_media_time_seconds", "created_at", "updated_at"]
     writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
     for item in mobility_service.cases():

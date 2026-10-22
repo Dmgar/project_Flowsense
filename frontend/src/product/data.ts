@@ -1,7 +1,7 @@
 import type { Corridor, Signal } from './types';
 
-export const classLabels: Record<string, string> = { car: "Cars", motorcycle: "Motorcycles", bus: 'Buses', truck: "Trucks", bicycle: "Bicycles", pedestrian: "Pedestrians" };
-export const classColors: Record<string, string> = { car: '#428363', motorcycle: '#c5933b', bus: '#688b78', truck: '#d07461', bicycle: '#8e7ca6', pedestrian: '#b5a24b' };
+export const classLabels: Record<string, string> = { car: "Cars", motorcycle: "Motorcycles", bus: 'Buses', truck: "Trucks", vehicle: "Type uncertain", bicycle: "Bicycles", pedestrian: "Pedestrians" };
+export const classColors: Record<string, string> = { car: '#428363', motorcycle: '#c5933b', bus: '#688b78', truck: '#d07461', vehicle: '#9fa8a8', bicycle: '#8e7ca6', pedestrian: '#b5a24b' };
 export const statusLabels: Record<string, string> = { new: "Review required", assigned: "Assigned", under_review: "Under review", confirmed: "Confirmed by operator", resolved: "Resolved", dismissed: "Dismissed" };
 export const severityLabels = { low: "Low", medium: "Medium", high: "High" };
 export const corridors: Corridor[] = [

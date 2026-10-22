@@ -4,6 +4,7 @@ import type { Camera, MobilityCase } from './types';
 
 interface ProductState {
   path: string; navigate: (path: string) => void; cameras: Camera[]; setCameras: (v: Camera[]) => void;
+  cameraCatalogLoaded: boolean; cameraCatalogFailed: boolean; setCameraCatalogStatus: (loaded: boolean, failed: boolean) => void;
   cases: MobilityCase[]; setCases: (v: MobilityCase[]) => void; selectedSignal: string; selectSignal: (v: string) => void;
   district: string; setDistrict: (v: string) => void; period: string; setPeriod: (v: string) => void;
   query: string; setQuery: (v: string) => void; mode: 'presentation' | 'observed'; setMode: (v: 'presentation' | 'observed') => void;
@@ -18,7 +19,9 @@ interface ProductState {
 export const useProduct = create<ProductState>()(persist((set) => ({
   path: window.location.pathname === '/' ? '/overview' : window.location.pathname,
   navigate: (path) => { window.history.pushState({}, '', path); set({ path: path.split('?')[0], query: new URLSearchParams(path.split('?')[1]).get('q') || '' }); },
-  cameras: [], setCameras: (cameras) => set({ cameras }), cases: [], setCases: (cases) => set({ cases }),
+  cameras: [], setCameras: (cameras) => set({ cameras }), cameraCatalogLoaded: false, cameraCatalogFailed: false,
+  setCameraCatalogStatus: (cameraCatalogLoaded, cameraCatalogFailed) => set({ cameraCatalogLoaded, cameraCatalogFailed }),
+  cases: [], setCases: (cases) => set({ cases }),
   selectedSignal: 'SIG-001', selectSignal: (selectedSignal) => set({ selectedSignal }),
   district: "All districts", setDistrict: (district) => set({ district }),
   period: "Last 15 min", setPeriod: (period) => set({ period }), query: new URLSearchParams(window.location.search).get('q') || '', setQuery: (query) => {

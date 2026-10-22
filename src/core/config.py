@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _CITY_PROFILE = os.getenv("FLOWSENSE_CITY", "manhattan").strip().lower()
@@ -38,10 +39,20 @@ class Settings(BaseSettings):
 
     # ---- Perception Engine (OpenCV 5) ----
     PERCEPTION_MODEL_PATH: Path = Path("models/yolov8n.onnx")
+    VIDEO_MODEL_PATH: Path = Path("models/yolov8s.onnx")
+    VIDEO_HIGH_RES_DETAIL_MODEL_PATH: Path = Path("models/yolo11s-1280.onnx")
+    VIDEO_LOW_LIGHT_MODEL_PATH: Path = Path("models/bdd-yolo11n.onnx")
+    VIDEO_LOW_LIGHT_HIGH_RES_MODEL_PATH: Path = Path("models/bdd-yolo11n-960.onnx")
+    VIDEO_LOW_LIGHT_PROFILE: Literal["bdd100k", "coco"] = "bdd100k"
+    VIDEO_LOW_LIGHT_INPUT_SIZE: Literal[640, 960] = 640
+    VIDEO_EVIDENCE_MAX_BYTES: int = 6_000_000_000
+    VIDEO_EVIDENCE_MIN_FREE_BYTES: int = 1_000_000_000
+    VIDEO_EVIDENCE_DIR: Path | None = None
+    VIDEO_RECORD_EVIDENCE: bool = True
     PERCEPTION_CONFIDENCE: float = 0.45
     PERCEPTION_NMS_THRESHOLD: float = 0.5
     PERCEPTION_SKIP_FRAMES: int = 3
-    PERCEPTION_BACKEND: str = "opencv_dnn"  # "opencv_dnn" | "onnxruntime"
+    PERCEPTION_BACKEND: str = "onnxruntime"  # Uses CUDA when available; retains the CPU provider as a fallback.
     PERCEPTION_PIXELS_PER_METER: float = 12.0
 
     # ---- Routing Optimization ----
