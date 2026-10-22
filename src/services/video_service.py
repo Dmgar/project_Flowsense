@@ -610,7 +610,7 @@ class VideoSession:
                 return None
             with self.lock:
                 sample = self.latest
-            if sample is None or sample[0] == last_sequence or time.monotonic() - sample[1] > 1:
+            if sample is None or sample[0] == last_sequence or time.monotonic() - sample[1] > 2.5:
                 return None
             if getattr(self, "zone_aware_inference", False):
                 with self.lock:
@@ -639,19 +639,20 @@ class VideoSession:
                     audit_tracker = RoadTracker(fps=self.source_fps)
                     generation = current_generation
                 # A newer source generation must never receive old boxes.
-                if time.monotonic() - instant > 1 or self.generation != generation:
+                if time.monotonic() - instant > 3.5 or self.generation != generation:
                     continue
                 with self.lock:
                     zone = dict(self.zone)
                 profile = getattr(detections, "profile", "standard")
-                boxes = tracker.update(detections, frame, instant, {**zone, "low_light": profile == "low_light"})
+                is_night = profile in {"low_light", "low_light_unavailable"}
+                boxes = tracker.update(detections, frame, instant, {**zone, "low_light": is_night})
                 directional_outside = []
                 if zone.get("enabled"):
                     audit_zone = {**zone, "enabled": True,
                         "polygon": [[0., 0.], [1., 0.], [1., 1.], [0., 1.]],
                         "counting_line_y": 1.01}
                     audit_boxes = audit_tracker.update(detections, frame, instant,
-                                                        {**audit_zone, "low_light": profile == "low_light"})
+                                                        {**audit_zone, "low_light": is_night})
                     directional_outside = directional_outside_tracks(audit_boxes, frame.shape, zone)
                 scale = min(1, 512 / frame.shape[1])
                 gray = cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), None, fx=scale, fy=scale)
@@ -659,7 +660,7 @@ class VideoSession:
                     self.model_name = getattr(detections, "model_name", self.model_name)
                     self.detection_profile = profile
                     if not self.filters_customized:
-                        self.settings["confidence"] = LOW_LIGHT_TRACK_CONFIDENCE if profile == "low_light" else .30
+                        self.settings["confidence"] = LOW_LIGHT_TRACK_CONFIDENCE if is_night else .30
                     road_candidates = [d for d in detections if in_road_zone(d.bbox, frame.shape, zone)]
                     outside_zone_candidates = [d for d in detections if not in_road_zone(d.bbox, frame.shape, zone)]
                     outside_zone_classes = {}
@@ -710,7 +711,7 @@ class VideoSession:
         observed = []
         pipeline = {}
         placed_labels = []
-        prior = [item for item in history if item[5] == generation and 0 <= instant - item[1] <= 1]
+        prior = [item for item in history if item[5] == generation and 0 <= instant - item[1] <= 3.0]
         if prior:
             analysis = prior[-1]
             pipeline = dict(analysis[6]) if len(analysis) > 6 else {}
@@ -722,13 +723,14 @@ class VideoSession:
             pipeline["aligned_tracks"] = len(detected)
             detected = confirmed_boxes(detected, history, instant, generation)
             pipeline["confirmed_tracks"] = len(detected)
-            observation_floor = LOW_LIGHT_OBSERVATION_CONFIDENCE if self.detection_profile == "low_light" else .20
+            is_night = self.detection_profile in {"low_light", "low_light_unavailable"}
+            observation_floor = LOW_LIGHT_OBSERVATION_CONFIDENCE if is_night else .20
             observed = [box for box in detected if in_road_zone(box["bbox"], frame.shape, zone)
                         and (box.get("track_confidence", box["confidence"]) >= observation_floor or box.get("counted"))]
             model_detections = len(detected)
             boxes = [box for box in detected if box.get("track_confidence", box["confidence"]) >= filters["confidence"] and box["class"] in filters["classes"]]
             displayed_ids = {box["id"] for box in boxes}
-            if self.detection_profile == "low_light" and filters.get("show_candidates", True):
+            if is_night and filters.get("show_candidates", True):
                 provisional_boxes = [box for box in observed
                     if box["id"] not in displayed_ids
                     and box.get("low_light")

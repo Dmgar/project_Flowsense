@@ -13,6 +13,9 @@ BBOX = (-118.56, 33.70, -117.84, 34.25)
 
 
 def build():
+    if OUTPUT.exists() and OUTPUT.stat().st_size > 1000:
+        print(f"Regional graph already exists at {OUTPUT} ({OUTPUT.stat().st_size / 1e6:.1f} MB)", flush=True)
+        return
     if not RAW.exists():
         RAW.parent.mkdir(parents=True, exist_ok=True)
         query = '[out:json][timeout:90];way["highway"~"^(motorway|trunk|primary|secondary)(_link)?$"]["access"!~"private"](33.70,-118.56,34.25,-117.84);out geom;'

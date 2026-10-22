@@ -83,15 +83,20 @@ def merge_detections(detections, threshold=.15, overlap=.5):
 
 class TrafficDetector:
     """Reuse one model; preserve full-scene coverage and examine three detail crops."""
-    def __init__(self, detector):
+    def __init__(self, detector, enable_crops=None):
         self.detector = detector
+        provider = getattr(detector, "execution_provider", None)
+        if enable_crops is not None:
+            self.enable_crops = enable_crops
+        else:
+            self.enable_crops = provider == "CUDAExecutionProvider" or provider is None
 
     def detect(self, frame, zone=None):
         if zone and zone.get("enabled"):
             return self.detect_road(frame, zone)
         detections = list(self.detector.detect(frame))
         height, width = frame.shape[:2]
-        if max(width, height) < 960:
+        if not self.enable_crops or max(width, height) < 960:
             return detections
         side = min(640, height, width)
         if width >= height:
