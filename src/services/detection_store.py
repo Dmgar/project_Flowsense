@@ -207,6 +207,25 @@ class DetectionStore:
             # otherwise sub-second captures as reviewable video evidence.
             db.execute("UPDATE clips SET state='short' WHERE state='ready' AND duration<?",
                        (MIN_PLAYABLE_CLIP_SECONDS,))
+            # Keep the observation ledger, but do not advertise a clip as ready
+            # after its MP4 has been removed or moved outside configured storage.
+            available_clip_ids = {
+                path.stem
+                for directory in self.clip_directories
+                for path in directory.glob("*.mp4")
+                if path.is_file()
+            }
+            missing_clip_ids = [clip_id for clip_id, in db.execute(
+                "SELECT id FROM clips WHERE state='ready'")
+                if clip_id not in available_clip_ids]
+            db.executemany("UPDATE clips SET state='unavailable' WHERE id=? AND state='ready'",
+                           ((clip_id,) for clip_id in missing_clip_ids))
+            restored_clip_ids = [clip_id for clip_id, in db.execute(
+                "SELECT id FROM clips WHERE state='unavailable' AND duration>=?",
+                (MIN_PLAYABLE_CLIP_SECONDS,))
+                if clip_id in available_clip_ids]
+            db.executemany("UPDATE clips SET state='ready' WHERE id=? AND state='unavailable'",
+                           ((clip_id,) for clip_id in restored_clip_ids))
 
     def connect(self):
         return sqlite3.connect(self.path, timeout=10)
@@ -602,6 +621,7 @@ class DetectionStore:
             recording_clips = db.execute("SELECT COUNT(*) FROM clips WHERE camera=? AND state='recording'", (camera,)).fetchone()[0]
             interrupted_clips = db.execute("SELECT COUNT(*) FROM clips WHERE camera=? AND state='interrupted'", (camera,)).fetchone()[0]
             short_clips = db.execute("SELECT COUNT(*) FROM clips WHERE camera=? AND state='short'", (camera,)).fetchone()[0]
+            unavailable_clips = db.execute("SELECT COUNT(*) FROM clips WHERE camera=? AND state='unavailable'", (camera,)).fetchone()[0]
             evidence_pauses = list(db.execute("SELECT started_at,ended_at,reason FROM evidence_pauses WHERE camera=? ORDER BY id DESC LIMIT 10", (camera,)))
         minute_bins = {}
         for minute, kind, count in bins:
@@ -746,7 +766,7 @@ class DetectionStore:
             "video_evidence": {"enabled": self.record_video, "ready_clips": ready_clips,
                                "external_clip_storage": self.clips != self.legacy_clips,
                                "recording_clips": recording_clips, "interrupted_clips": interrupted_clips,
-                               "short_clips": short_clips,
+                               "short_clips": short_clips, "unavailable_clips": unavailable_clips,
                                "bytes_used": video_bytes,
                                "max_bytes": self.max_video_bytes,
                                "encoding_crf": evidence_h264_crf(video_bytes, self.max_video_bytes,
