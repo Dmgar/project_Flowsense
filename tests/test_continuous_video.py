@@ -209,6 +209,39 @@ def test_repeated_weak_low_light_track_is_visible_and_saved_as_provisional():
     assert tuple(hidden[100, 100]) != PROVISIONAL_COLOR
 
 
+def test_untracked_low_light_road_candidates_are_visible_but_not_counted():
+    session = VideoSession.__new__(VideoSession)
+    frame = np.zeros((360, 640, 3), np.uint8)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    diagnostics = {"raw_candidates": 1, "road_candidates": 1,
+        "road_candidate_boxes": [{"bbox": [300, 120, 50, 30], "class": "car", "confidence": .14}],
+        "outside_zone_candidates": 0, "inbound_tracks": 0}
+    session.lock = threading.RLock()
+    session.analysis_history = deque([(1, 1., [], gray, 1., 1, diagnostics)])
+    session.settings = {"confidence": .30, "classes": ["car"], "show_candidates": True}
+    session.zone = {"enabled": True, "polygon": [[0,0],[1,0],[1,1],[0,1]], "revision": 1}
+    session.detection_profile = "low_light"
+    session.model_name = "test-model"
+    session.execution_provider = "test"
+    session.generation_first_sequence = 1
+    session.source_fps = 15
+    session.video_delay = .6
+
+    rendered, metrics = session._compose((1, 1., frame, 1))
+
+    assert metrics["analysis_pipeline"]["road_candidates"] == 1
+    assert metrics["analysis_pipeline"]["displayed_tracks"] == 0
+    assert metrics["detections"] == []
+    assert sum(metrics["counts"].values()) == 0
+    assert metrics["analysis_pipeline"]["road_candidate_boxes"] == diagnostics["road_candidate_boxes"]
+    assert np.any(rendered[119:151, 299:351] != 0)
+
+    session.settings["show_candidates"] = False
+    hidden, hidden_metrics = session._compose((1, 1., frame, 1))
+    assert sum(hidden_metrics["counts"].values()) == 0
+    assert not np.any(hidden[119:151, 299:351] != 0)
+
+
 async def until(predicate, timeout=6):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:

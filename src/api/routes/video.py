@@ -41,9 +41,11 @@ async def observed_roads():
         active_camera_ids = tuple(camera_id for camera_id, session in video_service.sessions.items()
                                   if not session.stop_event.is_set()
                                   and session.state in {"Live", "Recorded playback"})
-    graph = graph_service.get_graph()
     return await asyncio.to_thread(road_observations, video_service.observation_store,
-                                   mobility_service.cameras, graph, active_camera_ids)
+                                   mobility_service.cameras, None, active_camera_ids,
+                                   graph_service.get_graph_for_camera,
+                                   {camera_id: health for camera_id in mobility_service.cameras
+                                    if (health := mobility_service._cached_video_health(camera_id))})
 
 
 @router.get("/analysis-zones")
@@ -79,6 +81,7 @@ async def analysis_zone_coverage():
                 "route_metadata_available": route_metadata_available,
                 "ready_for_road_analysis": ready,
                 "status": status,
+                "source_health": mobility_service._cached_video_health(camera["id"]),
             })
         # This is a point-in-time observation only. Never probe idle sources or
         # treat an old HLS response as proof that video is currently advancing.
@@ -99,6 +102,7 @@ async def analysis_zone_coverage():
                 "calibration_required_count": len(items) - ready_count,
                 "zone_required_count": zone_required,
                 "route_metadata_required_count": metadata_required,
+                "source_health_policy_version": 1,
                 "cameras": items}
 
     return await asyncio.to_thread(collect)
@@ -121,7 +125,10 @@ async def monitoring_summary(camera_id: str, since: str | None = None):
         raise HTTPException(422, "Use an ISO timestamp with timezone that is not in the future.") from None
     result = await asyncio.to_thread(video_service.observation_store.summary, camera_id, start.astimezone(timezone.utc).isoformat())
     result["capture_status"] = video_service.capture_status(camera_id)
-    result["road"] = await asyncio.to_thread(road_context, mobility_service.cameras[camera_id], graph_service.get_graph(), video_service.observation_store)
+    camera = mobility_service.cameras[camera_id]
+    result["road"] = await asyncio.to_thread(road_context, camera,
+                                              graph_service.get_graph_for_camera(camera),
+                                              video_service.observation_store)
     return result
 
 
@@ -142,6 +149,8 @@ async def start_monitoring(camera_id: str, payload: MonitoringLease):
     camera = mobility_service.cameras.get(camera_id)
     if not camera or not camera.get("stream_url"):
         raise HTTPException(404, "Video camera not found.")
+    if camera.get("provider") == "Caltrans" and camera.get("provider_stream_available") is False:
+        raise HTTPException(409, "Caltrans is not currently publishing a video stream for this camera.")
     try:
         return await video_service.monitor(camera, payload.client_id)
     except OverflowError as error:

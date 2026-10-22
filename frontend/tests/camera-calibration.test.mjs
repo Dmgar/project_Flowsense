@@ -92,6 +92,29 @@ test('currently decoding video ranks ahead of historical HLS reachability', () =
   assert.deepEqual(calibrationQueue(cameras, statuses).map(item => item.id), ['live', 'old-url']);
 });
 
+test('calibration queue prefers a currently responsive source over a stale or failed HLS check', () => {
+  const cameras = [
+    { ...camera('temporarily-failed', 'Timed out source', 200), route: 'I-110', direction: 'South' },
+    { ...camera('current-source', 'Current source check', 0), route: 'I-110', direction: 'South' },
+    { ...camera('stale-source', 'Stale source check', 200), route: 'I-110', direction: 'South' },
+    { ...camera('unavailable-source', 'Unavailable source', 200), route: 'I-110', direction: 'South' },
+  ];
+  const statuses = [
+    { camera_id: 'temporarily-failed', ready_for_road_analysis: false, route_metadata_available: true,
+      source_health: { state: 'temporary_error' } },
+    { camera_id: 'current-source', ready_for_road_analysis: false, route_metadata_available: true,
+      source_health: { state: 'available' } },
+    { camera_id: 'stale-source', ready_for_road_analysis: false, route_metadata_available: true,
+      source_health: { state: 'stale' } },
+    { camera_id: 'unavailable-source', ready_for_road_analysis: false, route_metadata_available: true,
+      source_health: { state: 'unavailable' } },
+  ];
+
+  assert.deepEqual(calibrationQueue(cameras, statuses).map(item => item.id), [
+    'current-source', 'stale-source', 'temporarily-failed', 'unavailable-source',
+  ]);
+});
+
 test('continuation calibrates adjacent cameras on the same directed corridor first', () => {
   const cameras = [
     { ...camera('current', 'Current', 200), route: 'I-110', direction: 'South', lat: 34.05, lng: -118.26 },
@@ -248,6 +271,14 @@ test('road-area assistance abstains on balanced opposing flows and sparse motion
   });
   assert.equal(suggestObservedRoadRegion([moving(0), moving(1)], 100, 100), null);
   assert.equal(suggestObservedRoadRegion([moving(0), moving(1, true), moving(2), moving(3, true)], 100, 100), null);
+});
+
+test('road-area assistance abstains when same-direction traffic is split across distant road areas', () => {
+  const group = start => [0, 1, 2].map(index => ({
+    class: 'car', bbox: [start + index * 3, 30 + index * 4, 12, 7],
+    trail: [[start, 30 + index * 4], [start + 8, 30 + index * 4], [start + 16, 30 + index * 4]],
+  }));
+  assert.equal(suggestObservedRoadRegion([...group(5), ...group(75)], 100, 100), null);
 });
 
 test('road-area assistance retains a valid suggestion briefly across rolling-window dropouts', () => {

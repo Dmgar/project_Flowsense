@@ -41,6 +41,29 @@ def test_gamma_view_is_merged_as_one_observation_and_keeps_raw_evidence():
     assert len(result)==1 and result[0].confidence==.7
 
 
+def test_bdd_road_detail_crop_is_gamma_lifted_while_broad_crop_stays_original():
+    from src.perception.traffic_detector import TrafficDetector
+
+    class Detector:
+        confidence_threshold = .1
+        def __init__(self): self.means = []
+        def detect(self, crop):
+            self.means.append(float(crop.mean()))
+            return []
+
+    detector = Detector()
+    road = TrafficDetector(detector)
+    frame = np.full((720, 1280, 3), 35, np.uint8)
+    zone = {"enabled": True, "polygon": [[.05,.25],[.25,.25],[.98,.65],[.98,.96],[.18,.96]],
+            "direction": [.7,.7], "minimum_motion": .008}
+
+    road.detect(frame, zone, enhance_detail=True)
+
+    assert len(detector.means) == 2
+    assert detector.means[0] == 35
+    assert detector.means[1] > detector.means[0]
+
+
 def test_nested_headlight_fragment_does_not_duplicate_a_car_or_erase_its_neighbor():
     car=Detection((100,100,140,70),2,'car',.4)
     fragment=Detection((155,100,50,70),2,'car',.7)
@@ -96,6 +119,7 @@ def test_repeated_night_candidate_is_visible_as_checking_before_direction_is_con
     second = tracker.update([Detection((100, 80, 44, 36), 2, 'car', .22)], frame, .2, zone)
     assert first == []
     assert second and second[0]['direction_status'] == 'checking'
+    assert second[0]['track_age_seconds'] == pytest.approx(.2)
     assert not second[0]['counted']
 
 

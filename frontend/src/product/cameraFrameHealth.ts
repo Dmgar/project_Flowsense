@@ -1,6 +1,7 @@
 /** Watch decoded video progress without confusing a deliberate pause for a stall. */
 const DECODED_FRAME_STALL_TIMEOUT_MS = 8_000;
 const MISSING_MEDIA_TRACK_TIMEOUT_MS = 8_000;
+const INITIAL_VIDEO_FRAME_TIMEOUT_MS = 15_000;
 
 export class CameraFrameHealth {
   private lastTick: number;
@@ -17,7 +18,14 @@ export class CameraFrameHealth {
   setWatching(now: number, watching: boolean) {
     if (watching === this.lastWatching) return;
     this.advance(now, watching);
-    if (watching) this.idleSinceFrameMs = 0;
+    if (watching) {
+      // Hidden-tab and intentional-pause time must not count as a live stall.
+      this.idleSinceFrameMs = 0;
+      if (!this.hasFrame) {
+        this.activeWaitMs = 0;
+        this.missingTrackMs = 0;
+      }
+    }
   }
 
   private advance(now: number, watching: boolean, trackPresent = true) {
@@ -55,6 +63,6 @@ export class CameraFrameHealth {
     // A negotiated WebRTC track that never yields its first decoded frame is
     // unusable to the operator. Retry promptly while allowing normal source
     // startup and short network stalls.
-    return this.activeWaitMs >= 15_000 ? 'no-frame' : 'wait';
+    return this.activeWaitMs >= INITIAL_VIDEO_FRAME_TIMEOUT_MS ? 'no-frame' : 'wait';
   }
 }

@@ -89,20 +89,53 @@ if (-not (Test-Path -LiteralPath (Join-Path $Repo 'models/bdd-yolo11n.onnx'))) {
   }
 }
 $ExistingApi = Get-NetTCPConnection -LocalPort $ApiPort -State Listen -ErrorAction SilentlyContinue
+$ApiProfileMismatch = $false
 if ($ExistingApi) {
   $Health = Invoke-RestMethod "http://127.0.0.1:$ApiPort/" -TimeoutSec 5
-  if ($Health.pilot_city -ne 'Greater Los Angeles, California') { throw "Port $ApiPort is occupied by another profile. Stop that service or choose another port." }
+  $ApiProfileMismatch = $Health.pilot_city -ne 'Greater Los Angeles, California'
+  if ($ApiProfileMismatch) {
+    $ApiProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $($ExistingApi[0].OwningProcess)"
+    $ExpectedPython = [System.IO.Path]::GetFullPath($PythonCommand)
+    if (-not $ApiProcess -or $ApiProcess.Name -ne 'python.exe' -or
+        $ApiProcess.CommandLine -notmatch [regex]::Escape('"' + $ExpectedPython + '"') -or
+        $ApiProcess.CommandLine -notmatch [regex]::Escape("uvicorn src.main:app --host 127.0.0.1 --port $ApiPort")) {
+      throw "Port $ApiPort is occupied by a different application or environment. It was left running."
+    }
+  }
   $ApiSummary = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/summary" -TimeoutSec 8
   $ApiOpenApi = Invoke-RestMethod "http://127.0.0.1:$ApiPort/openapi.json" -TimeoutSec 5
+  $ApiZoneCoverage = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/analysis-zones" -TimeoutSec 8
+  $HasCurrentSourceHealthPolicy = [int]$ApiZoneCoverage.source_health_policy_version -eq 1
   $HasFastCaptureStatus = $null -ne $ApiOpenApi.paths.PSObject.Properties['/api/v1/mobility/video/cameras/{camera_id}/capture-status']
   $HasCurrentRoadMatcher = $null -ne $ApiSummary.road -and
     $null -ne $ApiSummary.road.PSObject.Properties['road_matching_version'] -and
-    [int]$ApiSummary.road.road_matching_version -eq 5
+    [int]$ApiSummary.road.road_matching_version -eq 7
   $HasCurrentCameraDetectionPolicy = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_detection_policy_version'] -and
     [int]$ApiSummary.capture_status.camera_detection_policy_version -eq 3
+  $HasLiveLowLightCandidateOverlayPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['live_low_light_candidate_overlay_policy_version'] -and
+    [int]$ApiSummary.capture_status.live_low_light_candidate_overlay_policy_version -eq 1
+  $HasLowLightDetailEnhancementPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['low_light_detail_enhancement_policy_version'] -and
+    [int]$ApiSummary.capture_status.low_light_detail_enhancement_policy_version -eq 1
+  $HasCurrentCameraMetadataPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_metadata_policy_version'] -and
+    [int]$ApiSummary.capture_status.camera_metadata_policy_version -eq 2
+  $HasCurrentCameraSourceCatalogPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_source_catalog_policy_version'] -and
+    [int]$ApiSummary.capture_status.camera_source_catalog_policy_version -eq 3
+  $HasCurrentCameraHealthMonitorPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_health_monitor_policy_version'] -and
+    [int]$ApiSummary.capture_status.camera_health_monitor_policy_version -eq 3
+  $HasRoadCorrelationPerformancePolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['road_correlation_performance_policy_version'] -and
+    [int]$ApiSummary.capture_status.road_correlation_performance_policy_version -eq 2
+  $HasRoadCorrelationExplainabilityPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['road_correlation_explainability_policy_version'] -and
+    [int]$ApiSummary.capture_status.road_correlation_explainability_policy_version -eq 1
   $HasCurrentRoadCoveragePolicy = $null -ne $ApiSummary.PSObject.Properties['road_coverage_policy_version'] -and
-    [int]$ApiSummary.road_coverage_policy_version -eq 2
+    [int]$ApiSummary.road_coverage_policy_version -eq 3
   $HasCaptureDiagnostics = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['model'] -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['detection_profile'] -and
@@ -115,6 +148,9 @@ if ($ExistingApi) {
   $HasEvidenceFramePolicy = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['evidence_frame_policy_version'] -and
     [int]$ApiSummary.capture_status.evidence_frame_policy_version -eq 4
+  $HasTrackTimingPolicy = $null -ne $ApiSummary.capture_status -and
+    $null -ne $ApiSummary.capture_status.PSObject.Properties['track_timing_policy_version'] -and
+    [int]$ApiSummary.capture_status.track_timing_policy_version -eq 1
   $HasOrderedEvidencePauses = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['evidence_pause_order_version'] -and
     [int]$ApiSummary.capture_status.evidence_pause_order_version -eq 1
@@ -144,13 +180,16 @@ if ($ExistingApi) {
     elseif ($UsageRatio -ge 0.75 -or $DiskHeadroomBytes -lt 750000000) { 31 } else { 28 }
   $StaleEvidenceEncoderPolicy = $null -ne $ApiSummary.video_evidence.PSObject.Properties['encoding_crf'] -and
     [int]$ApiSummary.video_evidence.encoding_crf -ne $ExpectedEvidenceCrf
-  if ($ExistingApi -and (-not $ApiSummary.PSObject.Properties['capture_status'] -or
+  if ($ExistingApi -and ($ApiProfileMismatch -or
+      -not $ApiSummary.PSObject.Properties['capture_status'] -or
       -not $ApiSummary.capture_status.PSObject.Properties['reconnect_attempts'] -or
       -not $ApiSummary.capture_status.PSObject.Properties['supplemental_detail_status'] -or
       [int]$ApiSummary.capture_status.restart_drain_version -ne 1 -or
       -not $ApiSummary.PSObject.Properties['minute_video_coverage'] -or
       -not $ApiSummary.PSObject.Properties['minute_timeline_sorted'] -or
       -not $ApiSummary.video_continuity.PSObject.Properties['recent_pauses'] -or
+      -not $ApiSummary.video_continuity.PSObject.Properties['in_session_pause_count'] -or
+      -not $ApiSummary.video_continuity.PSObject.Properties['session_boundary_gap_count'] -or
       -not $ApiSummary.PSObject.Properties['video_evidence_linkage'] -or
       -not $ApiSummary.video_evidence_linkage.PSObject.Properties['paused_clip_crossings'] -or
       -not $HasFastCaptureStatus -or
@@ -161,15 +200,27 @@ if ($ExistingApi) {
       -not $HasClipPaging -or
       -not $HasReviewArchive -or
       -not $HasCurrentRoadMatcher -or
+      -not $HasCurrentSourceHealthPolicy -or
       -not $HasCurrentCameraDetectionPolicy -or
+      -not $HasLiveLowLightCandidateOverlayPolicy -or
+      -not $HasLowLightDetailEnhancementPolicy -or
+      -not $HasCurrentCameraMetadataPolicy -or
+      -not $HasCurrentCameraSourceCatalogPolicy -or
+      -not $HasCurrentCameraHealthMonitorPolicy -or
+      -not $HasRoadCorrelationPerformancePolicy -or
+      -not $HasRoadCorrelationExplainabilityPolicy -or
       -not $HasCurrentRoadCoveragePolicy -or
       -not $HasCaptureDiagnostics -or -not $HasIndependentObservationDiagnostics -or
       -not $HasCachedVideoCapacityChecks -or -not $HasOrderedEvidencePauses -or -not $HasEvidenceFramePolicy -or
+      -not $HasTrackTimingPolicy -or
       $EvidenceDirectoryConfigured -or $EvidenceMaxGigabytes -gt 0)) {
     $ActiveRecordings = [int]$ApiSummary.video_evidence.recording_clips
     $ApiProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $($ExistingApi.OwningProcess)"
     $ExpectedCommand = "uvicorn src.main:app --host 127.0.0.1 --port $ApiPort"
-    if (-not $ApiProcess -or $ApiProcess.Name -ne 'python.exe' -or $ApiProcess.CommandLine -notmatch [regex]::Escape($ExpectedCommand)) {
+    $ExpectedPython = [System.IO.Path]::GetFullPath($PythonCommand)
+    if (-not $ApiProcess -or $ApiProcess.Name -ne 'python.exe' -or
+        $ApiProcess.CommandLine -notmatch [regex]::Escape('"' + $ExpectedPython + '"') -or
+        $ApiProcess.CommandLine -notmatch [regex]::Escape($ExpectedCommand)) {
       throw "Port $ApiPort serves an older camera API, but its process is not the expected FlowSense Uvicorn service. Stop it or choose another API port."
     }
     $CanRestartApi = $false
@@ -214,14 +265,25 @@ if ($ExistingApi) {
     }
     if ($CanRestartApi) {
       Write-Host "Refreshing the FlowSense API on port $ApiPort after evidence recording was safely drained."
-      Stop-Process -Id $ApiProcess.ProcessId -ErrorAction Stop
-      $PortReleased = $false
-      for ($Attempt = 0; $Attempt -lt 40; $Attempt++) {
-        if (-not (Get-NetTCPConnection -LocalPort $ApiPort -State Listen -ErrorAction SilentlyContinue)) { $PortReleased = $true; break }
-        Start-Sleep -Milliseconds 250
+      try {
+        Stop-Process -Id $ApiProcess.ProcessId -ErrorAction Stop
+        $PortReleased = $false
+        for ($Attempt = 0; $Attempt -lt 40; $Attempt++) {
+          if (-not (Get-NetTCPConnection -LocalPort $ApiPort -State Listen -ErrorAction SilentlyContinue)) { $PortReleased = $true; break }
+          Start-Sleep -Milliseconds 250
+        }
+        if (-not $PortReleased) { throw "FlowSense API did not release port $ApiPort after refresh." }
+        $ExistingApi = $null
+      } catch {
+        $ApiStillListening = Get-NetTCPConnection -LocalPort $ApiPort -State Listen -ErrorAction SilentlyContinue |
+          Where-Object { $_.OwningProcess -eq $ApiProcess.ProcessId }
+        if ($ApiStillListening) {
+          try {
+            Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cancel-restart" -Method Post -TimeoutSec 5 | Out-Null
+          } catch { }
+        }
+        throw
       }
-      if (-not $PortReleased) { throw "FlowSense API did not release port $ApiPort after refresh." }
-      $ExistingApi = $null
     }
   }
 }
@@ -309,13 +371,38 @@ if (-not $CameraSummary.PSObject.Properties['track_quality']) {
 if (-not $CameraSummary.PSObject.Properties['capture_status']) {
   $MissingCameraCapabilities += 'live capture-session status'
 }
+$CameraZoneCoverage = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/analysis-zones" -TimeoutSec 8
+if ([int]$CameraZoneCoverage.source_health_policy_version -ne 1) {
+  $MissingCameraCapabilities += 'unavailable camera source health in road estimates'
+}
 if (-not $CameraSummary.capture_status.PSObject.Properties['reconnect_attempts']) {
   $MissingCameraCapabilities += 'automatic live reconnect status'
+}
+if ([int]$CameraSummary.capture_status.camera_metadata_policy_version -ne 2) {
+  $MissingCameraCapabilities += 'verified Caltrans camera-route corrections'
+}
+if ([int]$CameraSummary.capture_status.live_low_light_candidate_overlay_policy_version -ne 1) {
+  $MissingCameraCapabilities += 'visible low-light in-road detector candidates'
+}
+if ([int]$CameraSummary.capture_status.low_light_detail_enhancement_policy_version -ne 1) {
+  $MissingCameraCapabilities += 'low-light road detail crop enhancement'
+}
+if ([int]$CameraSummary.capture_status.camera_source_catalog_policy_version -ne 3) {
+  $MissingCameraCapabilities += 'official Caltrans video URL refresh'
+}
+if ([int]$CameraSummary.capture_status.camera_health_monitor_policy_version -ne 3) {
+  $MissingCameraCapabilities += 'concurrent camera source health checks'
+}
+if ([int]$CameraSummary.capture_status.road_correlation_performance_policy_version -ne 2) {
+  $MissingCameraCapabilities += 'cached road graph selection for faster congestion summaries'
+}
+if ([int]$CameraSummary.capture_status.road_correlation_explainability_policy_version -ne 1) {
+  $MissingCameraCapabilities += 'camera names and road-link distances in congestion summaries'
 }
 if ([int]$CameraSummary.capture_status.restart_drain_version -ne 1) {
   $MissingCameraCapabilities += 'safe evidence-recorder restart drain'
 }
-if ([int]$CameraSummary.road_coverage_policy_version -ne 2) {
+if ([int]$CameraSummary.road_coverage_policy_version -ne 3) {
   $MissingCameraCapabilities += 'current low-light road-coverage policy'
 }
 if (-not $CameraSummary.PSObject.Properties['minute_video_coverage']) {

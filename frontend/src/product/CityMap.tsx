@@ -10,11 +10,13 @@ import type { Camera, Signal } from './types';
 import { Icon } from './ui';
 import { matchesZone, regions } from './coverage';
 import { apiUrl } from '../api/urls';
+import { describeRoadCameraCoverage, describeRoadCameraLinks } from './roadAssociationDiagnostics';
 
 function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boolean }) {
   const map = useMap();
   const mode = useProduct(state => state.mode);
   const visible = useProduct(state => state.layers.congestion);
+  const cameras = useProduct(state => state.cameras);
   useEffect(() => {
     if (!visible || (!forceObserved && mode !== 'observed')) return;
     const group = L.layerGroup().addTo(map);
@@ -49,10 +51,11 @@ function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boo
       try {
         const response = await fetch(apiUrl('/api/v1/mobility/video/road-observations'), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
         if (!response.ok) throw new Error('Road observations unavailable');
-        const roads = await response.json() as { camera_id: string; camera_ids: string[]; active_camera_ids: string[]; camera_count: number; active_camera_count: number; measured_camera_count: number; coordinates: [number, number][]; name: string; route: string; direction: string; estimate: { level: string; label: string; updated_at: string | null; sample_count: number; track_crossings_last_minute?: number; image_coverage_percent?: number | null; evidence_quality?: string; visibility?: string } }[];
+        const roads = await response.json() as { camera_id: string; camera_ids: string[]; active_camera_ids: string[]; camera_count: number; active_camera_count: number; measured_camera_count: number; coordinates: [number, number][]; name: string; route: string; direction: string; source_estimates?: { camera_id: string; distance_m?: number | null; zone_enabled?: boolean }[]; estimate: { level: string; label: string; updated_at: string | null; sample_count: number; calibrated_camera_count?: number; zone_required_camera_count?: number; track_crossings_last_minute?: number; image_coverage_percent?: number | null; evidence_quality?: string; visibility?: string } }[];
         if (stopped) return;
         if (statusMessage) statusMessage.textContent = 'Road colors show recent camera estimates. Gray roads have no current estimate.';
         group.clearLayers();
+        const cameraNames = new Map(cameras.map(camera => [camera.id, camera.name]));
         for (const road of roads) {
           const color = road.estimate.level === 'slow' ? '#d38e7e' : road.estimate.level === 'building' ? '#d6b274' : road.estimate.level === 'moving' ? '#82af94' : '#8b9690';
           const measured = road.estimate.level !== 'unknown';
@@ -60,23 +63,24 @@ function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boo
           const box = document.createElement('div');
           const title = document.createElement('strong'); title.textContent = `${road.route} · ${road.direction}bound`; box.append(title);
           const detail = document.createElement('div');
-          const sourceCoverage = `${road.measured_camera_count} of ${road.camera_count} linked camera estimates · ${road.active_camera_count} feeds live`;
+          const sourceCoverage = describeRoadCameraCoverage(road);
           const crossings = road.estimate.track_crossings_last_minute || 0;
           const flow = crossings ? `${crossings} inbound camera-track crossings in the last minute` : '';
           detail.textContent = measured
             ? `${road.estimate.label} · ${sourceCoverage}${flow ? ` · ${flow}` : ''}`
             : road.estimate.sample_count > 0
-              ? `${road.estimate.label} · ${road.estimate.image_coverage_percent == null ? '' : `${road.estimate.image_coverage_percent}% image coverage · `}${sourceCoverage}${flow ? ` · ${flow}` : ''}; congestion unmeasured`
+              ? `${road.estimate.label} · ${road.estimate.image_coverage_percent == null ? '' : `${road.estimate.image_coverage_percent}% vehicle footprint · `}${sourceCoverage}${flow ? ` · ${flow}` : ''}; congestion unmeasured`
               : `${road.estimate.label} · ${road.camera_count} linked cameras, ${road.active_camera_count} active${flow ? ` · ${flow}` : ''}`;
           box.append(detail);
-          const note = document.createElement('small'); note.textContent = `${road.camera_count} linked camera${road.camera_count === 1 ? '' : 's'} · track counts are per-camera events and overlapping views may count the same vehicle · approximate OSM association · no calibrated travel time.`; box.append(note);
+          const linkedCameras = describeRoadCameraLinks(road.source_estimates || [], cameraNames);
+          const note = document.createElement('small'); note.textContent = `${linkedCameras} · track counts are per-camera events and overlapping views may count the same vehicle · approximate OSM association · no calibrated travel time.`; box.append(note);
           line.bindTooltip(box, { sticky: true, className: 'p-map-tooltip' });
           line.on('click', () => useProduct.getState().navigate(`/cameras/${road.camera_id}`));
           group.addLayer(line);
           const path = line.getElement();
           path?.setAttribute('role', 'button');
           path?.setAttribute('tabindex', '0');
-          const evidence = `${measured ? `, ${road.measured_camera_count} of ${road.camera_count} linked camera estimates, ${road.active_camera_count} feeds live` : road.estimate.sample_count > 0 ? `, ${road.estimate.sample_count} recent samples${road.estimate.image_coverage_percent == null ? '' : `, ${road.estimate.image_coverage_percent}% image coverage`}, congestion unmeasured, ${road.active_camera_count} feeds live` : ', road association only'}${crossings ? `, ${crossings} inbound camera-track crossings in the last minute` : ''}`;
+          const evidence = `${measured ? `, ${road.measured_camera_count} of ${road.camera_count} linked camera estimates, ${road.active_camera_count} feeds live` : road.estimate.sample_count > 0 ? `, ${road.estimate.sample_count} recent samples${road.estimate.image_coverage_percent == null ? '' : `, ${road.estimate.image_coverage_percent}% vehicle footprint`}, congestion unmeasured, ${road.active_camera_count} feeds live` : ', road association only'}${crossings ? `, ${crossings} inbound camera-track crossings in the last minute` : ''}`;
           path?.setAttribute('aria-label', `${road.route} ${road.direction}bound: ${road.estimate.label}${evidence}`);
           path?.addEventListener('keydown', event => {
             if ((event as KeyboardEvent).key === 'Enter') useProduct.getState().navigate(`/cameras/${road.camera_id}`);
@@ -92,7 +96,7 @@ function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boo
     };
     void update(); const timer = window.setInterval(() => void update(), 10000);
     return () => { stopped = true; clearInterval(timer); controller.abort(); group.remove(); statusControl.remove(); };
-  }, [map, mode, forceObserved, visible]);
+  }, [map, mode, forceObserved, visible, cameras]);
   return null;
 }
 

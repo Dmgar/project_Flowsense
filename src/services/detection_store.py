@@ -17,9 +17,9 @@ EVIDENCE_H264_CRF = "28"
 EVIDENCE_QUEUE_WARNING = "Evidence writer fell behind; a few clip frames may be missing. Camera analysis continues."
 OBSERVATION_QUEUE_WARNING = "Observation history writer fell behind; recent road analysis may be delayed. Live video and inference continue."
 EVIDENCE_DISK_RESERVE_BYTES = 1_000_000_000
-STANDARD_ROAD_COVERAGE_FLOOR = .08
-LOW_LIGHT_ROAD_COVERAGE_FLOOR = .20
-ROAD_COVERAGE_POLICY_VERSION = 2
+STANDARD_VEHICLE_FOOTPRINT_FLOOR = .08
+LOW_LIGHT_VEHICLE_FOOTPRINT_FLOOR = .20
+ROAD_COVERAGE_POLICY_VERSION = 3
 EVIDENCE_CAPACITY_RECHECK_SECONDS = 5.0
 EVIDENCE_WRITER_RETRY_SECONDS = 5.0
 VIDEO_BYTES_CACHE_SECONDS = 10.0
@@ -261,6 +261,23 @@ class DetectionStore:
             {"enabled": False, "name": "Full scene", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]],
              "direction": [0, 1], "minimum_motion": .008, "revision": 0})
 
+    def zones(self, cameras):
+        """Load saved camera zones in one read, falling back to bundled presets."""
+        camera_ids = tuple(dict.fromkeys(cameras))
+        if not camera_ids:
+            return {}
+        with closing(self.connect()) as db:
+            rows = db.execute("SELECT camera,payload FROM analysis_zones").fetchall()
+        saved = {camera: json.loads(payload) for camera, payload in rows if camera in camera_ids}
+        presets_path = Path(__file__).resolve().parents[2] / "data/camera_analysis_zones.json"
+        try:
+            presets = json.loads(presets_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            presets = {}
+        fallback = {"enabled": False, "name": "Full scene", "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]],
+                    "direction": [0, 1], "minimum_motion": .008, "revision": 0}
+        return {camera: saved.get(camera, presets.get(camera, fallback)) for camera in camera_ids}
+
     def set_zone(self, camera, profile):
         profile = {**profile, "revision": self.zone(camera)["revision"] + 1}
         with closing(self.connect()) as db, db:
@@ -290,6 +307,8 @@ class DetectionStore:
                     confidence,observations,model,clip,bbox,candidate_class,zone_revision,class_status,direction,counted,crossed_at,model_hits)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ON CONFLICT(session,generation,track) DO UPDATE SET
+                    first_seen=CASE WHEN julianday(excluded.first_seen)<julianday(tracks.first_seen)
+                                    THEN excluded.first_seen ELSE tracks.first_seen END,
                     last_seen=excluded.last_seen, confidence=MAX(tracks.confidence,excluded.confidence),
                     observations=tracks.observations+1, bbox=excluded.bbox,
                     class=excluded.class,class_status=excluded.class_status,candidate_class=excluded.candidate_class,
@@ -298,7 +317,7 @@ class DetectionStore:
                     model_hits=MAX(tracks.model_hits,excluded.model_hits),
                     clip=CASE WHEN tracks.counted=0 AND excluded.counted=1 AND excluded.crossed_at IS NOT NULL
                               THEN excluded.clip ELSE COALESCE(tracks.clip,excluded.clip) END""",
-                    (session, metrics["generation"], box["id"], camera, box["class"], timestamp,
+                    (session, metrics["generation"], box["id"], camera, box["class"], box.get("first_seen_at", timestamp),
                      timestamp, max(box["confidence"], box.get("track_confidence", 0)), 1, model, clip, json.dumps(box["bbox"]),
                      box.get("candidate_class") if box.get("class_status") == "uncertain" else None,
                      profile.get("revision", 0), box.get("class_status", "legacy_unverified"), box.get("direction", "unrestricted"),
@@ -815,6 +834,12 @@ class DetectionStore:
         continuity_gaps = [max(0.0, later - earlier)
                            for earlier, later in zip(continuity_times, continuity_times[1:])]
         long_pauses = [gap for gap in continuity_gaps if gap > 2.0]
+        in_session_pauses = [gap for (earlier_session, _), (later_session, _), gap
+                             in zip(continuity_rows, continuity_rows[1:], continuity_gaps)
+                             if gap > 2.0 and earlier_session == later_session]
+        session_boundary_gaps = [gap for (earlier_session, _), (later_session, _), gap
+                                 in zip(continuity_rows, continuity_rows[1:], continuity_gaps)
+                                 if gap > 2.0 and earlier_session != later_session]
         pause_details = [
             {"from": earlier_stamp, "to": later_stamp, "duration_seconds": round(gap, 1),
              "session_changed": earlier_session != later_session, "in_progress": False}
@@ -837,6 +862,9 @@ class DetectionStore:
             "session_count": len({session for session, _ in continuity_rows}),
             "long_pause_count": len(long_pauses),
             "longest_pause_seconds": round(max(long_pauses), 1) if long_pauses else 0.0,
+            "in_session_pause_count": len(in_session_pauses),
+            "longest_in_session_pause_seconds": round(max(in_session_pauses), 1) if in_session_pauses else 0.0,
+            "session_boundary_gap_count": len(session_boundary_gaps),
             "recent_pauses": pause_details,
             "coverage_percent": round(max(0.0, 900.0 - unobserved_time) * 100 / 900.0, 1),
             "latest_sample_age_seconds": round(latest_sample_age, 1) if latest_sample_age is not None else None,
@@ -866,17 +894,22 @@ class DetectionStore:
                             slow_fraction=round(slow, 3) if slow is not None else None,
                             movement_sample_count=len(slow_values))
             low_light = estimate["visibility"] == "low_light"
-            coverage_floor = LOW_LIGHT_ROAD_COVERAGE_FLOOR if low_light else STANDARD_ROAD_COVERAGE_FLOOR
-            # Night glare and low contrast reduce the share of a road that can
-            # be observed reliably. Preserve vehicle flow, but withhold a road
-            # condition until the camera covers a larger portion of its zone.
-            if coverage < coverage_floor:
-                estimate.update(evidence_quality="sparse", label="Sparse road coverage")
+            footprint_floor = (LOW_LIGHT_VEHICLE_FOOTPRINT_FLOOR if low_light
+                               else STANDARD_VEHICLE_FOOTPRINT_FLOOR)
+            # This percentage is the area occupied by detected vehicle boxes,
+            # not the visible area of the road. Low footprint alone cannot
+            # establish congestion, but repeated measured movement and inbound
+            # crossings can still support a cautious moving-traffic estimate.
+            if coverage < footprint_floor:
+                estimate.update(evidence_quality="sparse", label="Sparse vehicle footprint")
                 if crowd >= 1:
-                    estimate["label"] = "Vehicle movement · sparse view"
+                    estimate["label"] = "Vehicle movement · low footprint"
+                if (estimate["track_crossings_last_minute"] >= 3 and slow is not None
+                        and len(slow_values) >= 10 and slow < .4):
+                    estimate.update(level="moving", label="Traffic moving · low footprint", score=.15)
                 elif estimate["track_crossings_last_minute"] >= 3:
                     estimate.update(label="Inbound vehicle flow · congestion unknown",
-                        basis="Inbound track crossings are confirmed, but sparse image coverage is insufficient to estimate congestion.")
+                        basis="Inbound crossings are confirmed, but the sparse vehicle footprint is insufficient to establish congestion.")
             elif crowd >= 3 and slow is not None and slow >= .6:
                 estimate.update(level="slow", label="Possible queue", score=.8)
             elif crowd >= 3 and slow is not None and slow >= .4:

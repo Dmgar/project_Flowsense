@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { candidateHintCoverage, classReviewEvidenceStatus, detectionPipelineStatus, formatOutsideZoneSummary, formatTrackScore, visibleClassBreakdown, visibleDetectionCount } from '../src/product/detectionDiagnostics.ts';
+import { candidateHintCoverage, classReviewEvidenceStatus, detectionPipelineStatus, formatOutsideZoneFrameSummary, formatOutsideZoneSummary, formatTrackScore, visibleClassBreakdown, visibleDetectionCount } from '../src/product/detectionDiagnostics.ts';
 
 test('live detection distinguishes a stale frame from an API without telemetry', () => {
   assert.equal(detectionPipelineStatus(null), 'stale');
@@ -23,15 +23,23 @@ test('track score is labeled separately from a provisional vehicle class', () =>
 test('outside-zone diagnostics identify excluded vehicle observations over the same window', () => {
   assert.equal(
     formatOutsideZoneSummary(3, { car: 2, bus: 1 }, 4),
-    '3 outside-zone model observations in the last 4 seconds (2 cars, 1 bus). These are excluded from tracking and counts.',
+    '3 outside-zone model candidates in the last 4 seconds (model labels: 2 cars, 1 bus). Labels are unverified; candidates are excluded from tracking and counts.',
   );
 });
 
 test('outside-zone diagnostics handle a singular observation and unknown model classes', () => {
   assert.equal(
     formatOutsideZoneSummary(1, { train: 1 }),
-    '1 outside-zone model observation in the last 2 seconds (1 train object). These are excluded from tracking and counts.',
+    '1 outside-zone model candidate in the last 2 seconds (model labels: 1 train object). Labels are unverified; candidates are excluded from tracking and counts.',
   );
+});
+
+test('live outside-zone diagnostics call types unverified model labels, not confirmed vehicles', () => {
+  assert.equal(formatOutsideZoneFrameSummary(2, { car: 2 }, 2),
+    'The model proposed 2 outside-zone candidates across 2 frames (model labels: 2 cars). Class labels are unverified; candidates are excluded from tracking and counts.');
+  assert.equal(formatOutsideZoneFrameSummary(1, { bus: 1 }, 1),
+    'The model proposed 1 outside-zone candidate across 1 frame (model labels: 1 bus). Class labels are unverified; candidates are excluded from tracking and counts.');
+  assert.equal(formatOutsideZoneFrameSummary(0), '');
 });
 
 test('visible count prefers the actual rendered detection list, including provisional tracks', () => {

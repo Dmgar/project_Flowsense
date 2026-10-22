@@ -4,6 +4,7 @@ import hashlib
 import math
 import re
 import threading
+import weakref
 from contextlib import closing
 
 
@@ -21,11 +22,21 @@ ROAD_NAME_ALIASES = {
     "710": ("long beach freeway",),
 }
 _ROAD_CATALOG_LOCK = threading.Lock()
-_ROAD_MATCH_VERSION = 5
+_GRAPH_SIGNATURE_LOCK = threading.Lock()
+_GRAPH_SIGNATURE_CACHE = weakref.WeakKeyDictionary()
+_ROAD_MATCH_VERSION = 7
 
 
 def _graph_signature(graph):
-    return f"{_ROAD_MATCH_VERSION}:{graph.number_of_nodes()}:{graph.number_of_edges()}"
+    with _GRAPH_SIGNATURE_LOCK:
+        cached = _GRAPH_SIGNATURE_CACHE.get(graph)
+        if cached is not None:
+            return cached
+    profile = graph.graph.get("flowsense_location_profile", "active")
+    signature = f"{_ROAD_MATCH_VERSION}:{profile}:{graph.number_of_nodes()}:{graph.number_of_edges()}"
+    with _GRAPH_SIGNATURE_LOCK:
+        _GRAPH_SIGNATURE_CACHE[graph] = signature
+    return signature
 
 
 def _camera_signature(camera):
@@ -46,7 +57,9 @@ def route_matches_camera(route, text):
     digits = "".join(character for character in str(route) if character.isdigit())
     if not digits:
         return False
-    if digits in re.findall(r"\d+", str(text)):
+    # Route numbers must be standalone tokens: I-5 must not match an ordinary
+    # street name such as "West 5th Street" or a different route such as I-405.
+    if re.search(rf"(?<![A-Za-z0-9]){re.escape(digits)}(?![A-Za-z0-9])", str(text)):
         return True
     folded = str(text).casefold()
     return any(alias in folded for alias in ROAD_NAME_ALIASES.get(digits, ()))
@@ -150,7 +163,8 @@ def _aggregate_road_observations(rows):
     result = []
     for sources in grouped.values():
         sources.sort(key=lambda row: row["camera_id"])
-        available = [row for row in sources if row["estimate"].get("label") != "No active feed"]
+        available = [row for row in sources if row["estimate"].get("label") != "No active feed"
+                     and row["estimate"].get("source_health") != "unavailable"]
         live = [row for row in sources if row["estimate"].get(
             "feed_active", row["estimate"].get("label") != "No active feed")]
         measured = [row for row in available if row["estimate"].get("level") in labels
@@ -166,17 +180,27 @@ def _aggregate_road_observations(rows):
             else:
                 contributors = measured
                 label = "Conflicting camera estimates"
+        elif all(row["estimate"].get("source_health") == "unavailable" for row in sources):
+            contributors = []
+            label = "Camera source unavailable"
         elif not available:
             contributors = []
             label = "No active feed"
         else:
             contributors = available
             source_labels = [row["estimate"].get("label") for row in available]
-            if "Direction zone required" in source_labels:
+            # A missing zone on one linked camera must not hide that another,
+            # calibrated source has gone stale. Keep the stale primary state
+            # visible; the per-source estimates and zone_required_camera_count
+            # still show the remaining calibration work.
+            if ("Direction zone required" in source_labels
+                    and not any(row["estimate"].get("zone_enabled") for row in available)):
                 label = "Direction zone required"
             elif any(row["estimate"].get("evidence_quality") == "sparse" or
-                     row["estimate"].get("label") == "Sparse road coverage" for row in available):
-                label = "Sparse road coverage"
+                     row["estimate"].get("label") == "Sparse vehicle footprint" for row in available):
+                label = next((row["estimate"].get("label") for row in available
+                              if str(row["estimate"].get("label", "")).startswith("Vehicle movement")),
+                             "Sparse vehicle footprint")
             elif any(row["estimate"].get("evidence_quality") == "motion_unavailable" for row in available):
                 label = "Vehicle movement · motion unavailable"
             elif "No recent estimate" in source_labels:
@@ -194,20 +218,32 @@ def _aggregate_road_observations(rows):
             "level": level,
             "label": label,
             "sample_count": sum(row["estimate"].get("sample_count", 0) or 0 for row in available),
+            "calibrated_camera_count": sum(bool(row["estimate"].get("zone_enabled")) for row in sources),
+            "zone_required_camera_count": sum(not bool(row["estimate"].get("zone_enabled")) for row in sources),
             "track_crossings_last_minute": sum(row["estimate"].get("track_crossings_last_minute", 0) or 0 for row in available),
             "updated_at": max(updated) if updated else None,
             "image_coverage_percent": round(sum(coverages) / len(coverages), 1) if coverages else None,
             "slow_fraction": round(sum(slow_values) / len(slow_values), 3) if slow_values else None,
             "visibility": "low_light" if any(row["estimate"].get("visibility") == "low_light" for row in available) else "standard",
-            "evidence_quality": "sparse" if label == "Sparse road coverage" else "motion_unavailable" if label == "Vehicle movement · motion unavailable" else "multi_camera" if len(measured) > 1 else "single_camera" if measured else "unavailable",
+            "evidence_quality": "sparse" if any(row["estimate"].get("evidence_quality") == "sparse"
+                                                   for row in contributors) else "motion_unavailable" if label == "Vehicle movement · motion unavailable" else "multi_camera" if len(measured) > 1 else "single_camera" if measured else "unavailable",
             "movement_sample_count": sum(row["estimate"].get("movement_sample_count", 0) or 0 for row in available),
+            "source_health": "unavailable" if all(
+                row["estimate"].get("source_health") == "unavailable" for row in sources) else None,
+            "source_http_status": next((row["estimate"].get("source_http_status") for row in sources
+                                         if row["estimate"].get("source_health") == "unavailable"), None),
             "basis": (f"{len(measured)} linked camera views provide fresh usable estimates; {len(live)} feeds are active on this directed road segment."
                       if measured else "; ".join(dict.fromkeys(row["estimate"].get("basis", "") for row in available if row["estimate"].get("basis")))
                       if available else "No linked camera source has recent saved evidence."),
         }
         source_estimates = [{"camera_id": row["camera_id"], "level": row["estimate"].get("level"),
+                             "distance_m": row.get("distance_m"),
+                             "association": row.get("association"),
                              "label": row["estimate"].get("label"), "sample_count": row["estimate"].get("sample_count", 0),
                              "feed_active": row["estimate"].get("feed_active", row["estimate"].get("label") != "No active feed"),
+                             "source_health": row["estimate"].get("source_health"),
+                             "source_http_status": row["estimate"].get("source_http_status"),
+                             "zone_enabled": row["estimate"].get("zone_enabled"),
                              "image_coverage_percent": row["estimate"].get("image_coverage_percent"),
                              "track_crossings_last_minute": row["estimate"].get("track_crossings_last_minute", 0),
                              "evidence_quality": row["estimate"].get("evidence_quality"),
@@ -224,11 +260,11 @@ def _aggregate_road_observations(rows):
     return result
 
 
-def road_observations(store, cameras=None, graph=None, active_camera_ids=()):
+def road_observations(store, cameras=None, graph=None, active_camera_ids=(), graph_for_camera=None,
+                      source_health=None):
     from datetime import datetime, timezone, timedelta
     active = set(active_camera_ids)
-    if graph is not None and cameras:
-        graph_signature = _graph_signature(graph)
+    if (graph is not None or graph_for_camera is not None) and cameras:
         video_cameras = [camera for camera in cameras.values() if camera.get("stream_url")]
         with _ROAD_CATALOG_LOCK:
             with closing(store.connect()) as db, db:
@@ -236,21 +272,32 @@ def road_observations(store, cameras=None, graph=None, active_camera_ids=()):
                 cached = {camera: json.loads(payload) for camera, payload in
                           db.execute("SELECT camera,payload FROM camera_road_links")}
             for camera in video_cameras:
+                camera_graph = graph_for_camera(camera) if graph_for_camera else graph
+                if camera_graph is None:
+                    continue
+                graph_signature = _graph_signature(camera_graph)
                 saved = cached.get(camera["id"], {})
                 if (camera["id"] in active
                         or saved.get("graph_signature") != graph_signature
                         or saved.get("camera_signature") != _camera_signature(camera)):
-                    road_context(camera, graph, store)
+                    road_context(camera, camera_graph, store)
     with closing(store.connect()) as db, db:
         db.execute("CREATE TABLE IF NOT EXISTS camera_road_links (camera TEXT PRIMARY KEY,payload TEXT NOT NULL)")
         links = list(db.execute("SELECT camera,payload FROM camera_road_links"))
+    linked_camera_ids = [camera for camera, payload in links
+                         if (not cameras or camera in cameras) and json.loads(payload).get("matched")]
+    zones = store.zones(linked_camera_ids) if hasattr(store, "zones") else {}
     result = []
     for camera, payload in links:
         item = json.loads(payload)
         if (cameras and camera not in cameras) or not item.get("matched"):
             continue
+        zone = zones.get(camera) if zones else None
+        if zone is None:
+            zone = store.zone(camera)
+        zone_enabled = bool(zone.get("enabled"))
         if camera in active:
-            if store.zone(camera).get("enabled"):
+            if zone_enabled:
                 summary = store.summary(camera, (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat())
                 estimate = {**summary["traffic_estimate"], "feed_active": True}
             else:
@@ -260,21 +307,37 @@ def road_observations(store, cameras=None, graph=None, active_camera_ids=()):
                     "feed_active": True,
                     "basis": "Live detections are not attributed to this road until a camera-specific road polygon and travel direction are enabled."}
         else:
-            if store.zone(camera).get("enabled"):
+            if zone_enabled:
                 summary = store.summary(camera, (datetime.now(timezone.utc) - timedelta(seconds=60)).isoformat())
                 estimate = {**summary["traffic_estimate"], "feed_active": False}
             else:
-                estimate = {"level": "unknown", "label": "No active feed", "sample_count": 0,
+                estimate = {"level": "unknown", "label": "Direction zone required", "sample_count": 0,
                     "updated_at": None, "image_coverage_percent": None, "slow_fraction": None,
-                    "track_crossings_last_minute": 0, "feed_active": False}
+                    "track_crossings_last_minute": 0, "feed_active": False,
+                    "basis": "This camera is linked to the road, but its inbound lane and direction have not been calibrated. No traffic estimate is available."}
             if estimate.get("sample_count", 0) or estimate.get("track_crossings_last_minute", 0):
                 estimate["basis"] = ("Recent saved camera evidence is shown, but the video feed is inactive. "
                     "Congestion is only estimated while observations remain fresh; track crossings are not calibrated vehicle counts.")
-            else:
+            elif zone_enabled:
                 estimate.update(level="unknown", label="No active feed", sample_count=0,
                     updated_at=None, image_coverage_percent=None, slow_fraction=None,
                     track_crossings_last_minute=0,
                     basis="No active camera video or recent saved observations are available for this road.")
+        health = (source_health or {}).get(camera)
+        if health and health.get("state") == "unavailable":
+            estimate["feed_active"] = False
+            estimate["source_health"] = "unavailable"
+            estimate["source_http_status"] = health.get("http_status")
+            estimate["source_checked_at"] = health.get("checked_at")
+            if estimate.get("sample_count", 0) or estimate.get("track_crossings_last_minute", 0):
+                estimate["basis"] = ("The source is currently unavailable; saved observations remain visible, "
+                                      "but they do not establish current road conditions.")
+            else:
+                estimate.update(level="unknown", label="Camera source unavailable", sample_count=0,
+                    updated_at=None, image_coverage_percent=None, slow_fraction=None,
+                    track_crossings_last_minute=0,
+                    basis="The camera source returned an unavailable response. No current road estimate is shown.")
+        estimate["zone_enabled"] = zone_enabled
         association = _public_road_link(item)
         result.append({**association, "camera_id": camera, "estimate": estimate})
     return _aggregate_road_observations(result)

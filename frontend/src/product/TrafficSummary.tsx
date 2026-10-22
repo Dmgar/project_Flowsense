@@ -12,7 +12,7 @@ import { diskReserveDiagnostic } from './diskReserveDiagnostics';
 import { monitoringPollDelay } from './monitoringPollDelay';
 import { trackQualityFromRecentHistory, type TrackQualitySample } from './trackQualityDiagnostics';
 import { buildTrafficTimeline, describeTrafficMinute } from './trafficTimeline';
-import { describeLatestSampleAge, describeVideoGap, liveCaptureIsFresh } from './videoGapDiagnostics';
+import { describeContinuityCoverage, describeLatestSampleAge, describeVideoGap, liveCaptureIsFresh } from './videoGapDiagnostics';
 import { roadCountDisplay, savedTrackScopeLabel, savedTrackScopeNote } from './roadAnalysisState';
 import './trafficSummary.css';
 import './savedClips.css';
@@ -26,7 +26,7 @@ interface Summary {
   traffic_estimate: { level: string; label: string; image_coverage_percent: number | null; updated_at: string | null; sample_count: number; track_crossings_last_minute: number; movement_sample_count?: number | null; visibility?: string; evidence_quality?: string };
   track_quality?: { counted_track_count: number; measurable_track_count?: number; brief_track_count: number; brief_track_percent: number | null; average_observations: number | null };
   video_evidence_linkage?: { window_seconds: number; counted_crossings: number; playable_clip_crossings: number; recording_clip_crossings: number; paused_clip_crossings?: number; no_clip_crossings: number; unavailable_clip_crossings: number; playable_percent: number | null };
-  video_continuity?: { window_seconds: number; sample_count: number; session_count: number; long_pause_count: number; longest_pause_seconds: number; coverage_percent: number | null; latest_sample_age_seconds: number | null; recent_pauses?: Array<{ from: string; to: string; duration_seconds: number; session_changed: boolean; in_progress?: boolean }> };
+  video_continuity?: { window_seconds: number; sample_count: number; session_count: number; long_pause_count: number; longest_pause_seconds: number; in_session_pause_count?: number; longest_in_session_pause_seconds?: number; session_boundary_gap_count?: number; coverage_percent: number | null; latest_sample_age_seconds: number | null; recent_pauses?: Array<{ from: string; to: string; duration_seconds: number; session_changed: boolean; in_progress?: boolean }> };
   capture_status?: { active: boolean; session_state: string; monitoring_lease_count: number; live_viewer_count: number; sample_age_seconds: number | null; frames_decoded: number; inference_updates: number; model?: string | null; detection_profile?: string | null; supplemental_detail_status?: 'road_zone_required' | 'model_unavailable' | 'cuda_required' | 'multiple_sessions' | 'memory_limited' | 'eligible' | null; execution_provider?: string | null; output_fps?: number; inference_fps?: number; evidence_fps?: number | null; visible_tracks?: number | null; confirmed_visible_tracks?: number | null; provisional_visible_tracks?: number | null; reconnect_attempts: number; retry_in_seconds: number | null; error: string; inference_error: string; storage_error?: string };
   video_evidence: { enabled: boolean; external_clip_storage?: boolean; ready_clips: number; recording_clips: number; interrupted_clips: number; short_clips?: number; unavailable_clips?: number; bytes_used: number; max_bytes: number; encoding_crf?: number; free_disk_bytes?: number; minimum_free_bytes?: number; storage_block_reason?: string; recent_recording_pauses?: Array<{ started_at: string; ended_at: string | null; reason: string; in_progress: boolean; timestamp_conflict?: boolean }> };
   road: { name: string; route?: string; direction?: string; matched: boolean; distance_m?: number; association: string };
@@ -70,6 +70,8 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
   const [clipPlaybackNotice, setClipPlaybackNotice] = useState('');
   const [focusedCrossing, setFocusedCrossing] = useState<Crossing | null>(null);
   const [clipError, setClipError] = useState('');
+  const providerOutOfService = camera.provider_in_service === false;
+  const sourceUnavailable = camera.video_health?.state === 'unavailable';
   const clipReview = useRef<HTMLDetailsElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
   const since = monitoringStartedAt();
@@ -391,13 +393,15 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
   const uncertainCrossings = crossings.filter(crossing => !crossing.counted && !crossing.feedback);
   const recentlyReviewedCrossings = reviewedHistory;
   const countedCrossings = crossings.filter(crossing => crossing.counted);
-  const roadBadge = !estimate ? 'Checking feed' : data?.directional_zone_enabled === false ? 'Zone required' : estimate.evidence_quality === 'sparse' ? 'Sparse evidence' : estimate.evidence_quality === 'motion_unavailable' ? 'Motion unavailable' : estimate.level === 'unknown' ? (estimate.label === 'No recent estimate' ? 'Estimate stale' : 'Estimate pending') : estimate.visibility === 'low_light' ? 'Night estimate' : 'Live estimate';
-  const roadTone = estimate?.level === 'moving' ? 'green' : 'amber';
+  const roadBadge = providerOutOfService || sourceUnavailable ? 'Video unavailable' : !estimate ? 'Checking feed' : data?.directional_zone_enabled === false ? 'Zone required' : estimate.evidence_quality === 'sparse' ? 'Sparse evidence' : estimate.evidence_quality === 'motion_unavailable' ? 'Motion unavailable' : estimate.level === 'unknown' ? (estimate.label === 'No recent estimate' ? 'Estimate stale' : 'Estimate pending') : estimate.visibility === 'low_light' ? 'Night estimate' : 'Live estimate';
+  const roadTone = providerOutOfService || sourceUnavailable ? 'amber' : estimate?.level === 'moving' ? 'green' : 'amber';
   const riderObserved = Number(data?.classes?.rider || trackedClasses?.rider || 0) > 0;
   const kinds = [['car', 'Cars'], ['truck', 'Trucks'], ['bus', 'Buses'], ['motorcycle', 'Motorcycles'], ['bicycle', 'Bicycles'], ...(riderObserved ? [['rider', 'Riders · mode unclear']] : []), ['vehicle', 'Type pending']];
   return <div className="p-traffic-summary">
     <Panel title="Monitoring history" action={<Badge tone={activeCount ? 'green' : 'amber'}>{activeCount ?? '—'} tracked in last 2 sec</Badge>}>
-      {roadZoneRequired && <p className="p-road-zone-required" role="status">Live video tracking is active, but directional road counts are unavailable until this camera’s inbound lane and travel direction are reviewed in <b>Edit road zone</b>.</p>}
+      {roadZoneRequired && <p className="p-road-zone-required" role="status">{providerOutOfService
+        ? 'Caltrans reports this camera out of service. Saved detections remain unassigned to a road until its inbound lane and travel direction are reviewed.'
+        : <>Live video tracking is active, but directional road counts are unavailable until this camera’s inbound lane and travel direction are reviewed in <b>Edit road zone</b>.</>}</p>}
       <div className="p-traffic-total"><span>Counted inbound crossings</span><strong>{roadCountDisplay(data?.total_passed, roadZoneEnabled)}</strong><small>{roadZoneRequired ? 'No road-specific count is available yet.' : `Tracks that crossed the configured counting line since ${new Date(since).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}</small></div>
       <div className="p-traffic-types">{kinds.map(([key, label]) => <div key={key}><span>{label}</span><b>{roadCountDisplay(data?.classes?.[key], roadZoneEnabled)}</b></div>)}</div>
       <details className="p-tracked-records"><summary><span>{savedTrackScopeLabel(roadZoneEnabled)}</span><b>{trackedTotal ?? '—'}</b></summary><p>{savedTrackScopeNote(roadZoneEnabled)}</p><div className="p-tracked-record-types">{kinds.map(([key, label]) => <span key={key}>{label} <b>{trackedClasses?.[key] ?? 0}</b></span>)}</div></details>
@@ -412,7 +416,15 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
       <p className="p-small-note">{data?.count_basis || 'Counts are based on model tracks crossing the approaching-lane counter.'} Data is saved automatically.{data?.minute_video_coverage === false ? ' This server does not report minute-level video coverage, so zero bars may include unobserved gaps.' : ''}</p>
       <p className="p-small-note">{roadZoneRequired ? 'Full-scene records remain saved; records from earlier road-zone revisions are retained.' : 'History uses the current road zone. Records from earlier zones remain saved.'}</p>
       <button className="p-text-button" aria-pressed={background || isMonitoring(camera.id)} onClick={() => { const next = !isMonitoring(camera.id); setMonitoring(camera.id, next); setBackground(next); }}>{background || isMonitoring(camera.id) ? 'Pause background monitoring' : 'Keep monitoring in the app'}</button>
-      <p className="p-small-note">{background || isMonitoring(camera.id)
+      <p className="p-small-note">{providerOutOfService
+        ? background || isMonitoring(camera.id)
+          ? 'Monitoring is paused while Caltrans lists this camera out of service. Your saved preference will resume when the provider reports it in service.'
+          : 'Caltrans lists this camera out of service. Turn monitoring on to resume saving automatically when the provider reports it in service.'
+        : sourceUnavailable
+          ? background || isMonitoring(camera.id)
+            ? 'Monitoring is paused after the HLS source returned a not-found response. Your preference and history are preserved; a later health check can resume monitoring.'
+            : 'The HLS source returned a not-found response. Turn monitoring on to resume automatically after a later health check confirms the feed is back.'
+        : background || isMonitoring(camera.id)
         ? 'Background monitoring is on. This camera can keep saving observations while its page is hidden.'
         : 'Background monitoring is off. Video capture pauses when this page is hidden or closed.'}</p>
       {error && <p role="status" className="p-inline-error">{error}</p>}
@@ -504,14 +516,18 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
               : null}
       {currentCaptureStatus && <p className="p-small-note">
         {!currentCaptureStatus.active
-          ? 'No active capture session. Open the live video or enable “Keep monitoring in the app” to resume analysis and clip recording.'
+          ? providerOutOfService
+            ? 'No active capture: Caltrans lists this source out of service. Use “Try video anyway” to check whether its feed has returned.'
+            : sourceUnavailable
+              ? 'No active capture: the latest HLS check returned a not-found response. Use “Try video anyway” to test the source directly.'
+            : 'No active capture session. Open the live video or enable “Keep monitoring in the app” to resume analysis and clip recording.'
           : currentCaptureStatus.session_state !== 'Live'
             ? `Camera capture session · ${currentCaptureStatus.session_state}${currentCaptureStatus.reconnect_attempts ? ` · reconnect attempt ${currentCaptureStatus.reconnect_attempts}${currentCaptureStatus.retry_in_seconds !== null ? ` in ${Math.ceil(currentCaptureStatus.retry_in_seconds)}s` : ''}` : ''}${currentCaptureStatus.error ? ` · ${currentCaptureStatus.error}` : ''}${currentCaptureStatus.inference_error ? ` · ${currentCaptureStatus.inference_error}` : ''}`
             : `Capture active · ${currentCaptureStatus.live_viewer_count} live viewer${currentCaptureStatus.live_viewer_count === 1 ? '' : 's'} · ${currentCaptureStatus.monitoring_lease_count} monitoring lease${currentCaptureStatus.monitoring_lease_count === 1 ? '' : 's'} · ${currentCaptureStatus.frames_decoded} frames decoded · ${currentCaptureStatus.inference_updates} inference updates${currentCaptureStatus.detection_profile ? ` · ${currentCaptureStatus.detection_profile === 'low_light' ? 'low-light' : currentCaptureStatus.detection_profile === 'low_light_unavailable' ? 'low-light fallback' : 'standard'} analysis` : ''}${currentCaptureStatus.model ? ` · ${currentCaptureStatus.model}` : ''}${currentCaptureStatus.execution_provider ? ` · ${currentCaptureStatus.execution_provider}` : ''}${currentCaptureStatus.evidence_fps != null ? ` · MP4 encoder ${currentCaptureStatus.evidence_fps} FPS` : ''}${currentCaptureStatus.visible_tracks != null ? ` · ${currentCaptureStatus.visible_tracks} tracked object${currentCaptureStatus.visible_tracks === 1 ? '' : 's'} in latest frame${currentCaptureStatus.provisional_visible_tracks ? `, ${currentCaptureStatus.provisional_visible_tracks} provisional` : ''}` : ''}.`}
       </p>}
       {currentCaptureStatus?.supplemental_detail_status && <p className="p-small-note" role="status">
         {currentCaptureStatus.supplemental_detail_status === 'memory_limited'
-          ? 'Night detail pass is paused by the memory safeguard; at least 2 GB of free memory is required. The standard detector remains active.'
+          ? 'Night detail is paused because less than 2 GB of system RAM is free; the standard low-light detector remains active.'
           : currentCaptureStatus.supplemental_detail_status === 'eligible'
             ? 'Night detail pass is eligible on selected inference updates.'
             : currentCaptureStatus.supplemental_detail_status === 'multiple_sessions'
@@ -527,14 +543,12 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         ? 'Capture continuity is unavailable from the current camera API. Saved detections do not prove uninterrupted video.'
         : data.video_continuity.sample_count === 0
           ? 'Capture continuity · no saved video samples in the last 15 minutes.'
-          : `Capture continuity · ${data.video_continuity.coverage_percent ?? '—'}% observed across ${data.video_continuity.session_count} video session${data.video_continuity.session_count === 1 ? '' : 's'} in the last 15 minutes. ${data.video_continuity.long_pause_count === 0
-            ? 'No pauses longer than 2 seconds.'
-            : `${data.video_continuity.long_pause_count} pauses longer than 2 seconds · longest ${data.video_continuity.longest_pause_seconds}s.`}`}</p>}
+          : describeContinuityCoverage(data.video_continuity)}</p>}
       {data?.video_continuity?.latest_sample_age_seconds != null && data.video_continuity.latest_sample_age_seconds > 5 && <p role="status" className="p-small-note">
         {describeLatestSampleAge(data.video_continuity.latest_sample_age_seconds, liveCaptureIsFresh(currentCaptureStatus))}
       </p>}
-      {!!data?.video_continuity?.recent_pauses?.length && <div className="p-small-note" aria-label="Recent video pauses">
-        <b>Recent analysis gaps · trigger unverified</b>
+      {!!data?.video_continuity?.recent_pauses?.length && <div className="p-small-note" aria-label="Recent analysis gaps">
+        <b>Recent analysis gaps · cause unverified</b>
         {data.video_continuity.recent_pauses.slice(-3).reverse().map((pause, index) => <p key={`${pause.from}-${index}`}>
           {new Date(pause.from).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}–{pause.in_progress ? 'now' : new Date(pause.to).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} · {pause.duration_seconds}s · {describeVideoGap(pause, liveCaptureIsFresh(currentCaptureStatus))}
         </p>)}
@@ -546,7 +560,8 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         ? <p className="p-small-note">Configure this camera’s road polygon and travel direction before using detections for road counts or map estimates. Full-scene detections are not assigned to a road.</p>
         : <p className="p-small-note">Estimated from model box area and tracked movement within the inbound zone over the last minute. This is not calibrated road occupancy or speed. The OSM association is approximate.</p>}
       {estimate?.visibility === 'low_light' && <p className="p-small-note">Limited night visibility: missed vehicles can understate traffic. Sparse detections do not establish a clear road.</p>}
-      {estimate?.evidence_quality === 'sparse' && <p className="p-small-note">Vehicle tracks are being saved, but image coverage is too sparse to classify the whole road. The map leaves this segment uncolored.</p>}
+      {estimate?.evidence_quality === 'sparse' && estimate.level === 'moving' && <p className="p-small-note">Vehicle boxes cover a small share of the road zone, but repeated track motion supports moving traffic. The map color does not represent calibrated speed or prove congestion.</p>}
+      {estimate?.evidence_quality === 'sparse' && estimate.level === 'unknown' && <p className="p-small-note">Vehicle boxes cover a small share of the road zone, so congestion remains unclassified. An uncolored segment does not mean the road is clear.</p>}
       {estimate?.evidence_quality === 'motion_unavailable' && <p className="p-small-note">Vehicles were visible, but the current tracks did not provide measurable movement. The map leaves congestion unclassified.</p>}
       {estimate?.level === 'unknown' && estimate.evidence_quality !== 'sparse' && <p className="p-small-note">Road conditions are withheld until fresh video analysis is available. No estimate does not mean the road is clear.</p>}
     </Panel>

@@ -105,6 +105,14 @@ async def snapshot(camera_id: str, frame_id: str | None = None):
         raise HTTPException(503, "The camera is not responding. The public provider may interrupt its stream.") from None
 
 
+@router.get("/cameras/{camera_id}/video-health")
+async def camera_video_health(camera_id: str):
+    try:
+        return await asyncio.to_thread(mobility_service.video_health, camera_id)
+    except KeyError:
+        raise HTTPException(404, "Camera not found.") from None
+
+
 @router.get("/cameras/{camera_id}/observation")
 async def observation(camera_id: str):
     try:

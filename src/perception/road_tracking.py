@@ -483,6 +483,10 @@ class RoadTracker:
                         if item[1] == key and item[2] is state:
                             initial_used.add(previous_index)
                             break
+                # Direction eligibility can delay persistence for a few real
+                # detector hits. Keep the actual first observation so history
+                # does not understate how long the tracker followed the object.
+                state.setdefault("first_seen_instant", state.get("instant", instant))
                 if state.get("tracker_key", key) != key or id(state) in updated_states:
                     continue
                 updated_states.add(id(state))
@@ -552,6 +556,7 @@ class RoadTracker:
                     outputs.append({"id": state["id"], "class": label, "confidence": detection.confidence,
                         "track_confidence": float(state["score"]), "bbox": detection.bbox,
                         "observation_hits": state["hits"],
+                        "track_age_seconds": max(0.0, instant - state["first_seen_instant"]),
                         "low_light": bool(profile.get("low_light")),
                         "velocity": tuple(velocity), "predicted": False, "direction": "approaching" if profile.get("enabled") else "unrestricted",
                         "class_status": "stable" if state["classifier"].locked else "uncertain",

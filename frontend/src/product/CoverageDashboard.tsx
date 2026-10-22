@@ -9,7 +9,7 @@ import { loadCameraCoverage } from './cameraCoverageRequest';
 import { calibrationCorridorProgress, calibrationPlaybackCoverage, calibrationProgress, calibrationQueue, hasPreviouslyVerifiedVideo, isCurrentlyPlaying, type CameraZoneStatus } from './cameraCalibration';
 
 interface ZoneCoverage extends CameraZoneStatus {
-  camera_id: string; status?: string; zone_revision?: number;
+  camera_id: string; name?: string; status?: string; zone_revision?: number;
 }
 
 export function CoverageDashboard() {
@@ -43,6 +43,7 @@ export function CoverageDashboard() {
     }).length
     : 0;
   const corridorProgress = zoneCoverage ? calibrationCorridorProgress(scopedVideo, zoneCoverage) : [];
+  const unavailableSources = (zoneCoverage ?? []).filter(status => status.source_health?.state === 'unavailable');
   const nextCamera = queue[0];
   const coverageTotal = calibration?.total ?? null;
   const linked = scoped.filter(c => c.stream_url).length;
@@ -55,7 +56,17 @@ export function CoverageDashboard() {
           <progress max={Math.max(1, coverageTotal || 1)} value={calibratedCount} aria-label="Camera road zones reviewed" /></div>
         <p>{coverageTotal === null
           ? 'Camera tracks are not assigned to road conditions until each video source has an inbound road zone and direction.'
-          : `${coverageTotal - calibratedCount} sources need road-zone review. ${liveVideoCount} are streaming now; ${calibratedLiveCount} also have reviewed zones. Live estimates require fresh analysis as well as video. Inactive sources are unverified, not offline. Of the sources awaiting review, ${queue.filter(camera => isCurrentlyPlaying(zoneCoverage?.find(item => item.camera_id === camera.id))).length} are streaming; ${playbackCoverage.previouslyVerified} URLs responded previously but still need live lane review; ${playbackCoverage.playbackCheckRequired} need playback verified before calibration.`}</p>
+          : `${coverageTotal - calibratedCount} sources need road-zone review. ${liveVideoCount} are streaming now; ${calibratedLiveCount} also have reviewed zones. Live estimates require fresh analysis as well as video. Inactive sources remain unverified unless a source check confirms an outage. Of the sources awaiting review, ${queue.filter(camera => isCurrentlyPlaying(zoneCoverage?.find(item => item.camera_id === camera.id))).length} are streaming; ${playbackCoverage.previouslyVerified} URLs responded previously but still need live lane review; ${playbackCoverage.playbackCheckRequired} need playback verified before calibration.`}</p>
+        {unavailableSources.length > 0 && <details className="p-road-queue p-source-health-list">
+          <summary>Recent source checks report {unavailableSources.length} unavailable feed{unavailableSources.length === 1 ? '' : 's'}</summary>
+          <p>These feeds cannot provide current video or road estimates while unavailable. Saved history is preserved.</p>
+          <ul>{unavailableSources.map(source => <li key={source.camera_id}>
+            <div><b>{source.name || source.camera_id}</b>
+              <small>{[source.route, source.direction && `${source.direction}bound`].filter(Boolean).join(' · ') || 'Road reference needs review'}</small>
+              <span>Source returned HTTP {source.source_health?.http_status ?? '404'} · check again later</span></div>
+            <button className="p-text-button" aria-label={`Open ${source.name || source.camera_id}`} onClick={() => useProduct.getState().navigate(`/cameras/${encodeURIComponent(source.camera_id)}`)}>Open</button>
+          </li>)}</ul>
+        </details>}
         {zoneCoverageError && <p role="status" className="p-inline-error">{zoneCoverageError}</p>}
         {nextCamera && (nextCamera.route || nextCamera.direction) && <p>Next source reference: {[nextCamera.route, nextCamera.direction && `${nextCamera.direction}bound`].filter(Boolean).join(' · ')}. Confirm the inbound lanes against moving video before saving.</p>}
         <button className="p-button primary" disabled={!nextCamera || loadingCoverage} onClick={() => nextCamera && useProduct.getState().navigate(`/cameras/${encodeURIComponent(nextCamera.id)}?calibrate=road&queue=1`)}>
@@ -78,7 +89,9 @@ export function CoverageDashboard() {
             const requirement = status?.status === 'zone_and_metadata_required' ? 'Road zone and route reference required'
               : status?.status === 'route_metadata_required' ? 'Route reference required' : 'Inbound road zone required';
             return <li key={camera.id}><div><b>{camera.name}</b><small>{route || 'Road and direction reference needs review'}</small>
-              <span>{requirement} · {isCurrentlyPlaying(status) ? `Live video verified now · ${status?.playback_session_state}` : hasPreviouslyVerifiedVideo(camera) ? 'HLS URL returned HTTP 200 previously · confirm playback' : 'Verify live video first'}</span></div>
+              <span>{status?.source_health?.state === 'unavailable'
+                ? `Source unavailable${status.source_health.http_status ? ` · HTTP ${status.source_health.http_status}` : ''}. Skip calibration until the feed returns.`
+                : `${requirement} · ${isCurrentlyPlaying(status) ? `Live video verified now · ${status?.playback_session_state}` : hasPreviouslyVerifiedVideo(camera) ? 'HLS URL returned HTTP 200 previously · confirm playback' : 'Verify live video first'}`}</span></div>
               <button className="p-text-button" aria-label={`Open calibration for ${camera.name}`} onClick={() => useProduct.getState().navigate(`/cameras/${encodeURIComponent(camera.id)}?calibrate=road&queue=1`)}>Open</button>
             </li>;
           })}</ol>

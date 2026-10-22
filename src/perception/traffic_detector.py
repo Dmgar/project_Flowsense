@@ -5,6 +5,8 @@ import numpy as np
 from src.perception.models import Detection
 from src.perception.tracker import _iou
 
+LOW_LIGHT_DETAIL_GAMMA_LUT = np.round((np.arange(256) / 255.) ** .65 * 255).astype(np.uint8)
+
 
 def is_low_light(frame):
     """Identify dark CCTV scenes from pixels, independent of server timezone."""
@@ -91,9 +93,9 @@ class TrafficDetector:
         else:
             self.enable_crops = provider == "CUDAExecutionProvider" or provider is None
 
-    def detect(self, frame, zone=None):
+    def detect(self, frame, zone=None, enhance_detail=False):
         if zone and zone.get("enabled"):
-            return self.detect_road(frame, zone)
+            return self.detect_road(frame, zone, enhance_detail=enhance_detail)
         detections = list(self.detector.detect(frame))
         height, width = frame.shape[:2]
         if not self.enable_crops or max(width, height) < 960:
@@ -117,7 +119,7 @@ class TrafficDetector:
                 detections.append(Detection((bx + x, by + y, bw, bh), item.class_id, item.class_name, item.confidence, item.class_scores))
         return merge_detections(detections, threshold=self.detector.confidence_threshold)
 
-    def detect_road(self, frame, zone):
+    def detect_road(self, frame, zone, enhance_detail=False):
         """Spend two passes on the monitored carriageway, including its far end."""
         height, width = frame.shape[:2]
         points = np.asarray(zone["polygon"]) * (width, height)
@@ -141,8 +143,13 @@ class TrafficDetector:
         regions = [(int(left), int(top), int(right), int(bottom)),
                    (detail_x, detail_y, detail_x + side, detail_y + side)]
         detections = []
-        for x, y, x2, y2 in regions:
-            for item in self.detector.detect(frame[y:y2, x:x2]):
+        for region_index, (x, y, x2, y2) in enumerate(regions):
+            crop = frame[y:y2, x:x2]
+            # Keep broad original-scene evidence and brighten the rotating
+            # detail crop for dark small vehicles without another model pass.
+            if enhance_detail and region_index == 1:
+                crop = cv2.LUT(crop, LOW_LIGHT_DETAIL_GAMMA_LUT)
+            for item in self.detector.detect(crop):
                 bx, by, bw, bh = item.bbox
                 if ((x > 0 and bx <= 3) or (y > 0 and by <= 3) or
                     (x2 < width and bx + bw >= x2 - x - 3) or (y2 < height and by + bh >= y2 - y - 3)):

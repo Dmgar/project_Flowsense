@@ -2,6 +2,7 @@ import math
 import json
 import logging
 import tempfile
+import threading
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
@@ -12,6 +13,15 @@ from src.models.schemas import GraphStatus
 
 logger = logging.getLogger("flowsense.graph")
 
+CAMERA_GRAPH_CATALOG = (
+    {"profile": "los_angeles", "bounds": (33.65, 34.30, -118.65, -117.75),
+     "files": ("los_angeles_regional_graph.graphml", "los_angeles_graph.graphml")},
+    {"profile": "cartagena", "bounds": (10.25, 10.55, -75.70, -75.35),
+     "files": ("cartagena_graph.graphml",)},
+    {"profile": "manhattan", "bounds": (40.65, 40.93, -74.08, -73.85),
+     "files": ("manhattan_graph.graphml",)},
+)
+
 class GraphService:
     """
     Manages the urban street network graph for FlowSense.
@@ -21,6 +31,10 @@ class GraphService:
         self.graph: Optional[nx.MultiDiGraph] = None
         self.is_synthetic: bool = False
         self.active_incidents: Dict[str, Dict[str, Any]] = {}
+        self._location_graphs: Dict[str, nx.MultiDiGraph] = {}
+        self._location_graph_candidates: Dict[str, List[nx.MultiDiGraph]] = {}
+        self._location_graph_lock = threading.RLock()
+        self._graph_bounds_cache: Dict[nx.MultiDiGraph, Tuple[int, Tuple[float, float, float, float]]] = {}
         self._ensure_cache_dir()
 
     def _ensure_cache_dir(self):
@@ -418,6 +432,80 @@ class GraphService:
         if self.graph is None:
             self.initialize()
         return self.graph
+
+    def _graph_contains_location(self, graph, lat: float, lon: float, padding: float = .004) -> bool:
+        if not graph or graph.number_of_nodes() == 0:
+            return False
+        node_count = graph.number_of_nodes()
+        cached = self._graph_bounds_cache.get(graph)
+        if cached is None or cached[0] != node_count:
+            try:
+                xs = [float(data["x"]) for _, data in graph.nodes(data=True)]
+                ys = [float(data["y"]) for _, data in graph.nodes(data=True)]
+            except (KeyError, TypeError, ValueError):
+                return False
+            bounds = (min(xs), min(ys), max(xs), max(ys))
+            self._graph_bounds_cache[graph] = (node_count, bounds)
+        else:
+            bounds = cached[1]
+        min_x, min_y, max_x, max_y = bounds
+        return (min_x - padding <= lon <= max_x + padding
+                and min_y - padding <= lat <= max_y + padding)
+
+    def _load_location_graph(self, profile: str, path: Path) -> nx.MultiDiGraph:
+        try:
+            graph = nx.read_graphml(str(path), node_type=int, force_multigraph=True)
+        except (TypeError, ValueError):
+            graph = nx.read_graphml(str(path), force_multigraph=True)
+        loader = GraphService.__new__(GraphService)
+        loader.graph = graph
+        loader.is_synthetic = str(graph.graph.get("flowsense_is_synthetic", "false")).lower() == "true"
+        loader.active_incidents = {}
+        loader._location_graphs = {}
+        loader._location_graph_candidates = {}
+        loader._location_graph_lock = threading.RLock()
+        loader._graph_bounds_cache = {}
+        loader._normalize_graph_attributes()
+        graph.graph["flowsense_location_profile"] = profile
+        return graph
+
+    def get_graph_for_camera(self, camera: Dict[str, Any]) -> nx.MultiDiGraph:
+        """Use a cached road graph near this camera instead of snapping every city to the map's active graph."""
+        try:
+            lat, lon = float(camera["lat"]), float(camera["lng"])
+        except (KeyError, TypeError, ValueError):
+            return self.get_graph()
+        active = self.get_graph()
+        if self._graph_contains_location(active, lat, lon):
+            return active
+        profile = next((entry for entry in CAMERA_GRAPH_CATALOG
+                        if entry["bounds"][0] <= lat <= entry["bounds"][1]
+                        and entry["bounds"][2] <= lon <= entry["bounds"][3]), None)
+        if profile is None:
+            return active
+        if profile["profile"] == settings.CITY_PROFILE:
+            return active
+        with self._location_graph_lock:
+            cached = self._location_graphs.get(profile["profile"])
+            if cached is not None and self._graph_contains_location(cached, lat, lon):
+                return cached
+            candidates = self._location_graph_candidates.get(profile["profile"])
+            if candidates is None:
+                candidates = []
+                for filename in profile["files"]:
+                    path = settings.DATA_PROCESSED_DIR / filename
+                    if not path.is_file() or path.stat().st_size <= 0:
+                        continue
+                    try:
+                        candidates.append(self._load_location_graph(profile["profile"], path))
+                    except (OSError, nx.NetworkXError, TypeError, ValueError) as error:
+                        logger.warning("Could not load %s road graph for camera matching: %s", profile["profile"], error)
+                self._location_graph_candidates[profile["profile"]] = candidates
+            for graph in candidates:
+                if self._graph_contains_location(graph, lat, lon):
+                    self._location_graphs[profile["profile"]] = graph
+                    return graph
+        return active
 
     def find_nearest_node(self, lat: float, lon: float, max_distance_m: float | None = None) -> int:
         """Finds the closest node to the specified latitude and longitude."""

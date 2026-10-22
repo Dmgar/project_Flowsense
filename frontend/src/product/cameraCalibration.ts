@@ -9,6 +9,7 @@ export interface CameraZoneStatus {
   /** True only while the decoder is active and its latest video sample is fresh. */
   playback_verified?: boolean;
   playback_session_state?: string | null;
+  source_health?: { state: string; http_status?: number | null; checked_at?: string | null; message?: string } | null;
 }
 
 export interface CorridorCalibrationCoverage {
@@ -176,7 +177,18 @@ export function suggestObservedRoadRegion(
   const alignment = Math.cos(Math.PI / 6);
   const clusters = motion.map(candidate => motion.filter(item =>
     candidate.vector[0] * item.vector[0] + candidate.vector[1] * item.vector[1] >= alignment));
-  const supporters = clusters.sort((left, right) => right.length - left.length)[0];
+  const directionSupporters = clusters.sort((left, right) => right.length - left.length)[0];
+  if (directionSupporters.length < 3 || directionSupporters.length / motion.length < .65) return null;
+
+  // Similar motion alone can combine vehicles on separate ramps into one huge outline.
+  // Keep the proposal local to a visible cluster; sparse or split scenes should abstain.
+  const centers = directionSupporters.map(item => item.points.reduce(
+    (center, point) => [center[0] + point[0] / item.points.length, center[1] + point[1] / item.points.length],
+    [0, 0] as [number, number],
+  ));
+  const spatialClusters = centers.map(center => directionSupporters.filter((_, otherIndex) =>
+    Math.hypot(center[0] - centers[otherIndex][0], center[1] - centers[otherIndex][1]) <= .3));
+  const supporters = spatialClusters.sort((left, right) => right.length - left.length)[0];
   if (supporters.length < 3 || supporters.length / motion.length < .65) return null;
 
   const points = supporters.flatMap(item => item.points);
@@ -280,6 +292,15 @@ export function isCurrentlyPlaying(status: CameraZoneStatus | undefined): boolea
   return status?.playback_verified === true;
 }
 
+function currentSourceHealthRank(status: CameraZoneStatus | undefined): number {
+  switch (status?.source_health?.state) {
+    case 'available': return 2;
+    case 'temporary_error': return 0;
+    case 'unavailable': return -1;
+    default: return 1;
+  }
+}
+
 export function nextCalibrationCamera(
   cameras: Camera[],
   statuses: CameraZoneStatus[],
@@ -314,6 +335,7 @@ export function calibrationQueue(
       const rightInCorridor = currentCorridor && corridorKey(right) === currentCorridor;
       return Number(Boolean(rightInCorridor)) - Number(Boolean(leftInCorridor))
         || Number(isCurrentlyPlaying(rightStatus)) - Number(isCurrentlyPlaying(leftStatus))
+        || currentSourceHealthRank(rightStatus) - currentSourceHealthRank(leftStatus)
         || Number(hasPreviouslyVerifiedVideo(right)) - Number(hasPreviouslyVerifiedVideo(left))
         || Number(rightStatus?.route_metadata_available) - Number(leftStatus?.route_metadata_available)
         || distanceFromCurrent(left) - distanceFromCurrent(right)
