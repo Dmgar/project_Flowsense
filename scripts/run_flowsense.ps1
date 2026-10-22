@@ -100,7 +100,7 @@ if ($ExistingApi) {
     [int]$ApiSummary.road.road_matching_version -eq 5
   $HasCurrentCameraDetectionPolicy = $null -ne $ApiSummary.capture_status -and
     $null -ne $ApiSummary.capture_status.PSObject.Properties['camera_detection_policy_version'] -and
-    [int]$ApiSummary.capture_status.camera_detection_policy_version -eq 2
+    [int]$ApiSummary.capture_status.camera_detection_policy_version -eq 3
   $HasCurrentRoadCoveragePolicy = $null -ne $ApiSummary.PSObject.Properties['road_coverage_policy_version'] -and
     [int]$ApiSummary.road_coverage_policy_version -eq 2
   $HasCaptureDiagnostics = $null -ne $ApiSummary.capture_status -and

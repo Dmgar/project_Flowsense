@@ -69,6 +69,22 @@ Peak simultaneous tracks increased from one to three. Mean inference time was
 run, close to the 100 ms target for the 10 Hz analysis loop. Threshold-eligible
 tracks are not independently confirmed detections.
 
+## Weak-night candidate continuity (2026-10-22)
+
+Weak low-light model hits now survive missed inference updates only while the
+last real hit is no more than 0.75 seconds old. A later candidate must still
+overlap the same class before it can enter tracking; empty frames never
+increment hit counts. When ByteTrack confirms the repeated candidate, the
+tracker is seeded from both real detections so movement and class consensus use
+the observed interval. Inbound-direction, class-confirmation and counting-line
+rules remain in force, so this recovery can expose a provisional vehicle
+without recording a crossing from weak evidence alone.
+
+Regression coverage includes a missed update, expired evidence, reverse-flow
+rejection and the existing weak-night tracking rules. This reduces needless
+track resets; it does not claim a measured recall increase without independent
+nighttime annotations.
+
 Reproduce the paired comparison with the locally available source clip and
 model:
 

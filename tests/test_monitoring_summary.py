@@ -159,7 +159,7 @@ def test_capture_status_exposes_counts_and_state_without_client_ids():
     status = service.capture_status("camera")
 
     assert status == {
-        "active": True, "camera_detection_policy_version": 2,
+        "active": True, "camera_detection_policy_version": 3,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
         "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
         "session_state": "Live", "monitoring_lease_count": 1,
@@ -177,7 +177,7 @@ def test_capture_status_reports_when_no_camera_session_exists():
     from src.services.video_service import VideoService
 
     assert VideoService().capture_status("camera") == {
-        "active": False, "camera_detection_policy_version": 2,
+        "active": False, "camera_detection_policy_version": 3,
         "restart_drain_version": 1, "evidence_pause_order_version": 1,
         "video_capacity_scan_version": 1, "evidence_frame_policy_version": 4,
         "session_state": "Not connected", "monitoring_lease_count": 0,
