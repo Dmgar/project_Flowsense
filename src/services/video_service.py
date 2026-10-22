@@ -615,8 +615,14 @@ class VideoSession:
             if getattr(self, "zone_aware_inference", False):
                 with self.lock:
                     zone = dict(self.zone)
+                    zone["_detail_crop_cursor"] = int(self.zone.get("_detail_crop_cursor", 0))
                 zone["_high_resolution_detail"] = (self.processed + 1) % 3 == 0
-                return sample, self.infer(sample[2], zone=zone)
+                detections = self.infer(sample[2], zone=zone)
+                with self.lock:
+                    # Keep this scheduling hint on the live session only; it
+                    # is not part of the saved, operator-reviewed road zone.
+                    self.zone["_detail_crop_cursor"] = int(zone.get("_detail_crop_cursor", 0)) % 3
+                return sample, detections
             return sample, self.infer(sample[2])
 
     def _inference(self):

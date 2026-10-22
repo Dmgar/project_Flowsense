@@ -284,8 +284,8 @@ for ($Attempt = 0; $Attempt -lt 30; $Attempt++) {
   } catch { Start-Sleep -Seconds 1 }
 }
 if (-not $Ready) { throw 'Services did not respond. Check the local backend and frontend logs.' }
-$CameraHistory = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/history?limit=1" -TimeoutSec 5
-$CameraSummary = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/summary" -TimeoutSec 5
+$CameraHistory = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/history?limit=1" -TimeoutSec 20
+$CameraSummary = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/summary" -TimeoutSec 30
 $CameraOpenApi = Invoke-RestMethod "http://127.0.0.1:$ApiPort/openapi.json" -TimeoutSec 5
 $CameraClipPage = $null
 try { $CameraClipPage = Invoke-RestMethod "http://127.0.0.1:$ApiPort/api/v1/mobility/video/cameras/caltrans-d7-cctv-1031/clips?limit=1&include_earlier_zones=true" -TimeoutSec 5 }

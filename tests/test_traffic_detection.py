@@ -210,6 +210,32 @@ def test_road_detail_crop_rotates_down_the_inbound_corridor_without_extra_model_
     assert detector.detector.calls == 8
 
 
+def test_camera_session_preserves_detail_crop_rotation_across_zone_copies():
+    session = VideoSession.__new__(VideoSession)
+    session.inference_gate = threading.RLock()
+    session.lock = threading.Lock()
+    session.stop_event = threading.Event()
+    session.zone_aware_inference = True
+    session.zone = {"enabled": True, "polygon": [[0, 0], [1, 0], [1, 1], [0, 1]]}
+    session.processed = 0
+    session.latest = None
+    cursors = []
+
+    def infer(frame, zone):
+        cursors.append(zone["_detail_crop_cursor"])
+        zone["_detail_crop_cursor"] = (zone["_detail_crop_cursor"] + 1) % 3
+        return []
+
+    session.infer = infer
+    frame = np.zeros((8, 8, 3), np.uint8)
+    for sequence in range(6):
+        session.latest = (sequence, time.monotonic(), frame, 1)
+        assert session._detect_latest(sequence - 1) is not None
+
+    assert cursors == [0, 1, 2, 0, 1, 2]
+    assert session.zone["_detail_crop_cursor"] == 0
+
+
 def test_single_model_hits_and_repeated_copies_are_not_confirmed_tracks():
     frame = np.zeros((20, 20), np.uint8)
     box = {"id": 1, "class": "car", "bbox": (2, 2, 10, 5), "confidence": .25}
