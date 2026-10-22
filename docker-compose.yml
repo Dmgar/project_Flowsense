@@ -10,7 +10,8 @@ services:
       - "8000:8000"
     environment:
       - PROJECT_NAME=FlowSense - Priority Routing & Perception
-      - PILOT_CITY=New York (Manhattan)
+      - FLOWSENSE_CITY=los_angeles
+      - PILOT_CITY=Greater Los Angeles, California
       - CONGESTION_ALPHA=3.0
       - ROUTING_ALGORITHM=astar
       - FLOWSENSE_API_KEY=flowsense-operator-v1

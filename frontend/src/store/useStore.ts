@@ -192,7 +192,7 @@ export const useStore = create<FlowSenseState>((set) => ({
   autoFollowNextDispatch: false,
   setAutoFollowNextDispatch: (autoFollowNextDispatch) => set({ autoFollowNextDispatch }),
 
-  origin: { label: "Downtown, Cartagena", latitude: 10.3910, longitude: -75.4794, category: 'destination' },
+  origin: { label: "Downtown Los Angeles", latitude: 33.9750, longitude: -118.2000, category: 'destination' },
   setOrigin: (origin) => set({ origin }),
   destination: null,
   setDestination: (destination) => set({ destination }),
