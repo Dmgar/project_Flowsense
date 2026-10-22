@@ -120,9 +120,21 @@ class TrafficDetector:
         right, bottom = np.minimum((width, height), points.max(axis=0).astype(int) + 16)
         apex = points[np.argsort(points[:, 1])[:2]].mean(axis=0)
         side = min(480, height, width)
-        far_x = int(np.clip(apex[0] - side / 2, 0, width - side))
-        far_y = int(np.clip(apex[1] - side / 4, 0, height - side))
-        regions = [(int(left), int(top), int(right), int(bottom)), (far_x, far_y, far_x + side, far_y + side)]
+        # The whole-zone crop preserves broad coverage but can shrink distant
+        # cars to only a few model pixels. Rotate the second, detail crop along
+        # the inbound road so the same inference pass periodically sees more
+        # pixels from the far, middle, and near portions of a long corridor.
+        # Keep the cursor on the per-session zone; the shared detector can serve
+        # multiple cameras without making their crop schedules interfere.
+        road_center = points.mean(axis=0)
+        travel = road_center - apex
+        cursor = int(zone.get("_detail_crop_cursor", 0)) % 3
+        zone["_detail_crop_cursor"] = (cursor + 1) % 3
+        center = apex + travel * (.9 * cursor)
+        detail_x = int(np.clip(center[0] - side / 2, 0, width - side))
+        detail_y = int(np.clip(center[1] - side / 4, 0, height - side))
+        regions = [(int(left), int(top), int(right), int(bottom)),
+                   (detail_x, detail_y, detail_x + side, detail_y + side)]
         detections = []
         for x, y, x2, y2 in regions:
             for item in self.detector.detect(frame[y:y2, x:x2]):

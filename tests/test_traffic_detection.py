@@ -175,6 +175,41 @@ def test_crop_boundary_fragments_cannot_replace_complete_vehicle_boxes():
     assert any(item.bbox == (300, 200, 80, 40) for item in result)
 
 
+def test_road_detail_crop_rotates_down_the_inbound_corridor_without_extra_model_passes():
+    class Detector:
+        confidence_threshold = .15
+        calls = 0
+        def detect(self, image):
+            self.calls += 1
+            if image.shape[:2] != (480, 480):
+                return []
+            y, x = np.where(image[:, :, 0] > 0)
+            if not len(x):
+                return []
+            return [Detection((int(x.min()), int(y.min()), int(x.max() - x.min() + 1),
+                               int(y.max() - y.min() + 1)), 2, "car", .8)]
+
+    frame = np.zeros((720, 1280, 3), np.uint8)
+    expected = [(240, 318), (583, 480), (971, 480)]
+    for index, (x, y) in enumerate(expected, start=1):
+        frame[y:y + 8, x:x + 8, 0] = index * 50
+    zone = {"enabled": True, "polygon": [[.055, .27], [.25, .28], [.98, .63],
+              [.98, .96], [.18, .96]], "direction": [.72, .69]}
+    detector = TrafficDetector(Detector())
+
+    for expected_box, next_cursor in zip(expected, (1, 2, 0)):
+        detections = detector.detect(frame, zone)
+        assert [item.bbox[:2] for item in detections] == [expected_box]
+        assert zone["_detail_crop_cursor"] == next_cursor
+    assert detector.detector.calls == 6
+
+    # Each camera owns its rotation state even though the inference model is shared.
+    other_zone = {"enabled": True, "polygon": zone["polygon"], "direction": zone["direction"]}
+    detector.detect(frame, other_zone)
+    assert other_zone["_detail_crop_cursor"] == 1
+    assert detector.detector.calls == 8
+
+
 def test_single_model_hits_and_repeated_copies_are_not_confirmed_tracks():
     frame = np.zeros((20, 20), np.uint8)
     box = {"id": 1, "class": "car", "bbox": (2, 2, 10, 5), "confidence": .25}

@@ -351,7 +351,10 @@ def test_high_resolution_day_detail_failure_keeps_base_and_backs_off(monkeypatch
                 attempts.append(path)
                 raise RuntimeError("Simulated detail-model allocation failure.")
         def detect(self, frame):
-            return [Detection((320, 280, 72, 42), 2, "car", .55)] if self.input_size == 640 else []
+            # Keep the base object in the whole-zone pass only; detail crops
+            # may contain other cars and should not fabricate this same box.
+            return ([Detection((320, 280, 72, 42), 2, "car", .55)]
+                    if self.input_size == 640 and frame.shape[:2] != (480, 480) else [])
 
     monkeypatch.setattr(module, "VehicleDetector", Detector)
     engine = module.VideoService()
