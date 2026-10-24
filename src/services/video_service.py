@@ -176,8 +176,8 @@ def open_capture(source):
     if str(source).isdigit():
         return cv2.VideoCapture(int(source))
     return cv2.VideoCapture(str(source), cv2.CAP_FFMPEG,
-                           [cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 8000,
-                            cv2.CAP_PROP_READ_TIMEOUT_MSEC, 15000])
+                           [cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000,
+                            cv2.CAP_PROP_READ_TIMEOUT_MSEC, 6000])
 
 
 def probe_video(source):
@@ -723,7 +723,7 @@ class VideoSession:
         observed = []
         pipeline = {}
         placed_labels = []
-        prior = [item for item in history if item[5] == generation and 0 <= instant - item[1] <= 3.0]
+        prior = [item for item in history if item[5] == generation and 0 <= instant - item[1] <= 2.5]
         if prior:
             analysis = prior[-1]
             pipeline = dict(analysis[6]) if len(analysis) > 6 else {}
