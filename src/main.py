@@ -102,10 +102,12 @@ async def telemetry_websocket(websocket: WebSocket):
     Protects against Cross-Site WebSocket Hijacking (CSWSH) and frame flooding.
     """
     origin = websocket.headers.get("origin")
+    host = websocket.headers.get("host")
     if origin:
         normalized_origin = origin.rstrip("/")
         allowed_origins = [o.rstrip("/") for o in settings.ALLOWED_ORIGINS if o != "*"]
-        if allowed_origins and normalized_origin not in allowed_origins:
+        is_same_host = bool(host and normalized_origin in (f"https://{host}", f"http://{host}"))
+        if allowed_origins and normalized_origin not in allowed_origins and not is_same_host:
             logger.warning(f"Rejected unauthorized WebSocket origin: {origin}")
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
