@@ -1,8 +1,8 @@
-import terms from '../../../docs/legal/TERMS_OF_SERVICE.md?raw';
-import privacy from '../../../docs/legal/PRIVACY_NOTICE.md?raw';
-import cookies from '../../../docs/legal/COOKIE_NOTICE.md?raw';
-import refunds from '../../../docs/legal/REFUND_POLICY.md?raw';
-import review from '../../../docs/legal/IMPLEMENTATION_REVIEW.md?raw';
+import terms from '../legal/TERMS_OF_SERVICE.md?raw';
+import privacy from '../legal/PRIVACY_NOTICE.md?raw';
+import cookies from '../legal/COOKIE_NOTICE.md?raw';
+import refunds from '../legal/REFUND_POLICY.md?raw';
+import review from '../legal/IMPLEMENTATION_REVIEW.md?raw';
 import { useId, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { Icon } from './ui';
