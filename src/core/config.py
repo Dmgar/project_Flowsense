@@ -79,6 +79,12 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3002",
     ]
 
+    # WebRTC STUN/TURN configuration
+    WEBRTC_ICE_SERVERS: list[str] = [
+        "stun:stun.l.google.com:19302",
+        "stun:stun1.l.google.com:19302",
+    ]
+
     model_config = SettingsConfigDict(case_sensitive=True)
 
 settings = Settings()

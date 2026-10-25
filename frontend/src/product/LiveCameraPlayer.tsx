@@ -29,6 +29,10 @@ export interface VideoReading {
   model?: string; execution_provider?: string; storage_error?: string; detection_profile?: string;
   analysis_zone?: { enabled: boolean; name: string; revision: number }; tracker?: string;
 }
+export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
 const base = '/api/v1/mobility/video';
 class VideoRequestError extends Error {
   readonly status: number;
@@ -168,7 +172,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
         setError(retrying ? automaticReconnectMessage(lastFailure.current) : '');
         setViewer(''); setPaused(false); clearCounts();
         if (typeof RTCPeerConnection === 'undefined') throw new Error('This browser does not support WebRTC video.');
-        peer = new RTCPeerConnection({ iceServers: [] });
+        peer = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
         // Bound negotiation even when ICE never emits a terminal state event.
         negotiationTimer = window.setTimeout(() => failed('Video connection timed out.'), VIDEO_NEGOTIATION_TIMEOUT_MS);
         peer.addTransceiver('video', { direction: 'recvonly' });

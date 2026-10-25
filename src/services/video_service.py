@@ -19,7 +19,7 @@ import uuid
 
 import cv2
 import numpy as np
-from aiortc import RTCConfiguration, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+from aiortc import RTCConfiguration, RTCIceServer, RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
 from aiortc.mediastreams import MediaStreamError
 from av import VideoFrame
 
@@ -1202,7 +1202,8 @@ class VideoService:
             expiry = self.expiry.pop(session.id, None)
             if expiry:
                 expiry.cancel()
-            peer = RTCPeerConnection(RTCConfiguration(iceServers=[]))
+            ice_servers = [RTCIceServer(url) for url in settings.WEBRTC_ICE_SERVERS] if getattr(settings, "WEBRTC_ICE_SERVERS", None) else []
+            peer = RTCPeerConnection(RTCConfiguration(iceServers=ice_servers))
             viewer_id = uuid.uuid4().hex
             self.peers[viewer_id] = (peer, session, time.monotonic())
 
@@ -1215,6 +1216,18 @@ class VideoService:
             await peer.setRemoteDescription(RTCSessionDescription(sdp=sdp, type=description_type))
             peer.addTrack(CameraVideoTrack(session))
             await peer.setLocalDescription(await peer.createAnswer())
+            if peer.iceGatheringState != "complete":
+                gathering_done = asyncio.Event()
+
+                @peer.on("icegatheringstatechange")
+                def _on_ice_gathering():
+                    if peer.iceGatheringState == "complete":
+                        gathering_done.set()
+
+                try:
+                    await asyncio.wait_for(gathering_done.wait(), timeout=3.0)
+                except asyncio.TimeoutError:
+                    logger.warning("ICE gathering timed out for %s; returning available candidates.", camera["id"])
             # A client that disappears during signaling must not hold resources.
             asyncio.create_task(self._watch(viewer_id))
             return {"sdp": peer.localDescription.sdp, "type": peer.localDescription.type,
