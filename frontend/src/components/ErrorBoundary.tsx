@@ -1,5 +1,6 @@
 import { BrandMark } from './BrandMark';
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, createRef, type ErrorInfo, type ReactNode } from 'react';
+import './ErrorBoundary.css';
 
 interface Props {
   children: ReactNode;
@@ -11,6 +12,8 @@ interface State {
 
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
+  private recovery = createRef<HTMLElement>();
+  private reopenAttempts = 0;
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
@@ -18,24 +21,37 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('[FlowSense] UI error:', error, info);
+    this.recovery.current?.focus({ preventScroll: true });
   }
 
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 fs-brand-loading font-mono">
-          <BrandMark size={54} /><div className="text-2xl font-bold text-accent-red">SYSTEM ERROR</div>
-          <div className="text-xs text-text-muted">The Command Center interface encountered an error.</div>
-          <button
+        <main ref={this.recovery} className="fs-workspace-recovery fs-brand-loading" tabIndex={-1} aria-labelledby="workspace-recovery-title">
+          <div className="fs-workspace-recovery-card"><BrandMark size={54} />
+          <span className="fs-workspace-recovery-eyebrow">FLOWSENSE WORKSPACE</span>
+          <h1 id="workspace-recovery-title">The workspace could not be displayed</h1>
+          <p role="alert">An interface error interrupted this view. You can try reopening the workspace.</p>
+          <p className="fs-workspace-recovery-note">If you were saving a change, check its recorded status before submitting it again. An interface error does not confirm whether that request completed.</p>
+          {this.reopenAttempts > 0 && <p>If this error keeps returning, reloading the page can request fresh interface resources.</p>}
+          <div className="fs-workspace-recovery-actions"><button
+            type="button"
             onClick={() => {
-              this.setState({ hasError: false });
+              this.reopenAttempts += 1;
+              this.setState({ hasError: false }, () => requestAnimationFrame(() => {
+                const heading = document.querySelector<HTMLElement>('#product-content [data-journey-active="true"] h1');
+                const destination = heading || document.getElementById('product-content');
+                if (destination && !destination.hasAttribute('tabindex')) destination.tabIndex = -1;
+                destination?.focus({ preventScroll: true });
+              }));
             }}
-            className="mt-2 rounded border border-accent-cyan bg-accent-cyan/10 px-4 py-1.5 text-xs text-accent-cyan"
+            className="fs-workspace-recovery-button"
           >
-
-            RESTART INTERFACE
+            Reopen workspace
           </button>
-        </div>
+          {this.reopenAttempts > 0 && <button type="button" className="fs-workspace-recovery-button secondary" onClick={() => window.location.reload()}>Reload page</button>}</div>
+          </div>
+        </main>
       );
     }
     return this.props.children;

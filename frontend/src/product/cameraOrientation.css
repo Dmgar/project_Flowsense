@@ -1,0 +1,29 @@
+.p-camera-breadcrumb { display: flex; align-items: center; gap: 9px; min-width: 0; margin: -4px 0 16px; color: var(--brand-muted); font-size: 11px; }
+.p-camera-breadcrumb > :is(button, a) { display: inline-flex; align-items: center; gap: 7px; flex: none; min-height: 36px; padding: 5px 0; border: 0; background: transparent; color: var(--brand-link); font-size: 11px; cursor: pointer; }
+.p-camera-breadcrumb > svg { flex: none; }
+.p-camera-breadcrumb > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-camera-section-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 22px; }
+.p-camera-section-links > a { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 66px; padding: 12px 16px; border: 1px solid var(--brand-border); border-radius: 7px; background: var(--brand-surface); color: var(--brand-link); text-decoration: none; transition: border-color .18s ease, background-color .18s ease; }
+.p-camera-section-links > a:hover { border-color: var(--brand-focus); background: var(--brand-selection); }
+.p-camera-section-links > a > svg { flex: none; }
+.p-camera-section-links > a > svg:last-child { margin-left: auto; }
+.p-camera-section-links > a > span { display: grid; min-width: 0; gap: 4px; }
+.p-camera-section-links b { color: var(--brand-ink); font-size: 12px; font-weight: 600; line-height: 1.5; }
+.p-camera-section-links small { color: var(--brand-muted); font-size: 10px; line-height: 1.5; }
+.p-camera-screen :is(.p-camera-main, .p-camera-insights, .p-camera-history) { scroll-margin-block: 24px; }
+.p-camera-screen :is(.p-camera-main, .p-camera-insights, .p-camera-history):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 5px; border-radius: 7px; }
+.p-camera-screen .p-camera-tools { align-items: stretch; gap: 10px; margin-bottom: 10px; }
+.p-camera-screen .p-camera-tools > .p-button { min-height: 44px; gap: 8px; white-space: normal; text-align: left; }
+.p-camera-screen .p-camera-tools > .p-button[aria-pressed="true"] { border-color: var(--brand-focus); color: var(--brand-link); background: var(--brand-selection); }
+.p-camera-action-hint { margin: 8px 0 16px; color: var(--brand-muted); font-size: 12px; line-height: 1.7; }
+.p-camera-screen .p-camera-review-trigger { min-height: 44px; gap: 8px; border-color: var(--brand-focus); }
+.p-camera-desk-shortcut { min-height: 44px; gap: 8px; margin-bottom: 10px; }
+.p-camera-screen .p-camera-history { grid-column: 1 / -1; min-width: 0; }
+.p-camera-history-heading { margin: 8px 0 20px; padding-top: 20px; border-top: 1px solid var(--brand-border); }
+.p-camera-history-heading h2 { margin: 8px 0; color: var(--brand-ink); font-size: 20px; font-weight: 600; line-height: 1.4; letter-spacing: -.3px; }
+.p-camera-history-heading p { max-width: 720px; margin: 0; color: var(--brand-muted); font-size: 13px; line-height: 1.75; }
+.p-camera-section-links > a:focus-visible, .p-camera-breadcrumb > :is(button, a):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+@media (max-width: 760px) { .p-camera-breadcrumb > :is(button, a) { min-height: 44px; } .p-camera-section-links { gap: 8px; } .p-camera-section-links > a { flex-direction: column; justify-content: center; align-items: center; gap: 7px; padding: 12px 8px; text-align: center; } .p-camera-section-links > a > svg:last-child { display: none; } .p-camera-section-links small { display: none; } .p-camera-section-links b { font-size: 11px; } .p-camera-screen .p-camera-tools > .p-button { flex: 1 1 180px; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .p-camera-section-links > a { transition: none; } }
+
+.p-camera-breadcrumb > a { text-decoration: none; }

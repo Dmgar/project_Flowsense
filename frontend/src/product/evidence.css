@@ -1,4 +1,4 @@
-.p-navigation nav{min-height:0;overflow-y:auto;scrollbar-width:thin;flex-shrink:1}
+.p-navigation nav{min-height:0;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;flex-shrink:1}
 .p-explorer-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:10px 0 25px}
 .p-explorer-hero>div:first-child{max-width:660px}
 .p-explorer-hero h1{font-size:clamp(26px,2.8vw,39px);font-weight:550;letter-spacing:-1.3px;color:#3a3b3e;margin:10px 0 12px;line-height:1.12}
@@ -43,7 +43,13 @@
 .p-explorer-result p{font-size:11px;color:#7b7c7f;line-height:1.5;margin:4px 0}
 .p-explorer-result-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
 .p-explorer-result-actions .p-text-button{font-size:11px;gap:4px}
+.p-explorer-result-actions .p-text-button:disabled{opacity:.5;cursor:not-allowed}
 .p-explorer-result-actions [aria-pressed=true]{color:#56575a}
+.p-desk-recovery{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid #d9c99d;border-radius:9px;background:#fbf8ef;color:#665a3d;font-size:12px;line-height:1.5}
+.p-desk-recovery .p-text-button{min-height:36px}
+.p-comparison-note{align-self:center;color:#7d7565;font-size:11px;line-height:1.4}
+html[data-theme="dark"] .p-comparison-note{color:#d0c4a5}
+html[data-theme="dark"] .p-desk-recovery{border-color:#655b43;background:#29261e;color:#e1d4ad}
 .p-map-camera-detail{position:absolute;bottom:60px;left:18px;right:70px;z-index:500;background:#fbfcffed;border:1px solid #cccdd0;box-shadow:0 10px 30px #2c2d3026;backdrop-filter:blur(10px);padding:18px;border-radius:12px}
 .p-map-camera-detail>.p-icon-button{position:absolute;right:8px;top:8px}
 .p-map-camera-detail h3{font-size:16px;color:#3b3c3f;margin:12px 0 7px;max-width:90%}

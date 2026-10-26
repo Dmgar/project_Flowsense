@@ -1,0 +1,35 @@
+/* Shared heading rhythm for operational views; specialized entry and guide layouts keep their own hierarchy. */
+.p-platform :is(.p-queue-screen, .p-settings-screen, .p-corridor-screen, .p-mobility-screen, .p-emergency-screen) > .p-page-heading,
+.p-platform .p-observation-desk > .p-explorer-hero {
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--brand-border);
+}
+.p-platform :is(.p-queue-screen, .p-settings-screen, .p-corridor-screen, .p-mobility-screen, .p-emergency-screen) > .p-page-heading h1,
+.p-platform .p-observation-desk > .p-explorer-hero h1 {
+  margin-block: 12px;
+  font-size: clamp(30px, 4vw, 42px);
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+.p-platform :is(.p-queue-screen, .p-settings-screen, .p-corridor-screen, .p-mobility-screen, .p-emergency-screen) > .p-page-heading .p-eyebrow,
+.p-platform .p-observation-desk > .p-explorer-hero .p-eyebrow {
+  color: var(--brand-link);
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+.p-platform :is(.p-queue-screen, .p-settings-screen, .p-corridor-screen, .p-mobility-screen, .p-emergency-screen) .p-heading-actions > .p-button,
+.p-platform .p-observation-desk > .p-explorer-hero > .p-button {
+  min-height: 46px;
+  border-radius: 9px;
+  gap: 9px;
+  white-space: normal;
+  line-height: 1.6;
+}
+@media (max-width: 760px) {
+  .p-platform :is(.p-queue-screen, .p-settings-screen, .p-corridor-screen, .p-mobility-screen, .p-emergency-screen) > .p-page-heading,
+  .p-platform .p-observation-desk > .p-explorer-hero { flex-wrap: wrap; gap: 14px; }
+  .p-platform .p-corridor-screen .p-heading-actions { width: 100%; align-items: stretch; }
+  .p-platform .p-corridor-screen .p-heading-actions > select { flex: 1 1 180px; min-width: 0; min-height: 44px; font-size: 16px; }
+}

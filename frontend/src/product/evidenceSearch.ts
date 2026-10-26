@@ -42,6 +42,21 @@ export function nearbyCameraOptions(cameras: Camera[], origin: Camera, maxKm = 1
 }
 
 export interface EvidenceHit { camera: Camera; match: 'catalog' | 'nearby'; distanceKm: number | null }
+export function evidenceResultsStatus({
+  searching, catalogLoaded, catalogFailed, cameraCount, nearbyCount,
+}: {
+  searching: boolean; catalogLoaded: boolean; catalogFailed: boolean; cameraCount: number; nearbyCount: number;
+}) {
+  if (searching) return 'Searching…';
+  if (catalogFailed) return cameraCount
+    ? `${cameraCount} cameras shown · catalog refresh unavailable`
+    : 'Camera catalog unavailable';
+  if (!catalogLoaded) return cameraCount
+    ? `${cameraCount} cameras shown · refreshing sources`
+    : 'Loading camera sources…';
+  return `${cameraCount} cameras · ${nearbyCount} by proximity`;
+}
+
 export function findStreetMatches(edges: GeoJsonEdgeFeature[], query: string) {
   const meaningful = normalizeStreet(query).length >= 2;
   const seen = new Set<string>();

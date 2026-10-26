@@ -22,12 +22,4 @@ export const signals: Signal[] = [
 export const hours = ['00', '02', '04', '06', '08', '10', '12', '14', '16', '18', '20', '22'];
 const congestion = [.10, .08, .17, .36, .77, .62, .34, .31, .48, .84, .63, .26];
 export function trendSeries(factor = 1) { return hours.map((hour, i) => ({ hour, current: Math.round(congestion[i] * factor * 100) / 100, baseline: Math.round(congestion[i] * 68) / 100, speed: Math.round(50 - congestion[i] * factor * 35), speed_baseline: Math.round(50 - congestion[i] * .68 * 35), pedestrians: Math.round(160 + congestion[i] * factor * 1620), conflicts: Math.round(3 + congestion[i] * factor * 18) })); }
-export const demoSteps = [
-  { title: "The city at a glance", detail: "Explore layers and prioritize review locations.", route: '/overview' },
-  { title: "Understand a corridor", detail: "Compare the trend and illustrative baseline.", route: '/corridors/harbor' },
-  { title: "From signal to priority", detail: "Select a hotspot and open its evidence.", route: '/hotspots' },
-  { title: "Public camera evidence", detail: "Query a real Caltrans image and its detections.", route: '/cameras/caltrans-d7-1002' },
-  { title: "People make the decision", detail: "Assign and review a case before confirming it.", route: '/risk-signals' },
-  { title: "Emergency continuity", detail: "Calculate a real corridor with an alternative.", route: '/emergency-corridor' },
-  { title: "Close the loop", detail: "Export the report and explain the system.", route: '/reports' },
-];
+export { tourSteps as demoSteps } from './journey';

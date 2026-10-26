@@ -1,0 +1,8 @@
+.p-page-return { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px 20px; padding: 18px 30px; border-top: 1px solid var(--brand-border); color: var(--brand-muted); }
+.p-page-return > span { font-size: 11px; line-height: 1.7; }
+.p-page-return > button { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 9px 12px; border: 1px solid var(--brand-border); border-radius: 5px; background: var(--brand-surface); color: var(--brand-link); font-size: 11px; cursor: pointer; }
+.p-page-return > button > svg { rotate: -90deg; flex: none; }
+.p-page-return > button:hover { border-color: var(--brand-focus); background: var(--brand-selection); }
+.p-page-return > button:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+@media (max-width: 760px) { .p-page-return { padding: 16px; } }
+@media print { .p-page-return { display: none; } }

@@ -1,0 +1,8 @@
+.p-platform .p-missing-view { display: flex; align-items: center; flex-direction: column; justify-content: center; min-height: 420px; padding-block: 50px; text-align: center; }
+.p-missing-view-icon { display: grid; place-items: center; width: 72px; height: 72px; margin-bottom: 24px; border: 1px solid var(--brand-border); border-radius: 18px; background: var(--brand-selection); color: var(--brand-link); }
+.p-missing-view h1 { margin: 10px 0 12px; color: var(--brand-ink); font-size: clamp(25px, 4vw, 34px); line-height: 1.4; letter-spacing: -.6px; }
+.p-missing-view p { max-width: 500px; margin: 0; color: var(--brand-muted); font-size: 14px; line-height: 1.8; }
+.p-missing-view code { max-width: 100%; margin: 18px 0 22px; padding: 8px 12px; border-radius: 5px; background: var(--brand-selection); color: var(--brand-muted); overflow-wrap: anywhere; font-size: 12px; }
+.p-missing-view-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.p-platform .p-missing-view-actions .p-button { min-height: 44px; text-decoration: none; box-sizing: border-box; }
+.p-missing-view > small { max-width: 400px; margin-top: 20px; color: var(--brand-muted); font-size: 11px; line-height: 1.7; }

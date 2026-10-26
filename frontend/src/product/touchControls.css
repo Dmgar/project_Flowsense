@@ -1,0 +1,9 @@
+/* Keep targets comfortable on touch-capable laptops even when a mouse is primary. */
+@media (any-pointer: coarse) {
+  .p-platform :is(.p-button, .p-text-button, .p-favorite-button, .p-map-coverage-action, .p-map-coverage-show, .p-map-layer-close, .p-map-tip-dismiss, .p-tour-trigger) { min-height: 44px; }
+  .p-platform :is(.p-icon-button, .p-map-layer-close, .p-map-tip-dismiss) { min-width: 44px; }
+  .p-platform :is(.p-catalog-active-filters, .p-queue-active-filters, .p-explorer-suggestions, .p-explorer-search-summary) > button { min-height: 44px; }
+  .p-platform :is(.p-legal-contents, .fs-guide-index, .fs-tour-topics, .fs-tour-keyboard-help, .p-zone-keyboard-guide) > summary { min-height: 44px; }
+  .p-platform .p-connection-notice summary { min-height: 44px; }
+  .p-platform :is(.fs-tour-inspect, .fs-coachmark-header-actions .fs-tour-return-focus) { min-height: 44px; }
+}

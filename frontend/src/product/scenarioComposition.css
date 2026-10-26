@@ -1,0 +1,10 @@
+.p-scenario-composition { margin: 0; }
+.p-scenario-composition figcaption { margin-bottom: 14px; color: var(--brand-muted); font-size: 11px; line-height: 1.7; }
+.p-composition-table-scroll { margin-top: 18px; overflow-x: auto; border-top: 1px solid var(--brand-border); }
+.p-composition-table-scroll table { width: 100%; border-collapse: collapse; color: var(--brand-ink); font-size: 11px; font-variant-numeric: tabular-nums; }
+.p-composition-table-scroll :is(th, td) { padding: 11px 8px; border-bottom: 1px solid var(--brand-border); text-align: right; line-height: 1.6; }
+.p-composition-table-scroll th { font-weight: 500; }
+.p-composition-table-scroll th:first-child { text-align: left; white-space: nowrap; }
+.p-composition-table-scroll thead th { color: var(--brand-muted); font-size: 10px; }
+.p-composition-table-scroll tbody th > i { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border: 1px solid var(--brand-border); border-radius: 2px; }
+.p-composition-table-scroll:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }

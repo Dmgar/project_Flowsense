@@ -1,0 +1,18 @@
+.p-platform .p-connection-notice { display: flex; align-items: flex-start; gap: 13px; padding: 18px 30px; }
+.p-connection-notice-copy { flex: 1; min-width: 0; }
+.p-connection-notice-copy h2 { margin: 0 0 5px; font-size: 13px; line-height: 1.5; font-weight: 650; color: inherit; }
+.p-connection-notice-copy p { max-width: 820px; margin: 0; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.p-connection-retry-status { display: block; margin-top: 6px; font-size: 11px; line-height: 1.6; }
+.p-connection-notice details { margin-top: 8px; }
+.p-connection-notice summary { width: fit-content; min-height: 32px; padding-block: 7px; cursor: pointer; font-size: 11px; font-weight: 600; }
+.p-connection-notice .p-connection-technical { max-height: 160px; overflow: auto; padding: 10px 12px; border: 1px solid currentColor; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 11px; }
+.p-platform .p-connection-notice > .p-button { flex: none; min-height: 44px; margin: 0; }
+.p-connection-notice > .p-button > span { display: inline-flex; flex: none; }
+.p-connection-notice > .p-button[aria-busy="true"] { cursor: progress; }
+.p-connection-notice :is(summary, .p-connection-technical):focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+@media (max-width: 760px) {
+  .p-platform .p-connection-notice { flex-wrap: wrap; gap: 10px; padding: 16px; }
+  .p-connection-notice-copy { flex-basis: calc(100% - 34px); }
+  .p-platform .p-connection-notice > .p-button { margin-left: 30px; }
+  .p-connection-notice summary { min-height: 44px; padding-block: 12px; }
+}

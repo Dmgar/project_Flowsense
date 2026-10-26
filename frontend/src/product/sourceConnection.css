@@ -1,0 +1,30 @@
+.p-platform .p-connect-dialog { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); border: 1px solid var(--brand-border); border-radius: 12px; color: var(--brand-ink); background: var(--brand-surface); }
+.p-connect-dialog::backdrop { background: #070e16b8; backdrop-filter: blur(4px); }
+.p-platform .p-connect-dialog > form { padding: 0; }
+.p-platform .p-connect-dialog header { margin: 0; padding: 24px 28px 20px; }
+.p-connect-header-mark { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 16px; border-radius: 12px; background: var(--brand-selection); color: var(--brand-link); }
+.p-connect-dialog header > .p-eyebrow { display: block; padding-right: 32px; }
+.p-platform .p-connect-dialog header > .p-icon-button { top: 20px; right: 20px; width: 40px; min-height: 40px; }
+.p-platform .p-connect-dialog header h2 { margin: 8px 0; color: var(--brand-ink); font-size: 25px; line-height: 1.25; letter-spacing: -.6px; }
+.p-platform .p-connect-dialog header p { max-width: 470px; margin: 0; color: var(--brand-muted); font-size: 13px; line-height: 1.7; }
+.p-connect-body { padding: 0 28px 8px; }
+.p-connect-section { display: block; min-width: 0; margin: 0 0 24px; padding: 0; border: 0; }
+.p-connect-section legend { display: flex; align-items: center; gap: 9px; width: 100%; margin-bottom: 16px; padding: 0 0 12px; border-bottom: 1px solid var(--brand-border); color: var(--brand-ink); font-size: 14px; font-weight: 600; }
+.p-connect-section legend > span { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--brand-selection); color: var(--brand-link); font-size: 10px; font-variant-numeric: tabular-nums; }
+.p-connect-section label { display: flex; flex-direction: column; min-width: 0; gap: 8px; margin-bottom: 16px; color: var(--brand-ink); font-size: 12px; font-weight: 550; }
+.p-connect-section label > input { width: 100%; min-width: 0; min-height: 44px; padding: 11px 12px; border: 1px solid var(--brand-border); border-radius: 6px; background: var(--brand-bg); color: var(--brand-ink); font-size: 14px; }
+.p-connect-section label > input::placeholder { color: var(--brand-muted); opacity: .85; }
+.p-connect-section label > input:focus-visible { border-color: var(--brand-focus); outline: 3px solid var(--brand-focus); outline-offset: 2px; }
+.p-connect-section label > small, .p-connect-section-description { margin: 0; color: var(--brand-muted); font-size: 12px; font-weight: 400; line-height: 1.6; }
+.p-connect-section-description { margin-bottom: 16px; }
+.p-connect-section .p-form-field-error { color: var(--brand-danger); }
+.p-platform .p-connect-dialog .p-form-two { margin: 0; gap: 16px; }
+.p-connect-source-note { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--brand-border); border-radius: 6px; background: var(--brand-selection); }
+.p-connect-source-note > svg { flex: none; margin-top: 2px; color: var(--brand-link); }
+.p-connect-source-note p { margin: 0; color: var(--brand-muted); font-size: 12px; line-height: 1.7; }
+.p-platform .p-connect-dialog footer { position: sticky; bottom: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0; padding: 16px 28px; border-top: 1px solid var(--brand-border); background: var(--brand-surface); }
+.p-connect-submit-note { flex: 1 1 180px; margin-right: auto; color: var(--brand-muted); font-size: 11px; line-height: 1.6; }
+.p-platform .p-connect-dialog footer .p-button { min-height: 44px; }
+.p-connect-dialog .p-policy-choice { min-height: 44px; }
+@media (max-width: 480px) { .p-platform .p-connect-dialog { max-height: calc(100dvh - 16px); } .p-platform .p-connect-dialog header { padding: 20px 20px 18px; } .p-connect-body { padding-inline: 20px; } .p-platform .p-connect-dialog footer { padding: 12px 20px max(12px, env(safe-area-inset-bottom)); } .p-connect-submit-note { flex-basis: 100%; } .p-platform .p-connect-dialog footer > .p-button { flex: 1; justify-content: center; } .p-platform .p-connect-dialog .p-form-two { grid-template-columns: 1fr; gap: 0; } }
+@media (prefers-reduced-transparency: reduce) { .p-connect-dialog::backdrop { background: #070e16e8; backdrop-filter: none; } }

@@ -1,0 +1,34 @@
+.p-saved-clips-timezone { margin: 12px 0 16px; padding: 12px; border-left: 3px solid var(--brand-focus); background: var(--brand-selection); color: var(--brand-muted); font-size: 11px; line-height: 1.8; }
+.p-saved-clips-timezone b { color: var(--brand-ink); font-weight: 600; overflow-wrap: anywhere; }
+.p-platform .p-saved-clip > div { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; padding-block: 12px; }
+.p-saved-clip time { font-variant-numeric: tabular-nums; line-height: 1.7; }
+.p-platform .p-saved-clip > div > span { color: var(--brand-muted); line-height: 1.6; }
+.p-platform .p-traffic-bars > button[aria-pressed="true"] { outline: 2px solid var(--brand-focus); outline-offset: 2px; background: var(--brand-selection); }
+.p-platform .p-traffic-bars > button:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 2px; }
+.p-platform .p-saved-clips > summary { min-height: 44px; line-height: 1.7; padding-block: 12px; }
+.p-platform .p-clip-history-scope { display: flex; align-items: center; gap: 9px; min-height: 44px; line-height: 1.7; }
+.p-platform .p-clip-history-scope > input { flex: none; width: 18px; height: 18px; accent-color: var(--brand-action); }
+.p-traffic-minute-picker { display: grid; gap: 8px; min-width: 0; margin-top: 16px; color: var(--brand-ink); font-size: 12px; line-height: 1.6; }
+.p-platform .p-traffic-minute-picker select { width: 100%; min-width: 0; max-width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--brand-border); border-radius: 6px; background: var(--brand-surface); color: var(--brand-ink); font: inherit; }
+.p-traffic-minute-picker select:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+@media (max-width: 760px) { .p-platform .p-traffic-minute-picker select { font-size: 16px; } }
+.p-platform .p-crossing-item { min-width: 0; padding: 12px; gap: 10px; }
+.p-platform .p-crossing-main { min-width: 0; min-height: 44px; gap: 6px 12px; }
+.p-platform .p-crossing-main > span { color: var(--brand-ink); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.p-platform .p-crossing-main > small { color: var(--brand-muted); font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.p-platform .p-crossing-main > strong { color: var(--brand-link); font-size: 11px; line-height: 1.6; }
+.p-platform .p-crossing-review-edit > summary, .p-platform .p-more-crossings > summary { min-height: 44px; align-content: center; color: var(--brand-link); font-size: 12px; line-height: 1.7; }
+.p-platform .p-crossing-review-edit label { font-size: 12px; line-height: 1.6; }
+.p-platform .p-crossing-review-edit select { min-height: 44px; max-width: 100%; color: var(--brand-ink); background: var(--brand-surface); font-size: 13px; }
+.p-platform .p-review-suggestion button { min-height: 44px; font-size: 12px; line-height: 1.6; }
+.p-platform .p-review-suggestion small { color: var(--brand-muted); font-size: 11px; line-height: 1.7; }
+.p-platform .p-crossing-review-edit button:disabled { cursor: not-allowed; }
+.p-platform .p-crossing-item[aria-busy="true"] button:disabled { cursor: progress; }
+.p-platform .p-crossing-review-edit > small { display: block; color: var(--brand-muted); font-size: 11px; line-height: 1.7; }
+.p-platform .p-crossing-review-edit .p-review-wait-note { margin-top: 8px; padding: 9px 10px; border-left: 2px solid var(--brand-focus); background: var(--brand-selection); }
+.p-crossing-main:focus-visible, .p-crossing-review-edit > summary:focus-visible, .p-more-crossings > summary:focus-visible, .p-review-suggestion button:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; border-radius: 4px; }
+@media (max-width: 760px) {
+  .p-platform .p-crossing-main { grid-template-columns: minmax(0, 1fr); }
+  .p-platform .p-crossing-main > strong { grid-column: 1; grid-row: auto; padding-top: 4px; }
+  .p-platform .p-crossing-review-edit select { width: 100%; font-size: 16px; }
+}

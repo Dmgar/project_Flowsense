@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cameraMatches, normalizeStreet, distanceToLineKm, searchEvidence, nearbyCameraOptions } from '../src/product/evidenceSearch.ts';
+import { cameraMatches, normalizeStreet, distanceToLineKm, evidenceResultsStatus, searchEvidence, nearbyCameraOptions } from '../src/product/evidenceSearch.ts';
 
 const camera = (id, name, lat = 34, lng = -118) => ({ id, name, lat, lng, district: 'Los Angeles', route: '', nearby_place: '' });
 const edge = (u, v, coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates }, properties: { u, v, name: 'Central Avenue' } });
@@ -44,4 +44,12 @@ test('video alternatives exclude the current camera, distant sources and sources
   const result = nearbyCameraOptions(others, origin);
   assert.deepEqual(result.map(item => item.camera.id), ['near-1', 'near-2', 'near-3']);
   assert(result.every(item => item.distanceKm > 0 && item.distanceKm < 10));
+});
+
+test('street explorer distinguishes unavailable and loading catalogs from empty search results', () => {
+  assert.equal(evidenceResultsStatus({ searching: true, catalogLoaded: false, catalogFailed: false, cameraCount: 0, nearbyCount: 0 }), 'Searching…');
+  assert.equal(evidenceResultsStatus({ searching: false, catalogLoaded: false, catalogFailed: false, cameraCount: 0, nearbyCount: 0 }), 'Loading camera sources…');
+  assert.equal(evidenceResultsStatus({ searching: false, catalogLoaded: false, catalogFailed: true, cameraCount: 0, nearbyCount: 0 }), 'Camera catalog unavailable');
+  assert.equal(evidenceResultsStatus({ searching: false, catalogLoaded: false, catalogFailed: true, cameraCount: 3, nearbyCount: 1 }), '3 cameras shown · catalog refresh unavailable');
+  assert.equal(evidenceResultsStatus({ searching: false, catalogLoaded: true, catalogFailed: false, cameraCount: 0, nearbyCount: 0 }), '0 cameras · 0 by proximity');
 });

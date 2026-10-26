@@ -39,6 +39,25 @@ test('street queries survive encoded links and back navigation', () => {
   assert.equal(useProduct.getState().query, '');
 });
 
+test('explorer filters survive route changes without becoming persistent browser preferences', () => {
+  useProduct.setState({ explorerRadiusKm: 1.5, explorerMapStyle: 'streets', explorerVideoFilter: 'all' });
+  useProduct.getState().setExplorerRadiusKm(3);
+  useProduct.getState().setExplorerMapStyle('terrain');
+  useProduct.getState().setExplorerVideoFilter('checked');
+  useProduct.getState().navigate('/cameras');
+  assert.equal(useProduct.getState().explorerRadiusKm, 3);
+  assert.equal(useProduct.getState().explorerMapStyle, 'terrain');
+  assert.equal(useProduct.getState().explorerVideoFilter, 'checked');
+  updateLocation('/explore?q=I-110'); events.popstate();
+  assert.equal(useProduct.getState().path, '/explore');
+  assert.equal(useProduct.getState().query, 'I-110');
+  assert.equal(useProduct.getState().explorerRadiusKm, 3);
+  const persisted = JSON.parse(saved.get('flowsense-product-preferences')).state;
+  assert(!('explorerRadiusKm' in persisted));
+  assert(!('explorerMapStyle' in persisted));
+  assert(!('explorerVideoFilter' in persisted));
+});
+
 test('legacy period preferences recover an English label without losing saved cameras', async () => {
   const previous = useProduct.getState().period;
   const legacyPeriods = ['\u00daltimos 15 min', '\u00daltima hora', '\u00daltimas 24 h', '\u00daltimos 7 d\u00edas'];
@@ -67,4 +86,24 @@ test('theme persists across hydration and older preferences retain new layer def
   assert.equal(useProduct.getState().theme, 'dark');
   assert.equal(useProduct.getState().layers.cameras, false);
   assert.equal(useProduct.getState().layers.clusterCameras, true);
+});
+
+
+test('tour opening and local journey milestones preserve evidence mode, search and saved context', () => {
+  useProduct.setState({ demoIndex: -1, mode: 'observed', query: 'I-110', district: 'Long Beach', favoriteCameras: ['a'], watchCameras: ['b'], journeyEvents: [] });
+  useProduct.getState().startTour();
+  const state = useProduct.getState();
+  assert.equal(state.demoIndex, 0);
+  assert.equal(state.mode, 'observed');
+  assert.equal(state.query, 'I-110');
+  assert.equal(state.district, 'Long Beach');
+  assert.deepEqual(state.favoriteCameras, ['a']);
+  assert.deepEqual(state.watchCameras, ['b']);
+  state.recordJourney('entry'); state.recordJourney('entry');
+  assert.deepEqual(useProduct.getState().journeyEvents, ['entry']);
+  state.setDemoIndex(-1); state.startTour();
+  assert.equal(useProduct.getState().demoIndex, 0);
+  const persisted = JSON.parse(saved.get('flowsense-product-preferences')).state;
+  assert(!('journeyEvents' in persisted));
+  assert(!('demoIndex' in persisted));
 });

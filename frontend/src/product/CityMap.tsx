@@ -11,6 +11,7 @@ import { Icon } from './ui';
 import { matchesZone, regions } from './coverage';
 import { apiUrl } from '../api/urls';
 import { describeRoadCameraCoverage, describeRoadCameraLinks } from './roadAssociationDiagnostics';
+import './mapInteraction.css';
 
 function ObservedRoadConditions({ forceObserved = false }: { forceObserved?: boolean }) {
   const map = useMap();
@@ -107,16 +108,25 @@ function MapTools({ bounds, expanded, highlight, onExpand, forceObserved }: { fo
   const [open, setOpen] = useState(false);
   const layers = useProduct(s => s.layers);
   const controls = useRef<HTMLDivElement>(null);
+  const layerTrigger = useRef<HTMLButtonElement>(null);
+  const layerPanel = useRef<HTMLDivElement>(null);
+  const focusLayersOnOpen = useRef(false);
   const menuId = useId();
   const storedMode = useProduct(state => state.mode);
   const observed = forceObserved || storedMode === 'observed';
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => { if (!controls.current?.contains(event.target as Node)) setOpen(false); };
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') { const inside = controls.current?.contains(document.activeElement); setOpen(false); if (inside) { event.preventDefault(); event.stopPropagation(); layerTrigger.current?.focus(); } } };
     document.addEventListener('pointerdown', dismiss);
     document.addEventListener('keydown', escape);
     return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', escape); };
+  }, [open]);
+  useEffect(() => {
+    if (!open || !focusLayersOnOpen.current) return;
+    focusLayersOnOpen.current = false;
+    const frame = requestAnimationFrame(() => layerPanel.current?.querySelector<HTMLInputElement>('input:not(:disabled)')?.focus());
+    return () => cancelAnimationFrame(frame);
   }, [open]);
   useEffect(() => {
     const element = controls.current;
@@ -125,10 +135,19 @@ function MapTools({ bounds, expanded, highlight, onExpand, forceObserved }: { fo
     L.DomEvent.disableScrollPropagation(element);
     return () => { L.DomEvent.off(element); };
   }, []);
-  return <div ref={controls} className="p-map-controls"><div className="p-map-actions"><button title="Fit to coverage" aria-label="View full coverage" onClick={() => { map.stop(); if (bounds?.isValid()) map.fitBounds(bounds, { padding: [35, 50], maxZoom: 15, animate: false }); else map.setView([status?.center_latitude ?? 34.048, status?.center_longitude ?? -118.259], 14); }}><Icon name="pin" size={18} /></button><button title={expanded ? "Exit expanded view" : "Expand map"} aria-label={expanded ? "Close expanded map" : "Expand map"} onClick={onExpand}><Icon name={expanded ? 'close' : 'expand'} size={18} /></button><button aria-label={open ? "Close map layers" : "Map layers"} aria-controls={menuId} aria-expanded={open} onClick={() => setOpen(v => !v)}><Icon name="layers" /></button>{highlight && <button title="Zoom to selected segment" aria-label="View selected segment" onClick={() => { if (highlight.geometry.type === 'LineString') map.fitBounds(L.latLngBounds(highlight.geometry.coordinates.map(([x, y]) => [y, x] as [number, number])), { padding: [40, 55], maxZoom: 17 }); }}><Icon name="search" /></button>}</div>{open && <div id={menuId} className="p-map-layer-menu"><strong>Visible layers</strong>{[['congestion', "Road network"], ['cameras', "Public cameras"], ['incidents', "Review signals"], ['pedestrians', "Pedestrian demand"], ['clusterCameras', "Cluster nearby cameras"]].map(([key, label]) => <label key={key}><input type="checkbox" disabled={observed && key === 'pedestrians'} checked={key === 'clusterCameras' ? layers[key] !== false : layers[key] && !(observed && key === 'pedestrians')} onChange={() => useProduct.getState().toggleLayer(key)} />{label}</label>)}<small>{observed ? "Pedestrian demand requires calibrated observations. Use presentation mode to explore that layer." : "Scenario traffic colors are illustrative."}</small></div>}</div>;
-
+  const layerOptions = [
+    { key: 'congestion', label: 'Road network', description: observed ? 'Road context and available camera estimates.' : 'Road context with illustrative traffic colors.' },
+    { key: 'cameras', label: 'Camera sources', description: 'Registered source locations, not verified viewing coverage.' },
+    { key: 'incidents', label: 'Review signals', description: observed ? 'Review markers when this view provides them.' : 'Illustrative signals for exploring a review.' },
+    { key: 'pedestrians', label: 'Pedestrian demand', description: observed ? 'Unavailable without calibrated observations.' : 'Illustrative pedestrian context.' },
+    { key: 'clusterCameras', label: 'Group nearby cameras', description: 'Combine nearby markers; zoom in to separate them.' },
+  ];
+  const closeLayers = () => { setOpen(false); layerTrigger.current?.focus(); };
+  return <div ref={controls} className="p-map-controls">
+    <div className="p-map-actions"><button type="button" title="Fit to context" aria-label="Fit map to available context" onClick={() => { map.stop(); if (bounds?.isValid()) map.fitBounds(bounds, { padding: [35, 50], maxZoom: 15, animate: false }); else map.setView([status?.center_latitude ?? 34.048, status?.center_longitude ?? -118.259], 14, { animate: false }); }}><Icon name="pin" size={18} /></button><button type="button" title={expanded ? 'Exit expanded view' : 'Expand map'} aria-label={expanded ? 'Close expanded map' : 'Expand map'} aria-pressed={expanded} onClick={onExpand}><Icon name={expanded ? 'close' : 'expand'} size={18} /></button><button ref={layerTrigger} type="button" aria-label={open ? 'Close map layers' : 'Map layers'} aria-controls={menuId} aria-expanded={open} onClick={event => { focusLayersOnOpen.current = event.detail === 0; setOpen(value => !value); }}><Icon name="layers" /></button>{highlight && <button type="button" title="Zoom to selected segment" aria-label="View selected segment" onClick={() => { if (highlight.geometry.type === 'LineString') map.fitBounds(L.latLngBounds(highlight.geometry.coordinates.map(([x, y]) => [y, x] as [number, number])), { padding: [40, 55], maxZoom: 17, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches }); }}><Icon name="search" /></button>}</div>
+    {open && <div ref={layerPanel} id={menuId} className="p-map-layer-menu p-map-layer-panel" role="region" aria-labelledby={`${menuId}-title`}><div className="p-map-layer-header"><div><strong id={`${menuId}-title`}>Visible layers</strong><small>Choose what the map shows.</small></div><button type="button" className="p-map-layer-close" aria-label="Close layer panel" onClick={closeLayers}><Icon name="close" size={15} /></button></div><fieldset><legend className="p-sr-only">Map layer options</legend>{layerOptions.map(option => <label key={option.key} className={observed && option.key === 'pedestrians' ? 'unavailable' : undefined}><input type="checkbox" disabled={observed && option.key === 'pedestrians'} checked={option.key === 'clusterCameras' ? layers[option.key] !== false : Boolean(layers[option.key] && !(observed && option.key === 'pedestrians'))} onChange={() => useProduct.getState().toggleLayer(option.key)} /><span><b>{option.label}</b><small>{option.description}</small></span></label>)}</fieldset><p className="p-map-layer-context"><Icon name={observed ? 'info' : 'play'} size={14} /><span>{observed ? 'Pedestrian demand requires calibrated observations. Use presentation mode to explore that layer.' : 'Scenario colors and demand are illustrative, not live conditions.'}</span></p></div>}
+  </div>;
 }
-
 function CorridorOverlay({ edges }: { edges?: GeoJsonEdgeFeature[] }) {
 
   const map = useMap();
@@ -230,6 +249,7 @@ function MapEffects({ focus, route, bounds, highlight, compact, expanded, onPick
   const options = useStore((s) => s.routeOptions);
   const focusLat = focus?.[0];
   const focusLng = focus?.[1];
+  const picking = Boolean(onPick);
   useMapEvents({ click: (event) => onPick?.(event.latlng.lat, event.latlng.lng) });
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
@@ -254,13 +274,13 @@ function MapEffects({ focus, route, bounds, highlight, compact, expanded, onPick
         if (geometry?.type !== 'LineString') continue;
         const coords = geometry.coordinates.map(([x, y]) => [y, x] as [number, number]);
         const active = r.route_id === route.route_id;
-        L.polyline(coords, { color: 'white', weight: active ? 10 : 7, opacity: .85, interactive: !onPick }).addTo(next);
-        L.polyline(coords, { color: active ? '#387a4d' : '#bf9c50', weight: active ? 6 : 4, dashArray: active ? undefined : '10 8', interactive: !onPick, className: active ? 'p-route-flow' : '' }).addTo(next);
-        if (active && coords.length) map.fitBounds(L.latLngBounds(coords), { padding: [35, 35], maxZoom: 15 });
+        L.polyline(coords, { color: 'white', weight: active ? 10 : 7, opacity: .85, interactive: !picking }).addTo(next);
+        L.polyline(coords, { color: active ? 'var(--brand-link)' : '#bf9c50', weight: active ? 6 : 4, dashArray: active ? undefined : '10 8', interactive: !picking, className: active ? 'p-route-flow' : '' }).addTo(next);
+        if (active && coords.length) map.fitBounds(L.latLngBounds(coords), { padding: [35, 35], maxZoom: 15, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
       }
     }
     return () => { next.remove(); };
-  }, [route, options, map, onPick]);
+  }, [route, options, map, picking]);
   return null;
 
 }
@@ -291,7 +311,7 @@ function CameraMarkers({ onPick, items, onCamera, selectedCamera, forceObserved 
     const icon = multiple ? L.divIcon({ className: 'p-camera-cluster', html: `<span>${group.length}</span>`, iconSize: [38, 38], iconAnchor: [19, 19] }) : cameraIcon(camera.status === 'online');
     return <Marker key={group.map(c => c.id).join('-')} position={[lat, lng]} icon={icon} opacity={!multiple && selectedCamera && camera.id !== selectedCamera ? .65 : 1} title={multiple ? `${group.length} cameras · zoom in to explore` : camera.name} eventHandlers={{ click: () => {
       if (onPick) onPick(lat, lng);
-      else if (multiple) map.fitBounds(L.latLngBounds(group.map(c => [c.lat, c.lng] as [number, number])), { padding: [60, 60], maxZoom: 17 });
+      else if (multiple) map.fitBounds(L.latLngBounds(group.map(c => [c.lat, c.lng] as [number, number])), { padding: [60, 60], maxZoom: 17, animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches });
       else if (onCamera) onCamera(camera);
       else if (forceObserved) openObservedCamera(camera.id);
       else useProduct.getState().navigate(`/cameras/${camera.id}`);
@@ -350,7 +370,12 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
   const focusLat = focus?.[0];
   const focusLng = focus?.[1];
   const center = useMemo((): [number, number] => [focusLat ?? graphStatus?.center_latitude ?? 34.048, focusLng ?? graphStatus?.center_longitude ?? -118.259], [focusLat, focusLng, graphStatus]);
-  const visible = (signalItems || signals).filter((s) => matchesZone(district, s.district));
+  const scopedSignals = (signalItems || signals).filter((s) => matchesZone(district, s.district));
+  const knownCameraIds = useMemo(() => new Set(cameras.map(camera => camera.id)), [cameras]);
+  const hasMappedLocation = (signal: Signal) => Number.isFinite(signal.lat) && Number.isFinite(signal.lng)
+    && (signal.data_origin !== 'observation' || Boolean(signal.evidence_camera_id && knownCameraIds.has(signal.evidence_camera_id)));
+  const visible = scopedSignals.filter(hasMappedLocation);
+  const unlocatedObservations = scopedSignals.filter(signal => signal.data_origin === 'observation' && !hasMappedLocation(signal)).length;
   return <div ref={root} className={`p-city-map ${compact ? 'compact' : ''} ${expanded ? 'expanded' : ''}`} role={expanded ? 'dialog' : undefined} aria-modal={expanded || undefined} aria-label={expanded ? "Expanded map of Los Angeles" : "Mobility map"}>
     <MapContainer center={center} zoom={compact ? 14 : graphStatus?.default_zoom ?? 13} scrollWheelZoom={!compact} zoomControl={false} className="p-leaflet" attributionControl>
       <TileLayer key={effectiveStyle} eventHandlers={{ tileerror: () => { if (effectiveStyle === 'terrain') setTerrainFailed(true); } }} url={effectiveStyle === 'terrain' ? 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png' : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'} attribution={effectiveStyle === 'terrain' ? '&copy; OpenStreetMap · SRTM | &copy; OpenTopoMap (CC-BY-SA)' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'} maxZoom={effectiveStyle === 'terrain' ? 17 : 19} />
@@ -365,13 +390,24 @@ export function CityMap({ focus, selected, compact = false, pedestrians = false,
     {mapStyle === 'terrain' && terrainFailed && <div className="p-map-source-notice" role="status">Terrain unavailable · showing the street map</div>}
     <div className="p-map-atlas"><span className="p-compass">N<svg viewBox="0 0 20 25"><path d="M10 1L2 23l8-7 8 7z" fill="currentColor" /></svg></span><span>Greater Los Angeles<br /><b>California · US</b></span></div>
     {!compact && <div className="p-map-legend">{viewEdges && <span><i style={{ background: '#477a53', height: 5 }} />Analyzed corridor</span>}{mode === 'presentation' ? <><span><i style={{ background: '#7fac85' }} />Free-flowing</span><span><i style={{ background: '#d8b363' }} />Moderate</span><span><i style={{ background: '#cf7b69' }} />High</span></> : <><span><i style={{ background: '#82af94' }} />Moving</span><span><i style={{ background: '#d6b274' }} />Slowing</span><span><i style={{ background: '#d38e7e' }} />Possible queue</span></>}<small>{mode === 'presentation' ? "Illustrative colors" : "Colored segments: camera estimates · gray: unmeasured"}</small></div>}
-    {!compact && <MapCoverageNote district={district} cameraCount={(cameraItems || cameras.filter(c => matchesZone(district, c.district))).length} />}
+    {!compact && <MapCoverageNote district={district} cameraCount={(cameraItems || cameras.filter(c => matchesZone(district, c.district))).length} unlocatedObservations={unlocatedObservations} />}
   </div>;
 
 }
 
-function MapCoverageNote({ district, cameraCount }: { district: string; cameraCount: number }) {
+function MapCoverageNote({ district, cameraCount, unlocatedObservations = 0 }: { district: string; cameraCount: number; unlocatedObservations?: number }) {
+  const catalogLoaded = useProduct(s => s.cameraCatalogLoaded);
+  const catalogFailed = useProduct(s => s.cameraCatalogFailed);
   const [visible, setVisible] = useState(true);
-  if (!visible) return <button className="p-map-coverage-show" onClick={() => setVisible(true)}>Show map tip</button>;
-  return <div className="p-map-coverage"><span><b>{district === 'All districts' ? 'Camera coverage' : district}</b><small>{cameraCount ? 'Zoom in to explore nearby camera feeds' : 'No cameras in this area'}</small></span><button type="button" aria-label="Hide map tip" onClick={() => setVisible(false)}>×</button></div>;
+  const showButton = useRef<HTMLButtonElement>(null);
+  const hideButton = useRef<HTMLButtonElement>(null);
+  const restoreTipFocus = useRef(false);
+  useEffect(() => {
+    if (!restoreTipFocus.current) return;
+    restoreTipFocus.current = false;
+    (visible ? hideButton.current : showButton.current)?.focus({ preventScroll: true });
+  }, [visible]);
+  if (!visible) return <button ref={showButton} type="button" className="p-map-coverage-show" onClick={() => { restoreTipFocus.current = true; setVisible(true); }}><Icon name="info" size={14} />Show map tip</button>;
+  const availability = catalogFailed ? cameraCount ? 'Showing last loaded source locations' : 'Camera catalog unavailable' : !catalogLoaded ? 'Loading camera sources' : cameraCount ? 'Zoom in to explore nearby camera feeds' : 'No registered camera sources in this area';
+  return <div className="p-map-coverage p-map-source-tip" role="note" aria-label="Camera source context"><span className="p-map-source-tip-icon" aria-hidden="true"><Icon name="camera" size={17} /></span><span className="p-map-source-tip-copy"><b>{district === 'All districts' ? 'Camera sources' : district}</b><small role="status">{availability}</small><span className="p-map-source-limit">A nearby marker does not confirm that a camera sees the road.</span>{unlocatedObservations > 0 && <span className="p-map-source-limit">{unlocatedObservations} saved {unlocatedObservations === 1 ? 'observation has' : 'observations have'} no linked location in this catalog and {unlocatedObservations === 1 ? 'is' : 'are'} omitted from the map. The records remain in the review list.</span>}{unlocatedObservations > 0 && <button type="button" className="p-map-coverage-action" onClick={() => useProduct.getState().navigate('/risk-signals')}>Open review queue</button>}{catalogFailed && <button type="button" className="p-map-coverage-action" onClick={() => useProduct.getState().navigate('/cameras')}>Open camera catalog to retry</button>}</span><button ref={hideButton} type="button" className="p-map-tip-dismiss" aria-label="Hide map tip" onClick={() => { restoreTipFocus.current = true; setVisible(false); }}><Icon name="close" size={15} /></button></div>;
 }

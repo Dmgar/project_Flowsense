@@ -1,0 +1,59 @@
+.p-platform .p-navigation nav > .p-navigation-group-label {
+  display: block;
+  flex: none;
+  margin: 17px 12px 5px;
+  color: var(--brand-muted);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 1.1px;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.p-platform .p-navigation nav > .p-navigation-group-label:first-child { margin-top: 0; }
+.p-platform .p-navigation nav > a { box-sizing: border-box; text-decoration: none; }
+.p-platform .p-navigation-secondary > a { box-sizing: border-box; text-decoration: none; }
+.p-platform .p-navigation nav > :is(button, a) { flex-shrink: 0; }
+.p-platform .p-navigation nav > :is(button, a), .p-platform .p-navigation-secondary > :is(button, a) { border-radius: 9px; }
+.p-platform .p-navigation nav > :is(button, a)[aria-current="page"] { color: var(--brand-link); background: var(--brand-selection); }
+.p-platform .p-navigation nav > :is(button, a):not([aria-current="page"]):hover { background: var(--brand-selection); color: var(--brand-ink); }
+.p-platform .p-navigation nav { overscroll-behavior-y: contain; scroll-padding-block: 8px; scrollbar-color: var(--brand-border) var(--brand-surface); }
+.p-platform .p-navigation > .p-navigation-close { flex-shrink: 0; min-width: 44px; min-height: 44px; }
+.p-platform .p-navigation > .p-brand, .p-platform .p-navigation-bottom { flex-shrink: 0; }
+.p-platform .p-navigation-secondary > :is(button, a) { min-height: 44px; }
+.p-platform .p-navigation-secondary > :is(button, a) > svg { flex: none; }
+.p-platform .p-navigation-secondary > :is(button, a) > span { display: grid; gap: 4px; text-align: left; line-height: 1.5; }
+.p-platform .p-navigation-secondary small { color: var(--brand-muted); font-size: 9px; font-weight: 400; line-height: 1.6; }
+.p-platform .p-navigation-secondary > .p-navigation-tour { color: var(--brand-link); }
+@media (min-width: 761px) and (max-width: 1000px) {
+  .p-platform .p-navigation-secondary > :is(button, a) { gap: 6px; padding-inline: 6px; }
+  .p-platform .p-navigation-secondary > :is(button, a) > span { display: grid; font-size: 10px; }
+  .p-platform .p-navigation-secondary small { display: none; }
+  .p-platform .p-navigation nav > :is(button, a) { min-height: 44px; align-items: center; }
+  .p-platform .p-navigation nav > :is(button, a) > span { font-size: 11px; line-height: 1.45; white-space: normal; overflow-wrap: normal; text-wrap: balance; }
+  .p-platform .p-navigation-secondary > :is(button, a) > span { font-size: 11px; white-space: normal; }
+}
+.p-platform .p-navigation nav > :is(button, a):focus-visible,
+.p-platform .p-navigation-secondary > :is(button, a):focus-visible {
+  outline: 3px solid var(--brand-focus);
+  outline-offset: 2px;
+}
+@media (min-width: 761px) and (max-width: 1000px) {
+  .p-platform .p-navigation nav > .p-navigation-group-label { margin-inline: 6px; font-size: 8px; letter-spacing: .65px; }
+}
+@media (max-width: 760px) {
+  .p-platform .p-navigation nav > .p-navigation-group-label { margin-top: 20px; }
+  .p-platform .p-navigation nav > :is(button, a) { min-height: 48px; }
+}
+@media (max-height: 760px) {
+  .p-platform .p-navigation .p-nav-note { display: none; }
+  .p-platform .p-navigation-bottom { padding-top: 10px; }
+  .p-platform .p-navigation .p-region { margin-bottom: 12px; padding-bottom: 12px; }
+}
+@media (max-height: 560px) {
+  .p-platform .p-navigation { padding-top: 8px; padding-bottom: 8px; }
+  .p-platform .p-navigation .p-region { display: none; }
+  .p-platform .p-navigation .p-brand { padding-bottom: 10px; }
+  .p-platform .p-navigation nav { flex: 1 1 auto; }
+  .p-platform .p-navigation-secondary small { display: none; }
+  .p-platform .p-navigation > .p-navigation-close { margin-block: 0; }
+}

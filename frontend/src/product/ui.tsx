@@ -1,7 +1,9 @@
-import { lazy, Suspense } from 'react';
-import type { ComponentProps, ReactNode } from 'react';
+import { Component, createRef, lazy, Suspense } from 'react';
+import type { ComponentProps, ErrorInfo, ReactNode } from 'react';
 import { severityLabels, statusLabels } from './data';
 import type { Severity } from './types';
+import './uiFeedback.css';
+import './metricReadability.css';
 
 const paths: Record<string, string> = {
   moon: 'M20.8 13A9 9 0 0111 3.2 9 9 0 1020.8 13z',
@@ -34,10 +36,44 @@ export function Icon({ name, size = 18 }: { name: string; size?: number }) { ret
 export function Badge({ children, tone = 'green' }: { children: ReactNode; tone?: string }) { return <span className={`p-badge ${tone}`}><i />{children}</span>; }
 export function SeverityBadge({ value }: { value: Severity }) { return <Badge tone={value === 'high' ? 'red' : value === 'medium' ? 'amber' : 'green'}>{severityLabels[value]}</Badge>; }
 export function ReviewBadge({ value }: { value: string }) { return <Badge tone={value === 'confirmed' || value === 'resolved' ? 'green' : value === 'dismissed' ? 'gray' : 'amber'}>{statusLabels[value] || value}</Badge>; }
-export function ConfidenceMeter({ value }: { value: number | null }) { return <div className="p-confidence"><b>{value === null ? '—' : Math.round(value * 100) + '%'}</b><span><i style={{ width: `${(value ?? 0) * 100}%` }} /></span></div>; }
+export function ConfidenceMeter({ value }: { value: number | null }) {
+  const available = value !== null && Number.isFinite(value);
+  const score = available ? Math.round(Math.min(1, Math.max(0, value)) * 100) : null;
+  return <div className={`p-confidence${score === null ? ' is-unavailable' : ''}`} role="img" aria-label={score === null ? 'Evidence score unavailable' : `Evidence score ${score} out of 100; not a calibrated probability`}><b aria-hidden="true">{score === null ? 'No score' : <>{score}<small> / 100</small></>}</b><span aria-hidden="true"><i style={{ width: `${score ?? 0}%` }} /></span></div>;
+}
 export function Sparkline({ tone = 'green', values = [6, 9, 7, 12, 11, 16, 13, 18, 17, 21] }: { tone?: string; values?: number[] }) { const max = Math.max(...values); return <svg className={`p-spark ${tone}`} viewBox="0 0 100 32" aria-hidden="true"><path d={`M0 32 ${values.map((v, i) => `L${i * 100 / (values.length - 1)} ${30 - v / max * 27}`).join(' ')} L100 32Z`} fill="currentColor" opacity=".08" /><polyline points={values.map((v, i) => `${i * 100 / (values.length - 1)},${30 - v / max * 27}`).join(' ')} fill="none" stroke="currentColor" strokeWidth="2" /></svg>; }
-export function MetricCard({ label, value, unit, delta, tone = 'green', icon = 'chart', note }: { label: string; value: ReactNode; unit?: string; delta?: string; tone?: string; icon?: string; note?: string }) { return <article className={`p-metric ${tone}`}><div className="p-metric-label"><Icon name={icon} size={16} />{label}</div><div className="p-metric-value">{value}<small>{unit}</small></div><div className="p-metric-bottom"><span>{delta || note || "No historical series"}</span>{delta && <Sparkline tone={tone} />}</div></article>; }
+export function MetricCard({ label, value, unit, delta, tone = 'green', icon = 'chart', note }: { label: string; value: ReactNode; unit?: string; delta?: string; tone?: string; icon?: string; note?: string }) {
+  const unavailable = value === '—' || value === null || value === undefined;
+  return <article className={`p-metric ${tone}${unavailable ? ' is-unavailable' : ''}`}>
+    <div className="p-metric-label"><Icon name={icon} size={16} />{label}</div>
+    <div className="p-metric-value">{unavailable ? <><span aria-hidden="true">—</span><span className="p-sr-only">Unavailable</span></> : value}<small aria-hidden={unavailable || undefined}>{unit}</small></div>
+    <div className="p-metric-bottom"><span>{delta || note || 'No historical series'}</span></div>
+  </article>;
+}
 export function Panel({ title, children, action, className = '' }: { title: string; children: ReactNode; action?: ReactNode; className?: string }) { return <section className={`p-panel ${className}`}><header className="p-panel-head"><h3>{title}</h3>{action}</header>{children}</section>; }
-export function EmptyState({ title = "Insufficient observations", detail = "Connect a source or use the presentation scenario to explore the workflow.", action }: { title?: string; detail?: string; action?: ReactNode }) { return <div className="p-empty"><Icon name="chart" size={30} /><h3>{title}</h3><p>{detail}</p>{action}</div>; }
+export function EmptyState({ title = "Insufficient observations", detail = "Connect a source or use the presentation scenario to explore the workflow.", action, icon = 'chart', headingAs: Heading = 'h3' }: { title?: string; detail?: string; action?: ReactNode; icon?: string; headingAs?: 'h1' | 'h2' | 'h3' }) { return <div className="p-empty"><span className="p-empty-illustration" aria-hidden="true"><span><Icon name={icon} size={25} /></span><i /></span><div className="p-empty-copy"><Heading>{title}</Heading><p>{detail}</p></div>{action && <div className="p-empty-action">{action}</div>}</div>; }
 const LazyTrendChart = lazy(() => import('./Charts'));
-export function TrendChart(props: ComponentProps<typeof LazyTrendChart>) { return <Suspense fallback={<div className="p-chart-loading">Loading chart…</div>}><LazyTrendChart {...props} /></Suspense>; }
+
+class ChartErrorBoundary extends Component<{ children: ReactNode; height: number }, { failed: boolean }> {
+  state = { failed: false };
+  private frame = createRef<HTMLDivElement>();
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[FlowSense] Chart render error:', error, info);
+  }
+
+  render() {
+    return <div ref={this.frame} className="p-chart-frame" tabIndex={-1} role="group" aria-label="Chart view">{this.state.failed
+      ? <div className="p-chart-error p-chart-recovery" style={{ minHeight: this.props.height }}><Icon name="chart" size={24} /><div role="status"><strong>This chart could not be displayed</strong><p>Retry this view, or continue using the other workspace tools. A display error does not mean that the measured value is zero.</p></div><button type="button" className="p-button" onClick={() => this.setState({ failed: false }, () => this.frame.current?.focus({ preventScroll: true }))}><Icon name="refresh" size={15} />Retry chart</button></div>
+      : this.props.children}</div>;
+  }
+}
+
+export function TrendChart(props: ComponentProps<typeof LazyTrendChart>) {
+  const height = props.height ?? 170;
+  return <ChartErrorBoundary height={height}><Suspense fallback={<div className="p-chart-loading" role="status" aria-label="Loading chart" style={{ height }}><span className="p-chart-loading-mark" aria-hidden="true" /><span>Loading chart…</span></div>}><LazyTrendChart {...props} /></Suspense></ChartErrorBoundary>;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiUrl } from '../api/urls';
 import { Panel, Badge } from './ui';
+import './savedEvidenceReading.css';
 import { isMonitoring, monitoringStartedAt, registerMonitoring, setMonitoring } from './monitoring';
 import { useProduct } from './store';
 import type { Camera } from './types';
@@ -42,8 +43,10 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
   const [data, setData] = useState<Summary | null>(null);
   const [zoneStatuses, setZoneStatuses] = useState<CameraZoneStatus[] | null>(null);
   const [zoneCoverageState, setZoneCoverageState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [captureStatus, setCaptureStatus] = useState<Summary['capture_status'] | null>(null);
+  const [captureStatus, setCaptureStatus] = useState<{ cameraId: string; value: Summary['capture_status'] } | null>(null);
   const [error, setError] = useState('');
+  const [retryingSummary, setRetryingSummary] = useState(false);
+  const [summaryRetry, setSummaryRetry] = useState(0);
   const [background, setBackground] = useState(() => isMonitoring(camera.id));
   const [selectedMinute, setSelectedMinute] = useState<string | null>(null);
   const [clips, setClips] = useState<Clip[]>([]);
@@ -67,9 +70,12 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
   const [playedClipIds, setPlayedClipIds] = useState<Set<string>>(() => new Set());
   const [savingFeedback, setSavingFeedback] = useState<string | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState('');
+  const [feedbackNoticeIsError, setFeedbackNoticeIsError] = useState(false);
   const [clipPlaybackNotice, setClipPlaybackNotice] = useState('');
   const [focusedCrossing, setFocusedCrossing] = useState<Crossing | null>(null);
   const [clipError, setClipError] = useState('');
+  const [retryingClipHistory, setRetryingClipHistory] = useState(false);
+  const [clipHistoryRetry, setClipHistoryRetry] = useState(0);
   const providerOutOfService = camera.provider_in_service === false;
   const sourceUnavailable = camera.video_health?.state === 'unavailable';
   const clipReview = useRef<HTMLDetailsElement>(null);
@@ -99,11 +105,10 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         const response = await fetch(apiUrl(`/api/v1/mobility/video/cameras/${encodeURIComponent(camera.id)}/capture-status`), { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(3000)]) });
         if (!response.ok) return;
         const result = await response.json() as NonNullable<Summary['capture_status']>;
-        if (!stopped) setCaptureStatus(result);
+        if (!stopped) setCaptureStatus({ cameraId: camera.id, value: result });
       } catch { /* Keep the last live status while the next lightweight poll retries. */ }
       finally { pending = false; }
     };
-    setCaptureStatus(null);
     void update();
     const timer = window.setInterval(() => void update(), 2000);
     return () => { stopped = true; controller.abort(); clearInterval(timer); };
@@ -126,12 +131,13 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         if (!stopped) setError(reason instanceof Error ? reason.message : 'Could not load traffic history.');
       } finally {
         pending = false;
+        if (!stopped) setRetryingSummary(false);
         if (!stopped) timer = window.setTimeout(() => void update(), monitoringPollDelay(consecutiveFailures, consecutiveFailures === 0));
       }
     };
     void update();
     return () => { stopped = true; controller.abort(); if (timer !== undefined) clearTimeout(timer); };
-  }, [camera.id, since]);
+  }, [camera.id, since, summaryRetry]);
   useEffect(() => {
     let stopped = false, pending = false;
     const controller = new AbortController();
@@ -188,11 +194,11 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
           setClipError('');
         }
       } catch (reason) { if (!stopped) setClipError(reason instanceof Error ? reason.message : 'Could not load saved clips.'); }
-      finally { pending = false; }
+      finally { pending = false; if (!stopped) setRetryingClipHistory(false); }
     };
     void update(); const timer = window.setInterval(() => void update(), 10000);
     return () => { stopped = true; controller.abort(); clearInterval(timer); };
-  }, [camera.id, olderClipPages, includeEarlierZones]);
+  }, [camera.id, olderClipPages, includeEarlierZones, clipHistoryRetry]);
   const bins = buildTrafficTimeline(data?.minutes || [], since, now);
   const maximum = Math.max(1, ...bins.map(bin => bin.total));
   const selection = bins.find(bin => bin.minute === selectedMinute);
@@ -208,7 +214,7 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
   const analyzedAt = estimate?.updated_at && Number.isFinite(Date.parse(estimate.updated_at))
     ? new Date(estimate.updated_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : null;
   const evidence = data?.video_evidence;
-  const currentCaptureStatus = captureStatus ?? data?.capture_status;
+  const currentCaptureStatus = (captureStatus?.cameraId === camera.id ? captureStatus.value : null) ?? data?.capture_status;
   const activeStorageError = storageError || currentCaptureStatus?.storage_error || '';
   const archivedReviewMessage = archivedReviewHistoryMessage(reviewHistorySupported, reviewSummary?.reviewed_detections || 0);
   const shortClips = evidence?.short_clips ?? shortClipCount;
@@ -266,13 +272,15 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
     playSavedClipAt(video, offset || 0, message => setClipError(`Could not play saved evidence: ${message}`));
   }, [focusedCrossing, clips]);
   const reviewCrossing = async (crossing: Crossing, confirmedSuggestion?: ReviewedClass) => {
+    if (savingFeedback) return;
     const key = `${crossing.session}-${crossing.generation}-${crossing.track}`;
     if (!canSaveVideoReview(crossing, playedClipIds)) {
+      setFeedbackNoticeIsError(true);
       setFeedbackNotice('Play this detection’s linked saved video before saving or changing its label.');
       return;
     }
     const reviewedClass = confirmedSuggestion || feedbackValues[key] || crossing.feedback?.reviewed_class || crossing.effective_class as ReviewedClass || crossing.class as ReviewedClass;
-    setSavingFeedback(key); setFeedbackNotice('');
+    setSavingFeedback(key); setFeedbackNotice(''); setFeedbackNoticeIsError(false);
     try {
       const response = await fetch(apiUrl(`/api/v1/mobility/video/cameras/${encodeURIComponent(camera.id)}/tracks/${encodeURIComponent(crossing.session)}/${crossing.generation}/${crossing.track}/feedback`), {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewed_class: reviewedClass }),
@@ -331,7 +339,7 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
           agreement_rate: evaluated ? matchingLabels / evaluated : null };
       });
       setFeedbackNotice('Review saved.');
-    } catch (reason) { setFeedbackNotice(reason instanceof Error ? reason.message : 'Could not save the detection review.'); }
+    } catch (reason) { setFeedbackNoticeIsError(true); setFeedbackNotice(reason instanceof Error ? reason.message : 'Could not save the detection review.'); }
     finally { setSavingFeedback(null); }
   };
   const loadOlderClips = async () => {
@@ -360,6 +368,7 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
     const key = `${crossing.session}-${crossing.generation}-${crossing.track}`;
     const suggestedClass = confirmableSuggestedClass(crossing, playedClipIds) as ReviewedClass | null;
     const reviewEvidencePlayed = canSaveVideoReview(crossing, playedClipIds);
+    const waitingForOtherReview = savingFeedback !== null && savingFeedback !== key;
     const detectionTime = crossing.crossed_at || crossing.last_seen || crossing.first_seen;
     const shownClass = crossing.feedback?.reviewed_class || crossing.class;
     const label = crossing.feedback ? `${shownClass.replace('_', ' ')} · reviewed`
@@ -370,10 +379,10 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
     const labelEvidenceScope = crossing.class_status === 'stable' && !crossing.counted && !crossing.feedback
       ? roadZoneRequired ? 'Stable model label · full scene' : 'Stable model label · approaching lane'
       : evidenceScope;
-    return <article className="p-crossing-item" key={`${crossing.clip}-${crossing.track}-${crossing.crossed_at}`}>
+    return <article className="p-crossing-item" aria-busy={savingFeedback === key} key={`${crossing.clip}-${crossing.track}-${crossing.crossed_at}`}>
       <button className="p-crossing-main" onClick={() => playCrossing(crossing)}><span>{label} · {detectionTime ? new Date(detectionTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Time unavailable'}</span><small>{crossing.feedback ? 'Operator-reviewed label applied to saved totals' : crossing.candidate_class ? `Unconfirmed ${crossing.candidate_class} candidate · ${roadZoneRequired ? 'full scene' : crossing.direction === 'approaching' ? 'approaching lane' : 'road lane not assigned'}` : labelEvidenceScope} · Track #{crossing.track} · {formatTrackScore(crossing.confidence)} · {crossing.model_hits > 0 ? `${crossing.model_hits} detector updates` : 'detector update count unavailable'}</small><strong>{crossing.counted ? 'Play video at crossing' : 'Play detection clip'}</strong></button>
       {crossing.class === 'vehicle' && crossing.class_status === 'uncertain' && crossing.candidate_class && !crossing.feedback && <div className="p-review-suggestion">
-        <button type="button" disabled={!suggestedClass || savingFeedback === key} onClick={() => { if (suggestedClass) void reviewCrossing(crossing, suggestedClass); }}>
+        <button type="button" disabled={!suggestedClass || savingFeedback !== null} onClick={() => { if (suggestedClass) void reviewCrossing(crossing, suggestedClass); }}>
           {savingFeedback === key ? 'Saving review…' : `Confirm ${crossing.candidate_class[0].toUpperCase()}${crossing.candidate_class.slice(1)} after video review`}
         </button>
         {!suggestedClass && <small>Play this detection’s linked video first to enable confirmation.</small>}
@@ -385,8 +394,9 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
           <option value="car">Car</option><option value="truck">Truck</option><option value="bus">Bus</option><option value="motorcycle">Motorcycle</option><option value="bicycle">Bicycle</option><option value="pedestrian">Person</option><option value="rider">Rider · bike or motorcycle unclear</option><option value="vehicle">Vehicle, type unclear</option><option value="false_positive">No target object</option>
           </select>
         </label>
-        <button className="p-text-button" disabled={savingFeedback === key || !reviewEvidencePlayed} onClick={() => void reviewCrossing(crossing)}>{savingFeedback === key ? 'Saving review…' : crossing.feedback ? 'Update review' : 'Save review'}</button>
+        <button className="p-text-button" disabled={savingFeedback !== null || !reviewEvidencePlayed} onClick={() => void reviewCrossing(crossing)}>{savingFeedback === key ? 'Saving review…' : crossing.feedback ? 'Update review' : 'Save review'}</button>
         {!reviewEvidencePlayed && <small>Play this detection’s linked saved video before saving a label.</small>}
+        {waitingForOtherReview && <small className="p-review-wait-note">Another review is being saved. Wait for its result before submitting this label.</small>}
       </details>
     </article>;
   };
@@ -407,13 +417,14 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
       <details className="p-tracked-records"><summary><span>{savedTrackScopeLabel(roadZoneEnabled)}</span><b>{trackedTotal ?? '—'}</b></summary><p>{savedTrackScopeNote(roadZoneEnabled)}</p><div className="p-tracked-record-types">{kinds.map(([key, label]) => <span key={key}>{label} <b>{trackedClasses?.[key] ?? 0}</b></span>)}</div></details>
       {(candidateHistoryComplete === false || candidateHintTotal > 0) && <details className={`p-candidate-records${candidateHistoryComplete === false ? ' p-candidate-records--partial' : ''}`} aria-label="Unconfirmed class suggestions"><summary><b>Class suggestions · review needed</b><span>{candidateHintTotal}</span></summary><p>Some saved vehicles from {candidateScope} may need a clearer class. Review these suggestions before they are added to class totals.</p>{hintCoverage && <p>Type hints are available for {hintCoverage.candidateCount} of {hintCoverage.pendingVehicleCount} pending vehicles ({hintCoverage.percent}%).</p>}{candidateHistoryComplete === false && <p className="p-candidate-history-warning" role="status">This view includes the latest 500 saved tracks. Older suggestions may also be waiting.</p>}<div>{Object.entries(candidateTracks).filter(([, count]) => count > 0).map(([key, count]) => <span key={key}>{key[0].toUpperCase() + key.slice(1)}? <b>{count}</b></span>)}</div></details>}
       <div className="p-traffic-chart"><div><b>Track crossings per minute</b><small>{bins.length > 1 ? `Last ${bins.length} minutes` : 'Current minute'}</small></div>
-        {roadZoneRequired ? <p className="p-road-zone-required-note">Road-specific crossings will appear after the inbound zone and direction are reviewed.</p> : <div className="p-traffic-bars">{bins.map(bin => <button key={bin.minute} className={bin.observed ? '' : 'is-unobserved'} title={describeTrafficMinute(bin)} aria-label={describeTrafficMinute(bin)} onClick={() => setSelectedMinute(bin.minute)}><i style={{ height: `${Math.max(3, bin.total / maximum * 100)}%` }} /></button>)}</div>}
+        {roadZoneRequired ? <p className="p-road-zone-required-note">Road-specific crossings will appear after the inbound zone and direction are reviewed.</p> : <div className="p-traffic-bars">{bins.map(bin => <button key={bin.minute} className={bin.observed ? '' : 'is-unobserved'} title={describeTrafficMinute(bin)} aria-label={describeTrafficMinute(bin)} aria-pressed={selectedMinute === bin.minute} onClick={() => setSelectedMinute(bin.minute)}><i style={{ height: `${Math.max(3, bin.total / maximum * 100)}%` }} /></button>)}</div>}
+        {!roadZoneRequired && <label className="p-traffic-minute-picker"><span>Inspect a minute</span><select value={selection?.minute || ''} onChange={event => setSelectedMinute(event.currentTarget.value || null)}><option value="">Choose a minute</option>{bins.map(bin => <option key={bin.minute} value={bin.minute}>{describeTrafficMinute(bin)}</option>)}</select></label>}
         {!roadZoneRequired && <p>{selection ? selection.observed
           ? `${new Date(selection.minute).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · ${selection.total} track crossings · ${selection.video_samples} video analysis samples`
           : `${new Date(selection.minute).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} · No video evidence · crossings unknown`
-          : 'Select a bar to inspect a minute. Hatched bars mean no video evidence was saved.'}</p>}
+          : 'Choose a minute above or select a bar. Hatched bars mean no video evidence was saved.'}</p>}
       </div>
-      <p className="p-small-note">{data?.count_basis || 'Counts are based on model tracks crossing the approaching-lane counter.'} Data is saved automatically.{data?.minute_video_coverage === false ? ' This server does not report minute-level video coverage, so zero bars may include unobserved gaps.' : ''}</p>
+      <p className="p-small-note">{data?.count_basis || 'Counts are based on model tracks crossing the approaching-lane counter.'} Check recording, continuity and storage status below before relying on saved video.{data?.minute_video_coverage === false ? ' This server does not report minute-level video coverage, so zero bars may include unobserved gaps.' : ''}</p>
       <p className="p-small-note">{roadZoneRequired ? 'Full-scene records remain saved; records from earlier road-zone revisions are retained.' : 'History uses the current road zone. Records from earlier zones remain saved.'}</p>
       <button className="p-text-button" aria-pressed={background || isMonitoring(camera.id)} onClick={() => { const next = !isMonitoring(camera.id); setMonitoring(camera.id, next); setBackground(next); }}>{background || isMonitoring(camera.id) ? 'Pause background monitoring' : 'Keep monitoring in the app'}</button>
       <p className="p-small-note">{providerOutOfService
@@ -427,7 +438,7 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         : background || isMonitoring(camera.id)
         ? 'Background monitoring is on. This camera can keep saving observations while its page is hidden.'
         : 'Background monitoring is off. Video capture pauses when this page is hidden or closed.'}</p>
-      {error && <p role="status" className="p-inline-error">{error}</p>}
+      {error && <div role="status" className="p-inline-error p-clip-retry"><span>{error} {data ? 'Showing the last successfully loaded history.' : ''}</span><button type="button" className="p-text-button" disabled={retryingSummary} onClick={() => { setRetryingSummary(true); setSummaryRetry(value => value + 1); }}>{retryingSummary ? 'Retrying…' : 'Retry traffic history'}</button></div>}
     </Panel>
     <Panel title="Video evidence" action={<Badge tone={evidence?.enabled && !storageBlockReason ? 'green' : 'amber'}>{!evidence ? 'Checking storage' : !evidence.enabled ? 'MP4 capture off' : storageBlockReason ? 'Recording paused' : evidence.recording_clips ? 'Recording' : 'Armed · waiting for detections'}</Badge>}>
       {evidence?.external_clip_storage && <p className="p-small-note">New MP4 clips are stored in the configured evidence directory. Existing clips remain available from their original location.</p>}
@@ -480,25 +491,25 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         {recentlyReviewedCrossings.length > 0 && <details className="p-more-crossings"><summary>Saved video review history · {recentlyReviewedCrossings.length}</summary>{recentlyReviewedCrossings.map(renderCrossing)}</details>}
         {countedCrossings.length > 0 && <b>Recent counted crossings to spot-check · {countedCrossings.length}</b>}
         {countedCrossings.map(renderCrossing)}
-        {feedbackNotice && <p role="status" className="p-small-note">{feedbackNotice}</p>}</div>}
+        {feedbackNotice && <p role={feedbackNoticeIsError ? 'alert' : 'status'} aria-live={feedbackNoticeIsError ? 'assertive' : 'polite'} className={feedbackNoticeIsError ? 'p-small-note p-inline-error' : 'p-small-note'}>{feedbackNotice}</p>}</div>}
       {focusedCrossing?.clip && !clips.some(clip => clip.id === focusedCrossing.clip) && <div className="p-saved-clip p-focused-detection-clip">
         <div><b>Saved video · Track #{focusedCrossing.track}</b><span>Loaded directly from this reviewed detection’s linked clip</span></div>
         <video ref={video => { videoRefs.current[focusedCrossing.clip!] = video; }} onPlaying={() => setPlayedClipIds(current => current.has(focusedCrossing.clip!) ? current : new Set(current).add(focusedCrossing.clip!))} controls preload="metadata" playsInline aria-label={`Linked saved video for reviewed track ${focusedCrossing.track}`} src={apiUrl(`/api/v1/mobility/video/clips/${encodeURIComponent(focusedCrossing.clip)}`)} />
       </div>}
       <details ref={clipReview} className="p-saved-clips"><summary>Review saved clips · {clips.length} loaded {includeEarlierZones ? 'across road-zone revisions' : 'in the current road zone'}</summary>
-        <label className="p-small-note p-clip-history-scope"><input type="checkbox" checked={includeEarlierZones} onChange={event => {
+        <p className="p-saved-clips-timezone">Dates and times use your device time zone: <b>{Intl.DateTimeFormat().resolvedOptions().timeZone}</b>. Media time is the position within the source video, not the capture date.</p><label className="p-small-note p-clip-history-scope"><input type="checkbox" checked={includeEarlierZones} onChange={event => {
           setClips([]); setClipCursor(null); setHasOlderClips(false); setOlderClipPages(0);
           setIncludeEarlierZones(event.target.checked);
         }} /> Include clips from earlier road-zone revisions</label>
         {clips.map(clip => <div className="p-saved-clip" key={clip.id}>
-          <div><b>{new Date(clip.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}{includeEarlierZones && clip.zone_revision !== data?.zone_revision ? ` · Earlier road zone r${clip.zone_revision ?? 'legacy'}` : ''}</b><span>{clip.duration.toFixed(1)} sec · media time {clip.start_media_time.toFixed(1)} sec</span></div>
+          <div><b><time dateTime={clip.created_at}>{new Date(clip.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' })}</time>{includeEarlierZones && clip.zone_revision !== data?.zone_revision ? ` · Earlier road zone r${clip.zone_revision ?? 'legacy'}` : ''}</b><span>{clip.duration.toFixed(1)} sec · media time {clip.start_media_time.toFixed(1)} sec</span></div>
           <video ref={video => { videoRefs.current[clip.id] = video; }} onPlaying={() => setPlayedClipIds(current => current.has(clip.id) ? current : new Set(current).add(clip.id))} controls preload="metadata" playsInline aria-label={`Saved detection clip from ${new Date(clip.created_at).toLocaleString('en-US')}`} src={apiUrl(`/api/v1/mobility/video/clips/${encodeURIComponent(clip.id)}`)} />
         </div>)}
         {!clips.length && !clipError && <p className="p-small-note">New clips appear here after a detected segment is finalized.</p>}
         {hasOlderClips && <button className="p-text-button" disabled={loadingOlderClips} onClick={() => void loadOlderClips()}>{loadingOlderClips ? 'Loading older clips…' : 'Load 30 older clips'}</button>}
         {!clipPagingAvailable && <p className="p-small-note">Older clip pagination becomes available after the camera API is refreshed; the latest clips remain accessible.</p>}
         {clipPagingAvailable && !hasOlderClips && clips.length > 0 && <p className="p-small-note">All playable clips across the selected road-zone revisions are loaded.</p>}
-        {clipError && <p role="status" className="p-inline-error">{clipError}</p>}
+        {clipError && <div role="status" className="p-inline-error p-clip-retry"><span>{clipError} {clips.length > 0 ? 'Previously loaded clips remain available.' : ''}</span><button type="button" className="p-text-button" disabled={retryingClipHistory} onClick={() => { setRetryingClipHistory(true); setClipHistoryRetry(value => value + 1); }}>{retryingClipHistory ? 'Retrying…' : 'Retry clip history'}</button></div>}
       </details>
     </Panel>
     <Panel title="Road conditions" action={<Badge tone={roadTone}>{roadBadge}</Badge>}>

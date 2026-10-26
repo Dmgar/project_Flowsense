@@ -1,0 +1,21 @@
+/* Let system contrast preferences identify controls even when fills are replaced. */
+@media (forced-colors: active) {
+  html .p-platform { --brand-bg: Canvas; --brand-surface: Canvas; --brand-ink: CanvasText; --brand-muted: CanvasText; --brand-border: ButtonBorder; --brand-action: Highlight; --brand-focus: Highlight; --brand-link: LinkText; --brand-selection: Canvas; --chart-grid: GrayText; --chart-ink: CanvasText; --chart-surface: Canvas; --chart-border: ButtonBorder; --chart-accent: LinkText; }
+  html .p-platform :is(.p-button, .p-icon-button, .p-text-button, .p-navigation nav :is(button, a), .p-navigation-secondary > :is(button, a), .p-region-explorer button, .p-segmented button) { border: 1px solid ButtonBorder !important; }
+  html .p-platform :is(button[aria-pressed="true"], button[aria-current="page"], button[aria-current="step"], .p-theme-option.selected, .p-policy-choice:has(input:checked)) { outline: 2px solid Highlight; outline-offset: -3px; }
+  html .p-platform :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid Highlight !important; outline-offset: 3px; }
+  html .p-platform :is(button:disabled, input:disabled, select:disabled) { color: GrayText !important; border-color: GrayText !important; }
+  html .p-platform .p-badge { border: 1px solid CanvasText; }
+  html .p-platform .p-badge > i { background: CanvasText; }
+  html .p-platform :is(.p-panel, .p-desk-card, .p-camera-tile, .p-metric, .fs-first-visit) { border-color: CanvasText; }
+  html .fs-coachmark { border: 2px solid CanvasText; background: Canvas; color: CanvasText; }
+  html .fs-coachmark :is(h2, p, small, b, span, button, summary) { color: CanvasText !important; }
+  html .fs-coachmark button { border: 1px solid ButtonBorder !important; }
+  html .fs-coachmark :is(button, summary, [tabindex]):focus-visible { outline: 3px solid Highlight !important; outline-offset: 3px; }
+  html .fs-tour-spotlight { border: 3px solid Highlight; }
+}
+@media (prefers-contrast: more) {
+  .p-platform :is(.p-panel, .p-metric, .p-camera-tile, .p-desk-card, .p-policy-choice) { border-width: 2px; }
+  .p-platform :is(.p-metric-bottom > span, .p-camera-action-hint, .p-catalog-source-guidance) { color: var(--brand-ink); }
+}
+

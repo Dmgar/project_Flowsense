@@ -1,0 +1,42 @@
+.p-platform .p-emergency-screen .p-dispatch-form { display: block; padding: 24px; margin-bottom: 20px; border: 1px solid var(--brand-border); border-radius: 9px; background: var(--brand-surface); }
+.p-corridor-form-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 22px; }
+.p-corridor-form-heading > span { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--brand-selection); color: var(--brand-link); }
+.p-corridor-form-heading h2 { margin: 0 0 6px; color: var(--brand-ink); font-size: 18px; font-weight: 600; line-height: 1.4; }
+.p-corridor-form-heading p { margin: 0; color: var(--brand-muted); font-size: 13px; line-height: 1.6; }
+.p-platform .p-emergency-screen .p-corridor-vehicle-field { display: grid; gap: 8px; width: min(100%, 240px); margin-bottom: 20px; color: var(--brand-muted); font-size: 12px; }
+.p-platform .p-emergency-screen .p-dispatch-form :is(input:not([type="checkbox"]), select) { min-width: 0; min-height: 44px; margin: 0; padding: 11px 12px !important; font-size: 13px !important; }
+.p-platform .p-emergency-screen .p-dispatch-form input[type="checkbox"] { display: inline-block; flex: none; align-self: flex-start; width: 17px; height: 17px; min-height: 17px; margin: 3px 0 0; padding: 0 !important; accent-color: var(--brand-action); }
+.p-corridor-points { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 16px; }
+.p-corridor-point { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 16px; border: 1px solid var(--brand-border); border-radius: 7px; background: var(--brand-bg); }
+.p-corridor-point > label { display: flex; align-items: center; gap: 8px; color: var(--brand-ink); font-size: 13px; font-weight: 600; }
+.p-corridor-point-marker { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid var(--brand-focus); border-radius: 50%; color: var(--brand-link); background: var(--brand-selection); font-size: 10px; }
+.p-corridor-point-marker.destination { border-radius: 5px; }
+.p-corridor-point > input { width: 100%; background: var(--brand-surface); color: var(--brand-ink); border: 1px solid var(--brand-border); border-radius: 5px; }
+.p-corridor-points-link { color: var(--brand-muted); }
+.p-platform .p-emergency-screen .p-pick-button { position: static; display: inline-flex; align-items: center; align-self: flex-start; gap: 7px; min-height: 40px; padding: 8px 10px; border: 1px solid var(--brand-border); border-radius: 5px; background: var(--brand-surface); color: var(--brand-link); font-size: 11px; cursor: pointer; }
+.p-platform .p-emergency-screen .p-pick-button[aria-pressed="true"] { border-color: var(--brand-focus); background: var(--brand-selection); }
+.p-corridor-coordinate-help { margin: 12px 0 22px; color: var(--brand-muted); font-size: 12px; line-height: 1.75; }
+.p-corridor-form-action { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--brand-border); }
+.p-corridor-form-action > p { display: flex; align-items: flex-start; flex: 1 1 230px; gap: 8px; max-width: 500px; margin: 0; color: var(--brand-muted); font-size: 12px; line-height: 1.65; }
+.p-corridor-form-action > p > svg { flex: none; margin-top: 2px; color: var(--brand-link); }
+.p-corridor-form-action .p-button { min-height: 44px; gap: 9px; }
+.p-emergency-screen .p-emergency-map { scroll-margin-block: 20px; }
+.p-platform .p-emergency-screen .p-map-pick-hint { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: max-content; max-width: calc(100% - 24px); padding: 8px 12px; border: 1px solid #52777b; background: #172124; color: #edf6f0; font-size: 12px; line-height: 1.6; white-space: normal; }
+.p-platform .p-emergency-screen .p-map-pick-hint > button { flex: none; min-height: 36px; margin: 0; color: #b9e6e8; font-size: 12px; }
+.p-emergency-screen .p-route-options { gap: 10px; }
+.p-platform .p-emergency-screen .p-route-options button { min-width: 0; min-height: 76px; padding: 14px; border: 1px solid var(--brand-border); border-radius: 7px; color: var(--brand-ink); background: var(--brand-surface); cursor: pointer; transition: border-color .18s ease, background-color .18s ease; }
+.p-platform .p-emergency-screen .p-route-options button.selected { border-color: var(--brand-focus); background: var(--brand-selection); box-shadow: inset 3px 0 var(--brand-focus); }
+.p-emergency-screen .p-route-options button > span { gap: 14px; color: var(--brand-ink); font-size: 12px; line-height: 1.5; }
+.p-emergency-screen .p-route-options button b { flex: none; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.p-emergency-screen .p-route-options button small { margin-top: 7px; color: var(--brand-muted); font-size: 11px; line-height: 1.5; }
+.p-emergency-screen :is(.p-dispatch-form, .p-route-options) :is(button, input, select):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+@media (max-width: 760px) { .p-platform .p-emergency-screen .p-dispatch-form { padding: 16px; } .p-corridor-points { grid-template-columns: 1fr; gap: 12px; } .p-corridor-points-link { display: none; } .p-corridor-point { padding: 12px; } .p-platform .p-emergency-screen .p-pick-button { min-height: 44px; } .p-corridor-form-action .p-button { flex: 1 1 100%; justify-content: center; } .p-platform .p-emergency-screen .p-map-pick-hint > button { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .p-platform .p-emergency-screen .p-route-options button { transition: none; } }
+.p-platform .p-route-key i.selected-route { background: var(--brand-link); }
+.p-platform .p-route-key > span { line-height: 1.6; }
+.p-platform .p-map-pick-hint { flex-wrap: wrap; gap: 10px; font-size: 12px; line-height: 1.7; }
+.p-platform .p-map-pick-hint > button { min-height: 44px; padding: 8px 10px; font-size: 11px; }
+.p-route-input-notice { display: flex; align-items: flex-start; gap: 12px; margin: 18px 0; padding: 16px; border: 1px solid var(--brand-border); border-left: 3px solid var(--brand-focus); border-radius: 6px; background: var(--brand-selection); }
+.p-route-input-notice > svg { flex: none; margin-top: 2px; color: var(--brand-link); }
+.p-route-input-notice strong { color: var(--brand-ink); font-size: 13px; font-weight: 600; line-height: 1.6; }
+.p-route-input-notice p { max-width: 900px; margin: 5px 0 0; color: var(--brand-muted); font-size: 12px; line-height: 1.8; }

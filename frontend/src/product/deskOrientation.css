@@ -1,0 +1,20 @@
+.p-platform .p-desk-card > header > div { min-width: 0; }
+.p-platform .p-desk-card > header h2 { color: var(--brand-ink); overflow-wrap: anywhere; font-size: 15px; line-height: 1.6; }
+.p-platform .p-desk-card > header small { display: block; color: var(--brand-muted); line-height: 1.65; overflow-wrap: anywhere; }
+.p-platform .p-desk-card > header > .p-icon-button { width: 44px; height: 44px; }
+.p-platform .p-desk-card .p-desk-card-body { padding: 16px 18px; background: var(--brand-surface); }
+.p-platform .p-desk-card-body > p { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; color: var(--brand-muted); font-size: 11px; line-height: 1.7; }
+.p-desk-card-body > p > svg { flex: none; margin-top: 2px; }
+.p-platform .p-desk-card-body > .p-button { min-height: 44px; white-space: normal; }
+.p-desk-card :is(button, a):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-observation-desk .p-desk-recovery button { min-height: 44px; white-space: normal; text-align: left; line-height: 1.7; }
+.p-observation-desk :is(.p-desk-recovery button, .p-explorer-hero > button):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+@media (max-width: 760px) { .p-platform .p-desk-card-body > .p-button { width: 100%; } }
+.p-desk-source-index { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.p-desk-source-index:empty { display: none; }
+.p-desk-source-index a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; max-width: 100%; padding: 9px 12px; box-sizing: border-box; border: 1px solid var(--brand-border); border-radius: 6px; background: var(--brand-surface); color: var(--brand-link); font-size: 12px; line-height: 1.6; text-decoration: none; overflow-wrap: anywhere; }
+.p-desk-source-index a > span { flex: none; color: var(--brand-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.p-desk-source-index a > svg { flex: none; rotate: 90deg; }
+.p-desk-source-index a:hover { border-color: var(--brand-focus); background: var(--brand-selection); }
+.p-desk-source-index a:focus-visible, .p-desk-card:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-desk-card { scroll-margin-block: 20px; }

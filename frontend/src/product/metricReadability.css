@@ -1,0 +1,18 @@
+.p-platform .p-confidence { min-width: 76px; }
+.p-platform .p-confidence b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.p-platform .p-confidence b small { display: inline; color: var(--brand-muted); font-size: 9px; font-weight: 450; }
+.p-platform .p-confidence.is-unavailable b { color: var(--brand-muted); font-size: 10px; font-weight: 500; }
+.p-platform .p-confidence.is-unavailable > span { opacity: .45; }
+.p-platform .p-metric-label { align-items: flex-start; line-height: 1.6; overflow-wrap: anywhere; }
+.p-platform .p-metric-label > svg { flex: none; margin-top: 1px; }
+.p-platform .p-metric-value { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; line-height: 1.25; }
+.p-platform .p-metric-value > small { display: inline-block; line-height: 1.6; }
+.p-platform .p-metric-bottom { align-items: flex-start; margin-top: 12px; }
+.p-platform .p-metric-bottom > span { color: var(--brand-muted); font-size: 11px; line-height: 1.65; }
+.p-platform .p-example-sparkline { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; max-width: 100%; margin-top: 6px; }
+.p-platform .p-example-sparkline > small { color: var(--brand-muted); font-size: 9px; line-height: 1.6; }
+@media (max-width: 760px) {
+  .p-platform .p-metric { padding: 15px 13px; }
+  .p-platform .p-metric-label { font-size: 11px; }
+  .p-platform .p-metric-value { font-size: clamp(23px, 5.8vw, 30px); }
+}

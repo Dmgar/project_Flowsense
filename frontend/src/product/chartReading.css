@@ -1,0 +1,24 @@
+.p-chart-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 9px 0 12px; color: var(--brand-muted); font-size: 11px; }
+.p-chart-legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.p-chart-legend i { width: 20px; border-top: 3px solid var(--chart-accent); }
+.p-chart-legend i.baseline { border-top: 2px dashed var(--chart-ink); }
+.p-chart-data { margin-top: 12px; border-top: 1px solid var(--brand-border); color: var(--brand-muted); }
+.p-chart-data summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-size: 11px; color: var(--brand-link); list-style: none; }
+.p-chart-data summary::-webkit-details-marker { display: none; }
+.p-chart-data summary::before { content: '+'; width: 14px; font-size: 18px; }
+.p-chart-data[open] summary::before { content: '−'; }
+.p-chart-data summary > span { margin-left: auto; color: var(--brand-muted); font-size: 10px; }
+.p-chart-data > p { margin: 0 0 12px; font-size: 11px; line-height: 1.7; }
+.p-chart-data-scroll { max-height: 250px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--brand-border); border-radius: 5px; }
+.p-chart-data table { width: 100%; border-collapse: collapse; color: var(--brand-ink); font-size: 11px; font-variant-numeric: tabular-nums; }
+.p-chart-data :is(th, td) { padding: 10px 12px; border-bottom: 1px solid var(--brand-border); text-align: right; white-space: nowrap; }
+.p-chart-data th:first-child { text-align: left; }
+.p-chart-data thead th { position: sticky; top: 0; z-index: 2; background: var(--brand-surface); font-weight: 600; white-space: normal; line-height: 1.6; text-wrap: balance; box-shadow: 0 1px 0 var(--brand-border); }
+.p-chart-data thead th:first-child { left: 0; z-index: 3; }
+.p-chart-data tbody th { position: sticky; left: 0; z-index: 1; background: var(--brand-surface); font-weight: 500; border-right: 1px solid var(--brand-border); }
+.p-chart-data tbody tr:last-child > * { border-bottom: 0; }
+.p-chart-data :is(summary, .p-chart-data-scroll):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-chart-no-data { display: grid; align-content: center; justify-items: center; gap: 8px; min-height: 150px; padding: 20px; box-sizing: border-box; border: 1px dashed var(--brand-border); border-radius: 8px; color: var(--brand-muted); background: var(--brand-bg); text-align: center; }
+.p-chart-no-data strong { color: var(--brand-ink); font-size: 13px; font-weight: 600; }
+.p-chart-no-data p { max-width: 44ch; margin: 0; font-size: 12px; line-height: 1.7; }
+.p-chart-data-scroll { isolation: isolate; scroll-padding-block: 44px 12px; }

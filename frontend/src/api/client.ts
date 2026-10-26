@@ -1,5 +1,5 @@
 import { apiUrl } from './urls.ts';
-import { apiErrorMessage } from './errors.ts';
+import { apiErrorMessage, flowSenseUnreachableMessage, flowSenseUnavailableMessage } from './errors.ts';
 import type {
   GraphStatus,
   GeoJsonEdgeFeature,
@@ -21,10 +21,15 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
       headers: { 'Content-Type': 'application/json', 'X-FlowSense-Key': 'flowsense-operator-v1', ...init?.headers },
       signal: controller.signal,
+    }).catch(error => {
+      if (error instanceof TypeError && !controller.signal.aborted) throw new Error(flowSenseUnreachableMessage);
+      throw error;
     });
     if (!res.ok) {
       const payload: unknown = await res.json().catch(() => null);
-      throw new Error(apiErrorMessage(payload, `API ${res.status}: ${res.statusText}`));
+      const message = apiErrorMessage(payload, res.status >= 500 ? flowSenseUnavailableMessage : `API ${res.status}: ${res.statusText}`);
+      if (res.status >= 500 && message === 'The operation could not be completed.') throw new Error(flowSenseUnavailableMessage);
+      throw new Error(message);
     }
     return await res.json();
   } catch (error) {

@@ -1,0 +1,8 @@
+.p-workspace-loading { display: grid; align-content: start; gap: 28px; }
+.p-workspace-loading-copy { display: grid; justify-items: start; gap: 12px; max-width: 620px; padding-block: 20px; }
+.p-workspace-loading-icon { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 8px; border: 1px solid var(--brand-border); border-radius: 14px; background: var(--brand-surface); color: var(--brand-link); }
+.p-workspace-loading h1 { margin: 0; color: var(--brand-ink); font-size: clamp(24px, 4vw, 32px); font-weight: 550; line-height: 1.35; overflow-wrap: anywhere; }
+.p-workspace-loading p { margin: 0; max-width: 62ch; color: var(--brand-muted); font-size: 14px; line-height: 1.8; }
+.p-workspace-loading-outline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.p-workspace-loading-outline > span { height: 100px; border: 1px dashed var(--brand-border); border-radius: 8px; background: var(--brand-surface); }
+@media (max-width: 760px) { .p-workspace-loading-outline { grid-template-columns: 1fr; gap: 12px; } .p-workspace-loading-outline > span { height: 64px; } }

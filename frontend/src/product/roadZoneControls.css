@@ -1,0 +1,17 @@
+.p-platform .p-zone-toolbar { gap: 12px; padding: 16px; background: #172124; border-color: #52777b; font-size: 12px; line-height: 1.7; }
+.p-platform .p-zone-toolbar > span { font-size: 12px; line-height: 1.7; }
+.p-platform .p-zone-toolbar > div { gap: 8px; }
+.p-platform .p-zone-toolbar button { min-height: 44px; max-width: 100%; padding: 9px 12px; background: #20383a; color: #f2f3f1; border-color: #52777b; font: inherit; text-align: left; white-space: normal; }
+.p-zone-toolbar :is(button, input):focus-visible { outline: 3px solid #68c7ce; outline-offset: 3px; }
+.p-zone-toolbar > label { min-height: 44px; align-content: center; }
+.p-zone-line-position { display: grid; gap: 6px; }
+.p-zone-line-position > input { width: 100%; height: 44px; margin: 0; accent-color: #68c7ce; }
+.p-zone-line-position > small { color: #b9e6e8; font-size: 11px; line-height: 1.7; }
+.p-platform .p-zone-toolbar .p-zone-save-guidance { margin: 0; padding: 10px 12px; border-left: 2px solid #68c7ce; border-radius: 0 6px 6px 0; background: #20383a; color: #dceef0; font-size: 12px; line-height: 1.7; }
+.p-zone-editor > svg:focus-visible { outline: 3px solid #68c7ce; outline-offset: -4px; }
+.p-platform .p-zone-toolbar .p-zone-keyboard-help { margin: 0; color: #b9e6e8; font-size: 12px; line-height: 1.7; }
+.p-zone-keyboard-guide { padding: 0 12px; border: 1px solid #52777b; border-radius: 8px; }
+.p-zone-keyboard-guide > summary { min-height: 44px; align-content: center; color: #b9e6e8; cursor: pointer; }
+.p-zone-keyboard-guide > summary:focus-visible { outline: 3px solid #68c7ce; outline-offset: 3px; }
+.p-zone-keyboard-guide[open] { padding-bottom: 12px; }
+.p-zone-keyboard-guide > button { margin-top: 12px; }

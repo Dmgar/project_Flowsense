@@ -1,0 +1,30 @@
+.p-platform .p-map-layer-menu.p-map-layer-panel { box-sizing: border-box; width: min(300px, calc(100vw - 86px)); max-height: min(460px, calc(100% - 96px), calc(100dvh - 180px)); padding: 14px; overflow-y: auto; overscroll-behavior: contain; border-radius: 8px; background: var(--brand-surface) !important; border-color: var(--brand-border) !important; color: var(--brand-ink) !important; scrollbar-width: thin; }
+.p-map-layer-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--brand-border); }
+.p-map-layer-panel .p-map-layer-header strong { margin: 0; color: var(--brand-ink); font-size: 13px; font-weight: 600; line-height: 1.5; }
+.p-map-layer-panel .p-map-layer-header small { margin: 4px 0 0; color: var(--brand-muted); font-size: 11px; line-height: 1.5; }
+.p-map-layer-close { display: grid; place-items: center; flex: none; width: 36px; min-height: 36px; margin: -5px -5px 0 0; padding: 0; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--brand-muted); cursor: pointer; }
+.p-map-layer-close:hover { border-color: var(--brand-border); background: var(--brand-selection); }
+.p-map-layer-panel fieldset { min-width: 0; margin: 6px 0 0; padding: 0; border: 0; }
+.p-map-layer-panel fieldset label { display: flex; align-items: flex-start; gap: 10px; min-height: 56px; padding: 12px 0; border-bottom: 1px solid var(--brand-border); }
+.p-map-layer-panel fieldset label > input { flex: none; width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--brand-action); }
+.p-map-layer-panel fieldset label > span { min-width: 0; }
+.p-map-layer-panel fieldset label b { color: var(--brand-ink); font-size: 12px; font-weight: 550; line-height: 1.5; }
+.p-map-layer-panel fieldset label small { margin: 4px 0 0; color: var(--brand-muted); font-size: 10px; line-height: 1.6; }
+.p-map-layer-panel fieldset label.unavailable { cursor: default; }
+.p-map-layer-panel .p-map-layer-context { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 10px; border-radius: 5px; background: var(--brand-selection); color: var(--brand-muted); font-size: 10px; line-height: 1.7; }
+.p-map-layer-context > svg { flex: none; margin-top: 2px; color: var(--brand-link); }
+html[data-theme] .p-platform .p-map-layer-menu.p-map-layer-panel, html[data-theme] .p-platform .p-map-coverage.p-map-source-tip { background: var(--brand-surface) !important; border-color: var(--brand-border) !important; color: var(--brand-ink) !important; }
+html[data-theme] .p-platform .p-map-controls .p-map-actions > button { background: var(--brand-surface) !important; border-color: var(--brand-border) !important; color: var(--brand-ink) !important; }
+html[data-theme] .p-platform .p-map-controls .p-map-actions > button[aria-expanded="true"] { background: var(--brand-selection) !important; border-color: var(--brand-focus) !important; color: var(--brand-link) !important; }
+.p-map-layer-panel :is(button, input):focus-visible, .p-map-actions > button:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-platform .p-map-coverage.p-map-source-tip { display: flex; align-items: flex-start; gap: 9px; max-width: min(310px, calc(100% - 75px)); padding: 12px; border-radius: 7px; border-color: var(--brand-border) !important; background: var(--brand-surface) !important; color: var(--brand-ink) !important; pointer-events: auto; }
+.p-map-source-tip > .p-map-source-tip-icon { display: grid; place-items: center; flex: none; width: 28px; height: 28px; margin: 0; border-radius: 7px; background: var(--brand-selection); color: var(--brand-link); }
+.p-map-source-tip > .p-map-source-tip-copy { display: grid; gap: 5px; flex: 1; min-width: 0; margin: 0; }
+.p-map-source-tip-copy b { color: var(--brand-ink); font-size: 11px; line-height: 1.5; }
+.p-map-source-tip-copy small, .p-map-source-limit { color: var(--brand-muted); font-size: 10px; line-height: 1.6; }
+.p-map-source-tip .p-map-coverage-action { min-height: 36px; margin: 2px 0 0; text-align: left; }
+.p-map-source-tip > .p-map-tip-dismiss { display: grid; place-items: center; flex: none; width: 28px; min-height: 28px; margin: -4px -4px 0 0; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--brand-muted); cursor: pointer; }
+.p-map-source-tip > .p-map-tip-dismiss:hover { background: var(--brand-selection); }
+.p-platform .p-map-coverage-show { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 7px 10px; border: 1px solid var(--brand-border); border-radius: 5px; background: var(--brand-surface); color: var(--brand-link); font-size: 11px; cursor: pointer; }
+.p-map-source-tip :is(button, a):focus-visible, .p-map-coverage-show:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 2px; }
+@media (max-width: 760px) { .p-map-layer-close { width: 44px; min-height: 44px; } .p-map-source-tip > .p-map-tip-dismiss { width: 36px; min-height: 44px; } .p-platform .p-map-coverage-show, .p-map-source-tip .p-map-coverage-action { min-height: 44px; } }

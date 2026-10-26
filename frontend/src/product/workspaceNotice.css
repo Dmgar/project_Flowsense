@@ -1,0 +1,12 @@
+.p-platform .p-toast.p-workspace-notice { position: fixed; display: flex; align-items: flex-start; gap: 12px; left: auto; right: 24px; bottom: 24px; width: min(440px, calc(100vw - 48px)); min-width: 0; max-width: none; padding: 18px; border: 1px solid var(--brand-border); border-left: 3px solid var(--brand-focus); border-radius: 9px; background: var(--brand-surface); color: var(--brand-ink); box-shadow: 0 12px 48px #00000030; backdrop-filter: none; transform: none; animation: fs-notice-arrive .2s ease-out both; }
+.p-workspace-notice-icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 8px; background: var(--brand-selection); color: var(--brand-link); }
+.p-workspace-notice-copy { flex: 1; min-width: 0; }
+.p-workspace-notice-copy > strong { display: block; margin-bottom: 7px; color: var(--brand-ink); font-size: 12px; font-weight: 600; line-height: 1.5; }
+.p-workspace-notice-message { max-height: min(220px, 35dvh); margin: 0; overflow-y: auto; overscroll-behavior: contain; color: var(--brand-ink); font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; scrollbar-width: thin; scrollbar-color: var(--brand-border) transparent; }
+.p-workspace-notice-copy > small { display: block; margin-top: 9px; color: var(--brand-muted); font-size: 10px; line-height: 1.6; }
+.p-platform .p-workspace-notice > .p-workspace-notice-close { display: grid; place-items: center; flex: none; width: 36px; min-height: 36px; margin: -5px -5px 0 0; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--brand-muted); cursor: pointer; }
+.p-platform .p-workspace-notice > .p-workspace-notice-close:hover { background: var(--brand-selection); border-color: var(--brand-border); color: var(--brand-link); }
+.p-workspace-notice :is(button, [tabindex]):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; border-radius: 3px; }
+@keyframes fs-notice-arrive { from { opacity: 0; translate: 0 7px; } to { opacity: 1; translate: 0 0; } }
+@media (max-width: 760px) { .p-platform .p-toast.p-workspace-notice { right: 12px; left: 12px; bottom: max(12px, env(safe-area-inset-bottom)); width: auto; padding: 16px; gap: 10px; } .p-platform .p-workspace-notice > .p-workspace-notice-close { width: 44px; min-height: 44px; } .p-workspace-notice-message { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .p-platform .p-toast.p-workspace-notice { animation: none; } }

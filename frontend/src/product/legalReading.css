@@ -1,0 +1,47 @@
+.p-legal-page .p-legal-nav { gap: 8px; padding-block: 12px; border-color: var(--brand-border); }
+.p-platform .p-legal-page .p-legal-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 9px 12px; border: 1px solid transparent; border-radius: 6px; color: var(--brand-muted); font-size: 12px; line-height: 1.5; }
+.p-platform .p-legal-page .p-legal-nav a[aria-current="page"] { border-color: var(--brand-focus); background: var(--brand-selection); color: var(--brand-link); font-weight: 600; }
+.p-legal-reading-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 32px; align-items: start; }
+.p-legal-reading-index { position: sticky; top: 20px; min-width: 0; }
+.p-legal-contents { border: 1px solid var(--brand-border); border-radius: 7px; background: var(--brand-surface); }
+.p-legal-contents summary { display: flex; align-items: center; gap: 9px; min-height: 56px; padding: 14px; color: var(--brand-ink); font-size: 12px; font-weight: 600; line-height: 1.5; cursor: pointer; list-style: none; }
+.p-legal-contents summary::-webkit-details-marker { display: none; }
+.p-legal-contents summary > svg { flex: none; color: var(--brand-link); }
+.p-legal-contents summary > svg:last-child { margin-left: auto; }
+.p-legal-contents[open] summary > svg:last-child { rotate: 45deg; }
+.p-legal-contents summary small { display: block; margin-top: 3px; color: var(--brand-muted); font-size: 10px; font-weight: 400; }
+.p-legal-contents nav { display: grid; max-height: calc(100dvh - 180px); padding: 5px 8px 10px; overflow-y: auto; overscroll-behavior: contain; border-top: 1px solid var(--brand-border); scrollbar-width: thin; }
+.p-legal-contents nav a { display: flex; align-items: center; min-height: 44px; padding: 9px 7px; border-radius: 4px; color: var(--brand-muted); font-size: 11px; line-height: 1.6; text-decoration: none; }
+.p-legal-contents nav a.subsection { padding-left: 18px; font-size: 10px; }
+.p-legal-contents nav a:hover { background: var(--brand-selection); color: var(--brand-link); }
+.p-legal-document-body { min-width: 0; }
+.p-platform .p-legal-page .p-legal-copy { max-width: 72ch; color: var(--brand-ink); font-size: 15px; line-height: 1.85; }
+.p-legal-page .p-legal-copy :is(h2, h3, h4), .p-legal-page h1 { scroll-margin-block: 24px; }
+.p-legal-page .p-legal-copy h2 { margin-top: 32px; margin-bottom: 14px; font-size: 22px; line-height: 1.4; }
+.p-legal-page .p-legal-copy h2:first-child { margin-top: 0; }
+.p-legal-page .p-legal-copy h3 { margin-top: 30px; margin-bottom: 12px; font-size: 17px; line-height: 1.5; }
+.p-legal-page .p-legal-copy h4 { margin: 24px 0 10px; color: var(--brand-ink); font-size: 15px; line-height: 1.5; }
+.p-legal-page .p-legal-copy p { margin-bottom: 17px; }
+.p-legal-page .p-legal-copy li { margin-block: 10px; }
+.p-legal-page .p-legal-copy a { color: var(--brand-link); overflow-wrap: anywhere; text-underline-offset: 3px; }
+.p-legal-reading-actions { display: flex; margin-top: 24px; padding-block: 16px; border-top: 1px solid var(--brand-border); }
+.p-legal-reading-actions a { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--brand-link); font-size: 12px; text-underline-offset: 3px; }
+.p-legal-reading-actions a > svg { rotate: -90deg; }
+.p-platform .p-legal-page .p-legal-footnote { max-width: 760px; padding: 16px; border: 1px solid var(--brand-border); border-radius: 6px; background: var(--brand-selection); color: var(--brand-muted); font-size: 12px; line-height: 1.75; }
+.p-legal-page :is(a, summary, h1, h2, h3, h4):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; border-radius: 3px; }
+.p-platform .p-policy-acceptance { padding: 16px; border-color: var(--brand-border); border-radius: 7px; background: var(--brand-bg); }
+.p-platform .p-policy-acceptance legend { padding-inline: 6px; color: var(--brand-ink); font-size: 12px; line-height: 1.5; }
+.p-platform .p-policy-acceptance .p-operator-reference { display: grid; gap: 8px; margin: 0 0 16px; color: var(--brand-ink); font-size: 12px; }
+.p-platform .p-policy-acceptance .p-operator-reference input { min-height: 44px; }
+.p-platform .p-policy-acceptance .p-operator-reference small, .p-platform .p-policy-acceptance > small { color: var(--brand-muted); font-size: 11px; line-height: 1.7; }
+.p-platform .p-policy-acceptance .p-policy-choice { align-items: flex-start; min-height: 44px; gap: 10px; margin: 8px 0; padding: 7px 0; color: var(--brand-ink); font-size: 12px; line-height: 1.7; }
+.p-platform .p-policy-acceptance .p-policy-choice > input { width: 18px; height: 18px; min-height: 18px; margin: 2px 0 0; padding: 0; accent-color: var(--brand-action); }
+.p-platform .p-policy-acceptance .p-policy-choice a { color: var(--brand-link); text-underline-offset: 3px; }
+.p-platform .p-policy-acceptance .p-policy-choice input:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-platform .p-policy-acceptance .p-policy-requirements { margin: 0 0 16px; color: var(--brand-muted); font-size: 11px; line-height: 1.75; }
+.p-platform .p-policy-acceptance .p-policy-choice { padding: 10px; border: 1px solid var(--brand-border); border-radius: 5px; background: var(--brand-surface); }
+.p-platform .p-policy-acceptance .p-policy-choice:has(input:checked) { border-color: var(--brand-focus); background: var(--brand-selection); }
+.p-platform .p-policy-acceptance .p-policy-choice:focus-within { outline: 2px solid var(--brand-focus); outline-offset: 2px; }
+.p-platform .p-policy-acceptance .p-policy-choice a:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; border-radius: 2px; }
+@media (max-width: 1000px) { .p-legal-reading-layout { grid-template-columns: 1fr; gap: 22px; } .p-legal-reading-index { position: static; } .p-legal-contents nav { max-height: 280px; } }
+@media (max-width: 760px) { .p-platform .p-legal-page .p-legal-copy { font-size: 16px; line-height: 1.8; } .p-legal-page .p-legal-copy h2 { font-size: 22px; } .p-legal-page .p-legal-copy h3 { font-size: 18px; } .p-platform .p-policy-acceptance { padding: 12px; } .p-legal-contents nav a { font-size: 13px; } .p-legal-contents nav a.subsection { font-size: 12px; } }

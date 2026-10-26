@@ -55,6 +55,23 @@ test('server errors retain the actionable detail supplied by the API', async t =
   await assert.rejects(getObservation('camera-a'), /The camera is not responding/);
 });
 
+test('network failures explain the service connection problem without exposing browser error text', async t => {
+  t.mock.method(globalThis, 'fetch', async () => { throw new TypeError('Failed to fetch'); });
+  await assert.rejects(getObservation('camera-a'), error => {
+    assert.equal(error.message, 'Unable to reach the FlowSense service. Check your connection or service status, then retry.');
+    assert.doesNotMatch(error.message, /Failed to fetch|operation could not be completed/i);
+    return true;
+  });
+});
+
+test('gateway failures without an API detail tell the operator what to retry', async t => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('Bad Gateway', { status: 502 }));
+  await assert.rejects(getObservation('camera-a'), error => {
+    assert.equal(error.message, 'The FlowSense service could not complete this request. Check service status and retry.');
+    return true;
+  });
+});
+
 test('validation errors identify the input field instead of showing an object placeholder', async t => {
   t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ detail: [{ loc: ['body', 'lat'], msg: 'Input should be less than or equal to 90' }] }), { status: 422 }));
   await assert.rejects(getObservation('camera-a'), /lat: Input should be less than or equal to 90/);

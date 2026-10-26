@@ -1,0 +1,10 @@
+.p-platform .p-coverage-cities > button { min-width: 0; color: var(--brand-ink); }
+.p-coverage-cities > button > span > b { min-width: 0; overflow-wrap: anywhere; }
+.p-platform .p-coverage-cities .p-coverage-open { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--brand-border); color: var(--brand-link); font-size: 11px; line-height: 1.6; }
+.p-coverage-open > svg { flex: none; align-self: center; }
+.p-coverage-dashboard :is(.p-coverage-cities > button, .p-road-queue summary, .p-road-queue button):focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; border-radius: 5px; }
+.p-platform .p-road-queue summary { min-height: 44px; align-content: center; font-size: 12px; line-height: 1.7; }
+.p-platform .p-road-queue li b { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.p-platform .p-road-queue li :is(small, span), .p-platform .p-road-queue > p { font-size: 11px; line-height: 1.7; }
+.p-platform .p-road-queue li .p-text-button { min-height: 44px; white-space: normal; text-align: left; }
+@media (max-width: 760px) { .p-platform .p-road-queue li { align-items: stretch; flex-direction: column; gap: 8px; } .p-platform .p-road-queue li .p-text-button { align-self: flex-start; max-width: 100%; } }

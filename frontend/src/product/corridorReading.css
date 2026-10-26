@@ -1,0 +1,11 @@
+.p-corridor-reading-note { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 20px; padding: 14px 16px; border: 1px solid var(--brand-border); border-radius: 7px; background: var(--brand-selection); color: var(--brand-muted); }
+.p-corridor-reading-note > svg { flex: none; margin-top: 2px; color: var(--brand-link); }
+.p-corridor-reading-note p { max-width: 900px; margin: 0; font-size: 12px; line-height: 1.75; }
+.p-platform .p-corridor-screen .p-toggle-label { min-height: 44px; line-height: 1.6; }
+.p-corridor-screen .p-toggle-label:has(input:disabled) { color: var(--brand-muted); }
+.p-platform .p-corridor-screen .p-segment-selector { flex-wrap: wrap; gap: 8px; }
+.p-platform .p-corridor-screen .p-segment-selector button { min-height: 44px; color: var(--brand-muted); }
+.p-platform .p-corridor-screen .p-segment-selector button[aria-pressed="true"] { border-color: var(--brand-focus); background: var(--brand-selection); color: var(--brand-link); }
+.p-corridor-screen .p-segment-selector button:focus-visible { outline: 3px solid var(--brand-focus); outline-offset: 3px; }
+.p-platform .p-corridor-screen .p-insight-action p { color: var(--brand-muted); font-size: 12px; line-height: 1.8; }
+.p-platform .p-corridor-screen .p-insight-action .p-button { min-height: 44px; white-space: normal; text-align: left; }
