@@ -15,7 +15,7 @@ test('live video retries keep recovering while their request rate stays bounded'
 
 test('temporary source timeouts explain automatic recovery without overriding other camera states', () => {
   assert.equal(cameraConnectionMessage('Reconnecting', true, 'Generic decoder error.'),
-    'The latest source check timed out. FlowSense will keep retrying the live video automatically.');
+    'The latest source check timed out. Waiting for the video connection to recover.');
   assert.equal(cameraConnectionMessage('Live', true, ''), 'Waiting for the video source…');
   assert.equal(cameraConnectionMessage('Reconnecting', false, 'Network interrupted.'), 'Network interrupted.');
 });

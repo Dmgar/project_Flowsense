@@ -46,6 +46,8 @@ TRACK_TIMING_POLICY_VERSION = 1
 MONITOR_LEASE_SECONDS = 120
 MAX_LIVE_RECONNECT_DELAY_SECONDS = 30
 HIGH_RES_MIN_FREE_MEMORY_BYTES = 2_000_000_000
+# Live video is view-only. Do not persist detection-triggered MP4 segments.
+VIDEO_RECORDING_ENABLED = False
 
 
 def available_system_memory_bytes():
@@ -1354,7 +1356,7 @@ class VideoService:
 video_service = VideoService(DetectionStore(
     settings.DATA_PROCESSED_DIR / f"video_{settings.CITY_PROFILE}",
     settings.VIDEO_EVIDENCE_MAX_BYTES,
-    settings.VIDEO_RECORD_EVIDENCE,
+    VIDEO_RECORDING_ENABLED,
     min_free_bytes=settings.VIDEO_EVIDENCE_MIN_FREE_BYTES,
     clip_directory=settings.VIDEO_EVIDENCE_DIR,
 ))

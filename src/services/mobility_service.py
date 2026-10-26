@@ -71,6 +71,22 @@ class MobilityService:
             db.execute("CREATE TABLE IF NOT EXISTS mobility_cases (id TEXT PRIMARY KEY, signal_id TEXT UNIQUE, payload TEXT NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS connected_cameras (id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS camera_video_health (camera_id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
+            db.execute("""CREATE TABLE IF NOT EXISTS policy_acceptance_events (
+                receipt_id TEXT PRIMARY KEY, accepted_at TEXT NOT NULL, form_type TEXT NOT NULL,
+                operator_reference TEXT NOT NULL, terms_version TEXT NOT NULL, terms_sha256 TEXT NOT NULL,
+                privacy_version TEXT NOT NULL, privacy_sha256 TEXT NOT NULL,
+                terms_accepted INTEGER NOT NULL CHECK (terms_accepted = 1),
+                privacy_acknowledged INTEGER NOT NULL CHECK (privacy_acknowledged = 1),
+                capture_method TEXT NOT NULL, actor_identity_strength TEXT NOT NULL
+            )""")
+            db.execute("""CREATE TRIGGER IF NOT EXISTS policy_acceptance_events_no_update
+                BEFORE UPDATE ON policy_acceptance_events BEGIN
+                    SELECT RAISE(ABORT, 'Policy acceptance events are append-only.');
+                END""")
+            db.execute("""CREATE TRIGGER IF NOT EXISTS policy_acceptance_events_no_delete
+                BEFORE DELETE ON policy_acceptance_events BEGIN
+                    SELECT RAISE(ABORT, 'Policy acceptance events are append-only.');
+                END""")
             for payload, in db.execute("SELECT payload FROM connected_cameras"):
                 item = json.loads(payload)
                 self.cameras[item["id"]] = item
@@ -80,6 +96,43 @@ class MobilityService:
                 except (TypeError, json.JSONDecodeError):
                     continue
         self.refresh_route_metadata()
+
+    def record_policy_acceptance(self, payload):
+        """Append a policy evidence receipt for a submitted, explicit pair of choices."""
+        if payload.get("terms_accepted") is not True or payload.get("privacy_acknowledged") is not True:
+            raise ValueError("Both separate policy choices are required.")
+        form_type = payload["form_type"]
+        if form_type not in {"camera_connection", "case_review", "emergency_corridor"}:
+            raise ValueError("Unknown form type.")
+        operator_reference = " ".join(payload["operator_reference"].split())
+        if not 2 <= len(operator_reference) <= 120:
+            raise ValueError("Enter an operator name or staff ID between 2 and 120 characters.")
+        root = Path(__file__).resolve().parents[2]
+        policy_files = {
+            "terms": root / "docs/legal/TERMS_OF_SERVICE.md",
+            "privacy": root / "docs/legal/PRIVACY_NOTICE.md",
+        }
+        version = "2026-10-24"
+        try:
+            digests = {key: hashlib.sha256(path.read_bytes()).hexdigest()
+                       for key, path in policy_files.items()}
+        except OSError as error:
+            raise RuntimeError("The policy documents could not be verified.") from error
+        receipt_id = str(uuid.uuid4())
+        accepted_at = now()
+        with closing(sqlite3.connect(self.db_path, timeout=10)) as db, db:
+            db.execute("""INSERT INTO policy_acceptance_events
+                (receipt_id, accepted_at, form_type, operator_reference, terms_version, terms_sha256,
+                 privacy_version, privacy_sha256, terms_accepted, privacy_acknowledged,
+                 capture_method, actor_identity_strength)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)""",
+                (receipt_id, accepted_at, form_type, operator_reference, version, digests["terms"],
+                 version, digests["privacy"], "two_independent_checkbox_choices_on_form_submit",
+                 "self_reported_unverified_operator_reference"))
+        return {"receipt_id": receipt_id, "accepted_at": accepted_at,
+                "form_type": form_type, "terms_version": version, "terms_sha256": digests["terms"],
+                "privacy_version": version, "privacy_sha256": digests["privacy"],
+                "identity_strength": "self-reported, not authenticated"}
 
     def refresh_route_metadata(self):
         """Apply newly published, exact-match route metadata without restarting the API."""

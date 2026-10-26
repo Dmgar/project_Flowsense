@@ -1,4 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
+from datetime import datetime, timezone
+import hashlib
+from pathlib import Path
+import sqlite3
 from types import SimpleNamespace
 import cv2
 import numpy as np
@@ -50,6 +55,59 @@ def test_case_creation_is_idempotent_under_concurrent_requests(mobility):
         results = list(executor.map(lambda _: mobility.create_case(payload()), range(4)))
     assert len({item["id"] for item in results}) == 1
     assert len(mobility.cases()) == 1
+
+
+def test_policy_acceptance_receipt_is_traceable_and_append_only(mobility):
+    receipt = mobility.record_policy_acceptance({
+        "form_type": "case_review",
+        "operator_reference": "  operator   work-handle  ",
+        "terms_accepted": True,
+        "privacy_acknowledged": True,
+    })
+    assert len(receipt["receipt_id"]) == 36
+    accepted_at = datetime.fromisoformat(receipt["accepted_at"])
+    assert accepted_at.tzinfo == timezone.utc
+    assert receipt["form_type"] == "case_review"
+    assert receipt["identity_strength"] == "self-reported, not authenticated"
+
+    root = Path(__file__).resolve().parents[1]
+    expected_terms_hash = hashlib.sha256((root / "docs/legal/TERMS_OF_SERVICE.md").read_bytes()).hexdigest()
+    expected_privacy_hash = hashlib.sha256((root / "docs/legal/PRIVACY_NOTICE.md").read_bytes()).hexdigest()
+    with closing(sqlite3.connect(mobility.db_path)) as db:
+        row = db.execute("""SELECT accepted_at, form_type, operator_reference,
+            terms_version, terms_sha256, privacy_version, privacy_sha256,
+            terms_accepted, privacy_acknowledged, capture_method, actor_identity_strength
+            FROM policy_acceptance_events WHERE receipt_id = ?""", (receipt["receipt_id"],)).fetchone()
+    assert row == (
+        receipt["accepted_at"], "case_review", "operator work-handle",
+        "2026-10-24", expected_terms_hash, "2026-10-24", expected_privacy_hash,
+        1, 1, "two_independent_checkbox_choices_on_form_submit",
+        "self_reported_unverified_operator_reference",
+    )
+
+    with closing(sqlite3.connect(mobility.db_path)) as db, db:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            db.execute("UPDATE policy_acceptance_events SET operator_reference = 'changed' WHERE receipt_id = ?", (receipt["receipt_id"],))
+    with closing(sqlite3.connect(mobility.db_path)) as db, db:
+        with pytest.raises(sqlite3.IntegrityError, match="append-only"):
+            db.execute("DELETE FROM policy_acceptance_events WHERE receipt_id = ?", (receipt["receipt_id"],))
+    with closing(sqlite3.connect(mobility.db_path)) as db:
+        assert db.execute("SELECT operator_reference FROM policy_acceptance_events WHERE receipt_id = ?", (receipt["receipt_id"],)).fetchone() == ("operator work-handle",)
+
+
+def test_policy_acceptance_endpoint_rejects_incomplete_choices(client, mobility, monkeypatch):
+    import src.api.routes.mobility as routes
+    monkeypatch.setattr(routes, "mobility_service", mobility)
+    endpoint = "/api/v1/mobility/legal/acceptances"
+    data = {"form_type": "camera_connection", "operator_reference": "staff-7", "terms_accepted": True, "privacy_acknowledged": True}
+    accepted = client.post(endpoint, json=data)
+    assert accepted.status_code == 201
+    assert accepted.json()["receipt_id"]
+    assert accepted.json()["terms_sha256"] and accepted.json()["privacy_sha256"]
+    rejected = client.post(endpoint, json={**data, "privacy_acknowledged": False})
+    assert rejected.status_code == 400
+    with closing(sqlite3.connect(mobility.db_path)) as db:
+        assert db.execute("SELECT COUNT(*) FROM policy_acceptance_events").fetchone() == (1,)
 
 
 def test_human_review_state_machine_and_audit_survive_restart(mobility):

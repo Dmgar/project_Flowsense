@@ -395,6 +395,13 @@ html[data-theme="dark"] .fs-first-visit-close { color: #b9e6e8 !important; }
 .fs-tour-compact-title { display: block; max-width: 32ch; margin-top: 4px; color: #f2f3f1; font-size: 13px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
 .fs-coachmark-header-actions { flex-wrap: wrap; justify-content: flex-end; margin-left: auto; }
 .p-platform .fs-coachmark-header-actions .fs-tour-return-focus { width: auto; min-height: 40px; margin: 0; padding: 8px 10px; gap: 7px; border-radius: 8px; font-size: 11px; }
+.p-platform .fs-coachmark.exploring { width: min(520px, calc(100vw - 24px)); max-height: none; overflow: visible; }
+.p-platform .fs-coachmark.exploring .fs-coachmark-top { min-height: 52px; }
+.fs-tour-explore-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px 14px; border-top: 1px solid #384649; }
+.fs-tour-explore-actions p { margin: 0; color: #c8e4e5; font-size: 12px; line-height: 1.5; }
+.fs-tour-explore-actions .p-button { flex: none; min-height: 42px; }
+.p-platform:has(.fs-tour-layer .fs-coachmark.exploring) { --fs-tour-reserved-space: max(76px, calc(env(safe-area-inset-bottom) + 60px)); }
+@media (max-width: 520px) { .fs-tour-explore-actions { align-items: flex-start; gap: 8px; padding: 10px 12px; } .fs-tour-explore-actions p { font-size: 11px; } .fs-tour-explore-actions .p-button { min-width: 104px; white-space: normal; } }
 @media (max-height: 560px) {
   .p-platform .fs-coachmark, .p-platform .fs-coachmark.mobile { max-height: 60dvh; }
   .p-platform .fs-tour-up-next { display: none; }

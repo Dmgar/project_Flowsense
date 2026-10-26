@@ -12,16 +12,7 @@
 - The operator reference is self-reported. This product has no authenticated user account, verified employee identity, or cryptographic link between a named person and a browser session. The ledger makes the submitted choices and policy text traceable; it does not prove who was at the keyboard or prevent a privileged host administrator from changing the SQLite file. Production needs authenticated principal IDs, restricted append-only audit access, backups, and retention controls before relying on it as strong evidence.
 - The event table blocks ordinary SQL `UPDATE` and `DELETE` operations with SQLite triggers. A privileged file/schema administrator can still bypass that protection. No public API is provided to read the operator references; authorized deployment staff can inspect `policy_acceptance_events` in the configured `mobility_cases_{CITY_PROFILE}.sqlite3` database. Restrict database access and export evidence under the operator’s own access controls.
 
-Authorized deployment staff can retrieve the evidence rows from that SQLite database with:
-
-```sql
-SELECT receipt_id, accepted_at, form_type, operator_reference,
-       terms_accepted, terms_version, terms_sha256,
-       privacy_acknowledged, privacy_version, privacy_sha256,
-       capture_method, actor_identity_strength
-FROM policy_acceptance_events
-ORDER BY accepted_at, receipt_id;
-```
+Authorized deployment staff can retrieve acceptance receipts from the configured database under the operator’s access controls. The application does not currently provide a user-facing audit export; protect the database and document who may access or disclose these records.
 
 ## Source, image, and data rights
 

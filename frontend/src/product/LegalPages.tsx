@@ -4,8 +4,9 @@ import cookies from '../legal/COOKIE_NOTICE.md?raw';
 import refunds from '../legal/REFUND_POLICY.md?raw';
 import review from '../legal/IMPLEMENTATION_REVIEW.md?raw';
 import { useId, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 import { Icon } from './ui';
+import { useProduct } from './store';
 import './legalReading.css';
 
 export type PolicyForm = 'camera_connection' | 'case_review' | 'emergency_corridor';
@@ -104,13 +105,25 @@ function Markdown({ content, idPrefix = 'legal' }: { content: string; idPrefix?:
 }
 
 export function LegalPage({ kind }: { kind: string }) {
+  const navigate = useProduct(state => state.navigate);
   const document = documents[kind];
   if (!document) return <div className="p-screen p-legal-page"><h1>Policy unavailable</h1><p>This policy could not be found. Open a listed document to continue.</p><a className="p-button" href="/legal/privacy">Open Privacy Notice<Icon name="arrow" size={15} /></a></div>;
   const idPrefix = `policy-${kind}`;
-  return <article className="p-screen p-legal-page"><div className="p-page-heading"><div><span className="p-eyebrow">{document.eyebrow}</span><h1 id={`${idPrefix}-title`} tabIndex={-1}>{document.title}</h1><p>FlowSense operator workspace · United States</p></div><a className="p-button" href="/legal/review"><Icon name="shield" size={15} />Implementation review</a></div><nav className="p-legal-nav" aria-label="Legal documents">{Object.entries(documents).map(([key, item]) => <a key={key} aria-current={key === kind ? 'page' : undefined} href={`/legal/${key}`}>{item.title}</a>)}</nav><div className="p-legal-reading-layout"><LegalContents content={document.content} idPrefix={idPrefix} title={document.title} /><div className="p-legal-document-body"><Markdown content={document.content} idPrefix={idPrefix} /><div className="p-legal-reading-actions"><a href={`#${idPrefix}-title`}>Back to document title<Icon name="arrow" size={14} /></a></div><p className="p-legal-footnote">These baseline documents describe the repository-visible product. The deploying organization must complete its identity and contact details and have counsel review the terms before production use.</p></div></div></article>;
+  const followLegalLink = (event: MouseEvent<HTMLAnchorElement>, path: string) => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(path);
+  };
+  return <article className="p-screen p-legal-page"><div className="p-page-heading"><div><span className="p-eyebrow">{document.eyebrow}</span><h1 id={`${idPrefix}-title`} tabIndex={-1}>{document.title}</h1><p>FlowSense operator workspace · United States</p></div><a className="p-button" href="/legal/review" onClick={event => followLegalLink(event, '/legal/review')}><Icon name="shield" size={15} />Implementation review</a></div><nav className="p-legal-nav" aria-label="Legal documents">{Object.entries(documents).map(([key, item]) => <a key={key} aria-current={key === kind ? 'page' : undefined} href={`/legal/${key}`} onClick={event => followLegalLink(event, `/legal/${key}`)}>{item.title}</a>)}<a href="/legal/review" onClick={event => followLegalLink(event, '/legal/review')}>U.S. review</a></nav><div className="p-legal-reading-layout"><LegalContents content={document.content} idPrefix={idPrefix} title={document.title} /><div className="p-legal-document-body"><Markdown content={document.content} idPrefix={idPrefix} /><p className="p-legal-footnote">These baseline documents describe the repository-visible product. The deploying organization must complete its identity and contact details and have counsel review the terms before production use.</p></div></div></article>;
 }
 
 export function LegalReviewPage() {
-  return <article className="p-screen p-legal-page"><div className="p-page-heading"><div><span className="p-eyebrow">U.S. BASELINE · ENGINEERING INVENTORY</span><h1 id="legal-review-title" tabIndex={-1}>Legal implementation review</h1><p>Repository-visible data flows and operator decisions that remain open.</p></div></div><div className="p-legal-reading-layout"><LegalContents content={review} idPrefix="legal-review" title="Legal implementation review" /><div className="p-legal-document-body"><Markdown content={review} idPrefix="legal-review" /><div className="p-legal-reading-actions"><a href="#legal-review-title">Back to document title<Icon name="arrow" size={14} /></a></div></div></div></article>;
+  const navigate = useProduct(state => state.navigate);
+  const followLegalLink = (event: MouseEvent<HTMLAnchorElement>, path: string) => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(path);
+  };
+  return <article className="p-screen p-legal-page"><div className="p-page-heading"><div><span className="p-eyebrow">U.S. BASELINE · ENGINEERING INVENTORY</span><h1 id="legal-review-title" tabIndex={-1}>Legal implementation review</h1><p>Repository-visible data flows and operator decisions that remain open.</p></div></div><nav className="p-legal-nav" aria-label="Legal documents">{Object.entries(documents).map(([key, item]) => <a key={key} href={`/legal/${key}`} onClick={event => followLegalLink(event, `/legal/${key}`)}>{item.title}</a>)}<a href="/legal/review" aria-current="page">U.S. review</a></nav><div className="p-legal-reading-layout"><LegalContents content={review} idPrefix="legal-review" title="Legal implementation review" /><div className="p-legal-document-body"><Markdown content={review} idPrefix="legal-review" /></div></div></article>;
 }
 

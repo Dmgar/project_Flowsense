@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { coachmarkPosition, nextTourIndex, targetPhase, sameCoachmarkPosition, tourCaseAvailability, tourCaseAvailabilityMessage, tourKey, tourRoute, tourSteps } from './journey';
+import { coachmarkPosition, nextTourIndex, targetPhase, sameCoachmarkPosition, tourCaseAvailability, tourCaseAvailabilityMessage, tourIndexForPath, tourKey, tourRoute, tourSteps } from './journey';
 import { useProduct } from './store';
 import { Icon } from './ui';
 
@@ -27,7 +27,10 @@ export function GuidedTour() {
   const [recenterRequest, setRecenterRequest] = useState(0);
   const [targetAvailable, setTargetAvailable] = useState(false);
   const [inspectingPage, setInspectingPage] = useState(false);
+  const [stepExplored, setStepExplored] = useState(false);
   const step = tourSteps[index];
+  const currentPageGuide = tourIndexForPath(path) === index;
+  const finishesHere = currentPageGuide || index === tourSteps.length - 1;
   const caseAvailability = tourCaseAvailability(index, { mode, casesLoaded, casesLoadStatus, caseCount });
   const caseNotice = caseAvailability ? tourCaseAvailabilityMessage(caseAvailability) : '';
   const caseActionAvailable = caseAvailability === 'ready' || caseAvailability === 'refreshing' || (caseAvailability === 'stale' && caseCount > 0);
@@ -53,6 +56,7 @@ export function GuidedTour() {
       const focusLost = !document.activeElement || document.activeElement === document.body;
       if (stepChanged) {
         setInspectingPage(false);
+        setStepExplored(false);
         const body = card.current?.querySelector<HTMLElement>('.fs-coachmark-body');
         if (body) body.scrollTop = 0;
       }
@@ -61,6 +65,18 @@ export function GuidedTour() {
     });
     return () => cancelAnimationFrame(frame);
   }, [index, catalogReady]);
+
+  useEffect(() => {
+    if (!inspectingPage) return;
+    const scope = document.querySelector('#product-content [data-journey-active="true"]');
+    const element = scope?.querySelector<HTMLElement>(step.target);
+    if (!element) return;
+    const markExplored = () => setStepExplored(true);
+    for (const eventName of ['click', 'input', 'change', 'submit']) element.addEventListener(eventName, markExplored, true);
+    return () => {
+      for (const eventName of ['click', 'input', 'change', 'submit']) element.removeEventListener(eventName, markExplored, true);
+    };
+  }, [index, inspectingPage, path, step.target, expected]);
 
   useEffect(() => {
     let alive = true;
@@ -158,10 +174,11 @@ export function GuidedTour() {
       if (modalOpen) return;
       const action = tourKey(event.key);
       if (action === 'close') { event.preventDefault(); close(); }
-      if ((action === 'next' || action === 'back') && document.activeElement === card.current) {
+      const guideHasFocus = Boolean(card.current?.contains(document.activeElement));
+      if ((action === 'next' || action === 'back') && guideHasFocus) {
         event.preventDefault();
         const state = useProduct.getState();
-        if (action === 'next' && index === tourSteps.length - 1) {
+        if (action === 'next' && finishesHere) {
           state.recordJourney('tour_completed');
           close();
         } else {
@@ -171,7 +188,7 @@ export function GuidedTour() {
     };
     window.addEventListener('keydown', keydown);
     return () => window.removeEventListener('keydown', keydown);
-  }, [index]);
+  }, [index, finishesHere]);
   function close() {
     const state = useProduct.getState();
     state.navigate(`${origin.current.path}${origin.current.search}`);
@@ -179,12 +196,12 @@ export function GuidedTour() {
     state.setDemoIndex(-1);
   }
   return <div className="fs-tour-layer">
-    {target ? <div className="fs-tour-spotlight" aria-hidden="true" style={{ left: target.left - 4, top: target.top - 4, width: target.width + 8, height: target.height + 8 }} /> : <div className="fs-tour-dim" aria-hidden="true" />}
-    <div ref={card} role="dialog" aria-modal="false" aria-labelledby="tour-title" aria-describedby={inspectingPage ? undefined : 'tour-detail tour-status'} aria-keyshortcuts="ArrowLeft ArrowRight Escape" tabIndex={-1} className={`fs-coachmark ${placement.mobile ? 'mobile' : ''}`} style={placement.mobile ? { left: placement.left, top: 'auto', bottom: 'max(12px, env(safe-area-inset-bottom))' } : { left: placement.left, top: placement.top }}>
-      <div className="fs-coachmark-top"><span aria-live="polite" aria-atomic="true">{`Step ${index + 1} of ${tourSteps.length}`}<strong id="tour-title" className="fs-tour-step-title">{step.title}</strong></span><div className="fs-coachmark-header-actions"><button type="button" className="fs-tour-inspect" aria-expanded={!inspectingPage} aria-controls="tour-explanation" onClick={() => { setInspectingPage(value => !value); if (inspectingPage) setRecenterRequest(value => value + 1); }}>{inspectingPage ? 'Read guide' : 'Inspect page'}</button>{!inspectingPage && targetAvailable && <button type="button" className="fs-tour-return-focus" aria-label="Show this step’s highlighted area" title="Bring the highlighted control into view" onClick={() => { card.current?.focus({ preventScroll: true }); setFocusOutsideGuide(false); setRecenterRequest(value => value + 1); }}>Show area<Icon name="arrow" size={14} /></button>}{!inspectingPage && focusOutsideGuide && !targetAvailable && <button type="button" className="fs-tour-return-focus" onClick={() => card.current?.focus({ preventScroll: true })}>Resume guide<Icon name="arrow" size={14} /></button>}<button className="p-icon-button" aria-label="Close guided tour" onClick={close}><Icon name="close" /></button></div></div>
-      <progress hidden={inspectingPage} max={tourSteps.length} value={index + 1} aria-label="Tour progress" />
+    {!inspectingPage && (target ? <div className="fs-tour-spotlight" aria-hidden="true" style={{ left: target.left - 4, top: target.top - 4, width: target.width + 8, height: target.height + 8 }} /> : <div className="fs-tour-dim" aria-hidden="true" />)}
+    <div ref={card} role="dialog" aria-modal="false" aria-labelledby="tour-title" aria-describedby={inspectingPage ? 'tour-explore-copy' : 'tour-detail tour-status'} aria-keyshortcuts="ArrowLeft ArrowRight Escape" tabIndex={-1} className={`fs-coachmark ${placement.mobile ? 'mobile' : ''}${inspectingPage ? ' exploring' : ''}`} style={placement.mobile || inspectingPage ? { left: placement.mobile ? placement.left : 12, top: 'auto', bottom: 'max(12px, env(safe-area-inset-bottom))' } : { left: placement.left, top: placement.top }}>
+      <div className="fs-coachmark-top"><span aria-live="polite" aria-atomic="true">{currentPageGuide ? 'Page guide' : `Step ${index + 1} of ${tourSteps.length}`}<strong id="tour-title" className="fs-tour-step-title">{step.title}</strong></span><div className="fs-coachmark-header-actions"><button type="button" className="fs-tour-inspect" aria-expanded={!inspectingPage} aria-controls="tour-explanation" onClick={() => { setInspectingPage(value => !value); if (inspectingPage) setRecenterRequest(value => value + 1); }}>{inspectingPage ? 'Back to guide' : 'Explore this page'}</button>{!inspectingPage && targetAvailable && <button type="button" className="fs-tour-return-focus" aria-label="Show this step’s highlighted area" title="Bring the highlighted control into view" onClick={() => { card.current?.focus({ preventScroll: true }); setFocusOutsideGuide(false); setRecenterRequest(value => value + 1); }}>Show area<Icon name="arrow" size={14} /></button>}{!inspectingPage && focusOutsideGuide && !targetAvailable && <button type="button" className="fs-tour-return-focus" onClick={() => card.current?.focus({ preventScroll: true })}>Resume guide<Icon name="arrow" size={14} /></button>}<button className="p-icon-button" aria-label="Close guided tour" onClick={close}><Icon name="close" /></button></div></div>
+      <progress hidden={inspectingPage || currentPageGuide} max={tourSteps.length} value={index + 1} aria-label="Tour progress" />
       <div id="tour-explanation" hidden={inspectingPage} className="fs-coachmark-body" role="region" aria-label="Step explanation and topic choices" tabIndex={0}>
-      <div className="fs-tour-up-next" aria-hidden="true"><span>{index === tourSteps.length - 1 ? 'Your next move' : 'Coming next'}</span><b>{tourSteps[index + 1]?.title || 'Explore at your own pace'}</b></div>
+      <div className="fs-tour-up-next" aria-hidden="true"><span>{currentPageGuide ? 'This page' : index === tourSteps.length - 1 ? 'Your next move' : 'Coming next'}</span><b>{currentPageGuide ? 'Explore this page at your own pace' : tourSteps[index + 1]?.title || 'Explore at your own pace'}</b></div>
       <div className="fs-coachmark-copy"><aside className="fs-tour-key-point" aria-label="Key point"><strong>KEY POINT</strong><p>{step.keyPoint}</p></aside><p id="tour-detail">{step.detail}</p></div>
       <p className="fs-tour-status" id="tour-status" role="status">{caseNotice || (phase === 'waiting' ? 'Finding this control… You can continue or close at any time.' : phase === 'fallback' ? targetAvailable ? 'This area is outside the viewing space. Choose Show area in the guide header to bring it back, or continue at your own pace.' : step.fallback : `Try this: ${step.action}. Continue when you are ready.`)}</p>
       {phase === 'ready' && (!caseAvailability || caseActionAvailable) && <button className="p-text-button" onClick={() => {
@@ -208,7 +225,8 @@ export function GuidedTour() {
       <details key={index} className="fs-tour-topics" onToggle={event => { if (event.currentTarget.open) event.currentTarget.querySelector<HTMLElement>('button[aria-current="step"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' }); }}><summary><span>Choose a topic</span><span className="fs-tour-topic-current">{String(index + 1).padStart(2, '0')} · {step.title}</span><Icon name="plus" size={15} /></summary><nav aria-label="Guided tour topics"><ol>{tourSteps.map((topic, topicIndex) => <li key={topic.title}><button type="button" aria-current={topicIndex === index ? 'step' : undefined} aria-label={`Go to step ${topicIndex + 1}: ${topic.title}`} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); card.current?.focus({ preventScroll: true }); useProduct.getState().setDemoIndex(topicIndex); }}><span className="fs-tour-topic-number" aria-hidden="true">{String(topicIndex + 1).padStart(2, '0')}</span><span className="fs-tour-topic-title">{topic.title}</span>{topicIndex === index && <small aria-hidden="true">Current</small>}</button></li>)}</ol></nav></details>
       <details className="fs-tour-keyboard-help"><summary><Icon name="info" size={14} />Keyboard navigation</summary><p>← / → change steps when the guide has focus. Tab moves through page controls. Escape returns to where you started.</p></details>
       </div>
-      <footer hidden={inspectingPage}><button className="p-text-button" onClick={close}>Skip tour</button><button className="p-button" disabled={index === 0} onClick={() => useProduct.getState().setDemoIndex(nextTourIndex(index, 'back'))}>Back</button><button className="p-button primary" onClick={() => { if (index === tourSteps.length - 1) { useProduct.getState().recordJourney('tour_completed'); close(); } else useProduct.getState().setDemoIndex(nextTourIndex(index, 'next')); }}>{index === tourSteps.length - 1 ? 'Finish tour' : 'Next'}<Icon name="arrow" size={14} /></button></footer>
+      <div hidden={!inspectingPage} className="fs-tour-explore-actions"><p id="tour-explore-copy" role="status">{stepExplored ? 'Good work. This page guide is complete.' : currentPageGuide ? 'Explore this page. Continue when you’re ready.' : `Explore this page. Next: ${tourSteps[index + 1]?.title || 'finish the tour'}.`}</p><button type="button" className="p-button primary" onClick={() => { setInspectingPage(false); if (finishesHere) { useProduct.getState().recordJourney('tour_completed'); close(); } else useProduct.getState().setDemoIndex(nextTourIndex(index, 'next')); }}>{finishesHere ? 'Finish guide' : stepExplored ? 'Good — next' : 'Done — Next'}<Icon name="arrow" size={14} /></button></div>
+      <footer hidden={inspectingPage}><button className="p-text-button" onClick={close}>Skip tour</button><button className="p-button" disabled={index === 0 || currentPageGuide} onClick={() => useProduct.getState().setDemoIndex(nextTourIndex(index, 'back'))}>Back</button><button className="p-button primary" onClick={() => { if (finishesHere) { useProduct.getState().recordJourney('tour_completed'); close(); } else useProduct.getState().setDemoIndex(nextTourIndex(index, 'next')); }}>{finishesHere ? 'Finish guide' : 'Next'}<Icon name="arrow" size={14} /></button></footer>
     </div>
   </div>;
 }

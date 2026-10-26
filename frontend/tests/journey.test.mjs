@@ -15,8 +15,8 @@ test('first-visit tour invitation is local, dismissible and safe when storage is
   dismissFirstVisitTour({ getItem() { return null; }, setItem() { throw new Error('blocked'); } });
 });
 
-test('the guided tour covers all thirteen workspace views and supports forward, backward, finish and dismissal', () => {
-  assert.equal(tourSteps.length, 13);
+test('the guided tour covers all fourteen destinations and supports forward, backward, finish and dismissal', () => {
+  assert.equal(tourSteps.length, 14);
   for (const step of tourSteps) {
     assert(step.route.startsWith('/'));
     assert(step.target.length > 0);
@@ -25,17 +25,17 @@ test('the guided tour covers all thirteen workspace views and supports forward, 
     assert(step.fallback.length > 0);
   }
   assert.equal(tourSteps[0].target, '.fs-tasks');
-  assert.match(tourSteps[0].action, /Review the available task choices/);
-  assert.match(tourSteps[2].fallback, /no video or analysis can be verified/);
+  assert.match(tourSteps[0].action, /Review the task choices/);
+  assert.match(tourSteps[2].fallback, /No video or analysis can be verified/);
   assert.match(tourSteps[4].fallback, /does not mean the queue is empty/);
   let index = 0;
-  for (let step = 1; step < 13; step++) { index = nextTourIndex(index, 'next'); assert.equal(index, step); }
+  for (let step = 1; step < tourSteps.length; step++) { index = nextTourIndex(index, 'next'); assert.equal(index, step); }
   assert.equal(nextTourIndex(index, 'next'), -1);
   assert.equal(nextTourIndex(0, 'back'), 0);
   assert.equal(nextTourIndex(3, 'back'), 2);
-  for (let step = 0; step < 13; step++) assert.equal(nextTourIndex(step, 'close'), -1);
+  for (let step = 0; step < tourSteps.length; step++) assert.equal(nextTourIndex(step, 'close'), -1);
   assert.deepEqual(journeyTasks.map(task => task.route), ['/explore', '/cameras', '/risk-signals', '/map']);
-  assert.deepEqual(new Set(tourSteps.map(step => step.route)), new Set(['/overview', '/explore', '/cameras', '/corridors/harbor', '/risk-signals', '/reports', '/map', '/watch', '/hotspots', '/pedestrians', '/emergency-corridor', '/settings', '/storyboard']));
+  assert.deepEqual(new Set(tourSteps.map(step => step.route)), new Set(['/overview', '/explore', '/cameras', '/corridors/harbor', '/risk-signals', '/reports', '/map', '/watch', '/hotspots', '/pedestrians', '/emergency-corridor', '/settings', '/legal/terms', '/storyboard']));
 });
 
 test('camera step uses registered context or a saved video source, never a fabricated camera', () => {
@@ -127,7 +127,7 @@ test('case-tour steps distinguish loading, failed, empty, refreshing, stale and 
   assert.equal(tourCaseAvailability(5, { ...base, casesLoadStatus: 'error' }), 'unavailable');
   assert.match(tourCaseAvailabilityMessage('unavailable'), /does not mean the queue is empty/);
   assert.equal(tourCaseAvailability(4, { ...base, casesLoaded: true, casesLoadStatus: 'ready' }), 'empty');
-  assert.match(tourCaseAvailabilityMessage('empty'), /loaded empty list/);
+  assert.match(tourCaseAvailabilityMessage('empty'), /No saved cases yet/);
   assert.equal(tourCaseAvailability(5, { ...base, casesLoaded: true, casesLoadStatus: 'refreshing', caseCount: 3 }), 'refreshing');
   assert.equal(tourCaseAvailability(4, { ...base, casesLoaded: true, casesLoadStatus: 'error', caseCount: 3 }), 'stale');
   assert.equal(tourCaseAvailability(4, { ...base, casesLoaded: true, casesLoadStatus: 'ready', caseCount: 2 }), 'ready');

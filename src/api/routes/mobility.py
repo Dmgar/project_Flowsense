@@ -78,6 +78,18 @@ class CaseReview(BaseModel):
     note: str = Field(min_length=3, max_length=2000)
 
 
+class PolicyAcceptance(BaseModel):
+    form_type: Literal["camera_connection", "case_review", "emergency_corridor"]
+    operator_reference: str = Field(min_length=2, max_length=120)
+    terms_accepted: bool
+    privacy_acknowledged: bool
+
+    @field_validator("operator_reference")
+    @classmethod
+    def normalize_operator_reference(cls, value: str) -> str:
+        return " ".join(value.split())
+
+
 @router.get("/cameras")
 def cameras(video_only: bool = False):
     return mobility_service.list_cameras(video_only=video_only)
@@ -133,6 +145,14 @@ def history(camera_id: str):
 @router.get("/cases")
 def cases():
     return mobility_service.cases()
+
+
+@router.post("/legal/acceptances", status_code=201)
+def record_policy_acceptance(payload: PolicyAcceptance):
+    try:
+        return mobility_service.record_policy_acceptance(payload.model_dump())
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from error
 
 
 @router.post("/cases")

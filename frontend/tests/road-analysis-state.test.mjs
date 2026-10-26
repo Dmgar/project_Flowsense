@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { roadCountDisplay, savedTrackScopeLabel, savedTrackScopeNote } from '../src/product/roadAnalysisState.ts';
 
 test('unconfigured road zones never present unavailable direction counts as zero', () => {
-  assert.equal(roadCountDisplay(0, false), 'Zone required');
-  assert.equal(roadCountDisplay(12, false), 'Zone required');
+  assert.equal(roadCountDisplay(0, false), '—');
+  assert.equal(roadCountDisplay(12, false), '—');
 });
 
 test('configured road zones retain measured zero and count values', () => {

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { apiUrl } from '../api/urls';
 import { Badge, Icon } from './ui';
 import { RoadZoneEditor } from './RoadZoneEditor';
-import { automaticReconnectMessage, cameraConnectionMessage, reconnectDelayMs, shouldRecoverDisconnectedWebRtcConnection, shouldWatchCameraFrames, VIDEO_NEGOTIATION_TIMEOUT_MS, WEBRTC_DISCONNECT_GRACE_MS } from './reconnectPolicy';
+import { automaticReconnectMessage, cameraConnectionMessage, MAX_AUTOMATIC_VIDEO_RETRIES, reconnectDelayMs, shouldRecoverDisconnectedWebRtcConnection, shouldWatchCameraFrames, VIDEO_NEGOTIATION_TIMEOUT_MS, WEBRTC_DISCONNECT_GRACE_MS } from './reconnectPolicy';
 import { CameraFrameHealth } from './cameraFrameHealth';
 import { cameraMediaErrorMessage, shouldRetryCameraMediaError, shouldRetryCameraRequestStatus } from './cameraMediaError';
 import { detectionPipelineStatus, formatOutsideZoneFrameSummary, formatOutsideZoneSummary, visibleClassBreakdown, visibleDetectionCount } from './detectionDiagnostics';
@@ -160,10 +160,12 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
       video.pause(); video.srcObject = null;
       peer?.close();
       if (viewerId) closeViewer(viewerId);
-      if (retry) {
-        retries.current = Math.min(retries.current + 1, 4);
+      if (retry && retries.current < MAX_AUTOMATIC_VIDEO_RETRIES) {
+        retries.current += 1;
         setState('Reconnecting');
         retryTimer = window.setTimeout(() => setRevision(value => value + 1), reconnectDelayMs(retries.current));
+      } else if (retry) {
+        setError(`${message} Automatic retries stopped after ${MAX_AUTOMATIC_VIDEO_RETRIES} attempts. Use Reconnect to try again.`);
       }
     };
     const onMediaError = () => {
@@ -337,7 +339,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
     : `No objects were detected in the last ${windowSeconds} seconds. Night glare, blur, and distant vehicles can hide traffic.`;
   return <div className="p-live-player" id={!compact ? 'camera-live-player' : undefined} ref={stage}>
     <div className="p-live-stage" ref={setVideoStage}><video ref={ref} autoPlay muted playsInline aria-label={`Continuous video from ${name}`} />
-      {covered && <div className="p-live-cover" role="status"><Icon name="camera" size={34} /><strong>{status}</strong><span>{sourceUnavailable ? providerOutOfService ? 'Caltrans currently lists this camera as out of service. Saved history and clips remain available below.' : `${sourceUnavailableMessage} Saved history and clips remain available below.` : !supported ? 'This source does not provide continuous video.' : reconnectMessage}</span></div>}
+      {covered && <div className="p-live-cover" role="status"><Icon name="camera" size={34} /><strong>{status}</strong><span>{sourceUnavailable ? providerOutOfService ? 'Caltrans currently lists this camera as out of service. Try again when its feed is available.' : sourceUnavailableMessage : !supported ? 'This source does not provide continuous video.' : reconnectMessage}</span></div>}
       <div className="p-live-badge"><Badge tone={status === 'Live' ? 'green' : 'amber'}>{status}</Badge></div>
     </div>
     {!compact && reading && <section className="p-detection-diagnostic" aria-label="Live detection pipeline" aria-live="polite">

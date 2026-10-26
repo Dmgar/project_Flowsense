@@ -90,7 +90,7 @@ test('theme persists across hydration and older preferences retain new layer def
 
 
 test('tour opening and local journey milestones preserve evidence mode, search and saved context', () => {
-  useProduct.setState({ demoIndex: -1, mode: 'observed', query: 'I-110', district: 'Long Beach', favoriteCameras: ['a'], watchCameras: ['b'], journeyEvents: [] });
+  useProduct.setState({ path: '/overview', demoIndex: -1, mode: 'observed', query: 'I-110', district: 'Long Beach', favoriteCameras: ['a'], watchCameras: ['b'], journeyEvents: [] });
   useProduct.getState().startTour();
   const state = useProduct.getState();
   assert.equal(state.demoIndex, 0);

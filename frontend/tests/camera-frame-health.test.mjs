@@ -31,6 +31,7 @@ test('a user pause does not expire the no-frame budget', () => {
 
 test('a missing WebRTC media track expires even when the video element is still paused', () => {
   const health = new CameraFrameHealth(0);
+  health.beginTrackWait(0);
   assert.equal(health.poll(0, true, false), 'wait');
   assert.equal(health.poll(7_999, true, false), 'wait');
   assert.equal(health.poll(8_000, true, false), 'no-track');
@@ -42,6 +43,7 @@ test('a missing WebRTC media track expires even when the video element is still 
 
 test('an unpaused camera view times out when no WebRTC track arrives and the video element remains paused', () => {
   const health = new CameraFrameHealth(0);
+  health.beginTrackWait(0);
   const watching = shouldWatchCameraFrames(true, false);
   assert.equal(watching, true);
   assert.equal(health.poll(0, watching, false), 'wait');
@@ -51,6 +53,7 @@ test('an unpaused camera view times out when no WebRTC track arrives and the vid
 
 test('an autoplay-blocked element still times out if the media track itself never arrived', () => {
   const health = new CameraFrameHealth(0);
+  health.beginTrackWait(0);
   const watching = shouldWatchCameraFrames(true, false, false, true);
   assert.equal(watching, true);
   assert.equal(health.poll(0, watching, false), 'wait');
@@ -65,6 +68,7 @@ test('intentional pause and background tab suspend the missing-track watchdog', 
 
 test('background time does not consume the missing-track deadline', () => {
   const health = new CameraFrameHealth(0);
+  health.beginTrackWait(0);
   assert.equal(health.poll(5_000, false, false), 'wait');
   assert.equal(health.poll(100_000, false, false), 'wait');
   assert.equal(health.poll(107_999, true, false), 'wait');

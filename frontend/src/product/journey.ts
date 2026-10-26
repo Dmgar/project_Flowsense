@@ -80,7 +80,7 @@ export function tourCaseAvailabilityMessage(availability: TourCaseAvailability):
 export const tourSteps = [
   { title: 'Start with your question', keyPoint: 'Observations use available evidence. Presentation mode uses examples.', detail: 'Choose a task to open its tools.', route: '/overview', target: '.fs-tasks', action: 'Review the task choices', fallback: 'Task choices are not available yet. Continue or explore the page.' },
   { title: 'Find the street', keyPoint: 'A nearby camera may face away from your street.', detail: 'Search, open a result, then check its video and direction.', route: '/explore', target: '.p-explorer-search', action: 'Search for a street', fallback: 'Search is unavailable. Continue to learn what to check on a camera page.' },
-  { title: 'Check video and evidence', keyPoint: 'A listing is not proof of live video. Detections still need review.', detail: 'Open the video; saved clips show earlier evidence.', route: '/cameras', target: '.p-camera-main .p-live-controls > button', action: 'Inspect camera video', fallback: 'Camera controls are unavailable. No video or analysis can be verified here.' },
+  { title: 'Check video and evidence', keyPoint: 'A listing is not proof of live video. Detections still need review.', detail: 'Watch the current camera feed and check its source status.', route: '/cameras', target: '.p-camera-main .p-live-stage', action: 'Inspect the camera feed', fallback: 'The video area is unavailable. No video or analysis can be verified here.' },
   { title: 'Check the road context', keyPoint: 'A nearby road or camera does not prove coverage.', detail: 'Review the viewing zone. Scene counts are not calibrated speed.', route: '/corridors/harbor', target: '.p-corridor-screen select[aria-label="Choose corridor"]', action: 'Review road context', fallback: 'Road context is unavailable. Continue to the review steps.' },
   { title: 'Keep a person in the loop', keyPoint: 'A model score cannot confirm an incident.', detail: 'Inspect source evidence and record your reasoning.', route: '/risk-signals', target: '.p-table-panel', action: 'Review an observation', fallback: 'Saved cases are unavailable. That does not mean the queue is empty.' },
   { title: 'Make the next check clear', keyPoint: 'Check source, freshness and review history before sharing.', detail: 'Review export readiness and note what still needs checking.', route: '/reports', target: '.p-report-readiness', action: 'Prepare a report', fallback: 'Export preparation is unavailable. No report or operational decision has been made.' },
@@ -90,8 +90,18 @@ export const tourSteps = [
   { title: 'Review pedestrian context', keyPoint: 'Missing measurements mean unknown, not zero.', detail: 'The pedestrian scenario is illustrative.', route: '/pedestrians', target: '.p-pedestrian-layout', action: 'Compare a mode or location', fallback: 'Pedestrian context is unavailable. Missing measurements are not zero demand.' },
   { title: 'Compare an emergency corridor', keyPoint: 'A suggested route does not dispatch or verify live conditions.', detail: 'Compare a primary route with its backup.', route: '/emergency-corridor', target: '.p-dispatch-form', action: 'Review route choices', fallback: 'Route inputs are unavailable. No route has been calculated or dispatched.' },
   { title: 'Set your workspace context', keyPoint: 'Keep observed data separate from presentation examples.', detail: 'Review source status and connect a source when needed.', route: '/settings', target: '.p-settings-layout', action: 'Review workspace settings', fallback: 'Settings are loading. Retry unavailable source status rather than assuming it is empty.' },
+  { title: 'Find legal information', keyPoint: 'Use the tabs to move between Terms, Privacy, Cookies and Refunds.', detail: 'The U.S. review summarizes implementation decisions.', route: '/legal/terms', target: '.p-legal-nav', action: 'Choose a legal document', fallback: 'The document links are unavailable. Use the legal links at the bottom of the workspace.' },
   { title: 'Use the evidence guide', keyPoint: 'Treat unavailable sources and measurements as unknown.', detail: 'Return here for evidence limits and review guidance.', route: '/storyboard', target: '.fs-guide-notes', action: 'Review evidence guidance', fallback: 'The evidence guide is unavailable. Return from workspace navigation when ready.' },
 ];
+
+export function tourIndexForPath(path: string): number {
+  if (path.startsWith('/cameras/')) return 2;
+  if (path.startsWith('/corridors/')) return 3;
+  if (path.startsWith('/legal/')) return 12;
+  const route = path.split('/')[1] || 'overview';
+  const matchingStep = tourSteps.findIndex(step => step.route.split('/')[1] === route);
+  return matchingStep >= 0 ? matchingStep : 0;
+}
 
 export function tourRoute(index: number, cameras: { id: string; stream_url?: string | null }[], currentPath: string, selected: string[]) {
   if (index !== 2) return tourSteps[index].route;

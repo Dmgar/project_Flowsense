@@ -440,8 +440,9 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         : 'Background monitoring is off. Video capture pauses when this page is hidden or closed.'}</p>
       {error && <div role="status" className="p-inline-error p-clip-retry"><span>{error} {data ? 'Showing the last successfully loaded history.' : ''}</span><button type="button" className="p-text-button" disabled={retryingSummary} onClick={() => { setRetryingSummary(true); setSummaryRetry(value => value + 1); }}>{retryingSummary ? 'Retrying…' : 'Retry traffic history'}</button></div>}
     </Panel>
-    <Panel title="Video evidence" action={<Badge tone={evidence?.enabled && !storageBlockReason ? 'green' : 'amber'}>{!evidence ? 'Checking storage' : !evidence.enabled ? 'MP4 capture off' : storageBlockReason ? 'Recording paused' : evidence.recording_clips ? 'Recording' : 'Armed · waiting for detections'}</Badge>}>
-      {evidence?.external_clip_storage && <p className="p-small-note">New MP4 clips are stored in the configured evidence directory. Existing clips remain available from their original location.</p>}
+    <Panel title="Live video · view only" action={<Badge tone="gray">View only</Badge>}>
+      <p className="p-small-note">Live streams display in the player above. New video files are not recorded. Existing recordings, if any, are left untouched.</p>
+      {evidence?.enabled && <div>      {evidence?.external_clip_storage && <p className="p-small-note">New MP4 clips are stored in the configured evidence directory. Existing clips remain available from their original location.</p>}
       {storageBlockReason
         ? <p className="p-small-note p-evidence-alert" role="alert">Saving video clips is paused. Live video and vehicle history continue; saved clips are safe.</p>
         : writerStatus.warning
@@ -511,6 +512,7 @@ export function TrafficSummary({ camera, activeCount, storageError = '' }: { cam
         {clipPagingAvailable && !hasOlderClips && clips.length > 0 && <p className="p-small-note">All playable clips across the selected road-zone revisions are loaded.</p>}
         {clipError && <div role="status" className="p-inline-error p-clip-retry"><span>{clipError} {clips.length > 0 ? 'Previously loaded clips remain available.' : ''}</span><button type="button" className="p-text-button" disabled={retryingClipHistory} onClick={() => { setRetryingClipHistory(true); setClipHistoryRetry(value => value + 1); }}>{retryingClipHistory ? 'Retrying…' : 'Retry clip history'}</button></div>}
       </details>
+      </div>}
     </Panel>
     <Panel title="Road conditions" action={<Badge tone={roadTone}>{roadBadge}</Badge>}>
       <div className="p-road-condition"><span>{data?.road.route || camera.name}{data?.road.direction ? ` · ${data.road.direction}bound` : ''}</span><h3>{data?.traffic_estimate.label || 'Collecting observations'}</h3><p>{data?.road.matched ? `${data.road.name} · mapped segment ${data.road.distance_m} m from camera` : data?.road.association || 'Matching this camera to the road network…'}</p>{analyzedAt && <p className="p-road-updated">Latest analyzed sample · {analyzedAt} local time</p>}</div>

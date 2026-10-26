@@ -1,4 +1,4 @@
-import { recordJourney, type JourneyEvent } from './journey.ts';
+import { recordJourney, tourIndexForPath, type JourneyEvent } from './journey.ts';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Camera, MobilityCase } from './types';
@@ -52,7 +52,7 @@ export const useProduct = create<ProductState>()(persist((set) => ({
   toggleLayer: (name) => set((state) => ({ layers: { ...state.layers, [name]: name === 'clusterCameras' ? state.layers[name] === false : !state.layers[name] } })),
   toast: '', notify: (toast) => set({ toast }), error: '', setError: (error) => set({ error }),
   journeyEvents: [], recordJourney: (event) => set(state => ({ journeyEvents: recordJourney(state.journeyEvents, event) })),
-  tourReturnFocus: null, startTour: (trigger) => set({ demoIndex: 0, tourReturnFocus: trigger ?? (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null) }),
+  tourReturnFocus: null, startTour: (trigger) => set(state => ({ demoIndex: tourIndexForPath(state.path), tourReturnFocus: trigger ?? (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null) })),
   connected: false, setConnected: (connected) => set({ connected }), demoIndex: -1, setDemoIndex: (demoIndex) => set({ demoIndex }),
   mapFocus: null, setMapFocus: (mapFocus) => set({ mapFocus }),
   favoriteCameras: [], toggleFavorite: (id) => set((state) => ({ favoriteCameras: state.favoriteCameras.includes(id) ? state.favoriteCameras.filter(key => key !== id) : [...state.favoriteCameras, id] })),

@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     VIDEO_EVIDENCE_PRUNE_WATERMARK: float = 0.85
     VIDEO_EVIDENCE_PRUNE_TARGET: float = 0.70
     VIDEO_EVIDENCE_DIR: Path | None = None
-    VIDEO_RECORD_EVIDENCE: bool = True
+    VIDEO_RECORD_EVIDENCE: bool = False
     PERCEPTION_CONFIDENCE: float = 0.45
     PERCEPTION_NMS_THRESHOLD: float = 0.5
     PERCEPTION_SKIP_FRAMES: int = 3
