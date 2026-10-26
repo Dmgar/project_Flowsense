@@ -1,5 +1,5 @@
 export function roadCountDisplay(value: number | null | undefined, directionalZoneEnabled: boolean | undefined) {
-  if (directionalZoneEnabled === false) return 'Zone required';
+  if (directionalZoneEnabled === false) return '—';
   return value ?? 0;
 }
 

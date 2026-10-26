@@ -107,8 +107,8 @@ export function CoverageDashboard() {
           <ol>{queue.slice(0, 8).map(camera => {
             const status = zoneCoverage?.find(item => item.camera_id === camera.id);
             const route = [camera.route, camera.direction && `${camera.direction}bound`].filter(Boolean).join(' · ');
-            const requirement = status?.status === 'zone_and_metadata_required' ? 'Road zone and route reference required'
-              : status?.status === 'route_metadata_required' ? 'Route reference required' : 'Inbound road zone required';
+            const requirement = status?.status === 'zone_and_metadata_required' ? 'Set inbound lane and route details'
+              : status?.status === 'route_metadata_required' ? 'Add route reference' : 'Set inbound lane and direction';
             return <li key={camera.id}><div><b>{camera.name}</b><small>{route || 'Road and direction reference needs review'}</small>
               <span>{status?.source_health?.state === 'unavailable'
                 ? `Source unavailable${status.source_health.http_status ? ` · HTTP ${status.source_health.http_status}` : ''}. Skip calibration until the feed returns.`

@@ -9,6 +9,7 @@ export class CameraFrameHealth {
   private missingTrackMs = 0;
   private idleSinceFrameMs = 0;
   private hasFrame = false;
+  private trackNegotiated = false;
   private lastWatching = true;
 
   constructor(now: number) {
@@ -49,6 +50,16 @@ export class CameraFrameHealth {
   }
 
   recordTrack(now: number) {
+    this.trackNegotiated = true;
+    this.lastTick = now;
+    this.activeWaitMs = 0;
+    this.missingTrackMs = 0;
+    this.idleSinceFrameMs = 0;
+  }
+
+  /** Start the missing-track watchdog only after WebRTC negotiation can deliver a track. */
+  beginTrackWait(now: number) {
+    this.trackNegotiated = true;
     this.lastTick = now;
     this.activeWaitMs = 0;
     this.missingTrackMs = 0;
@@ -57,7 +68,7 @@ export class CameraFrameHealth {
 
   poll(now: number, watching: boolean, trackPresent = true): 'wait' | 'no-track' | 'no-frame' | 'stalled' {
     this.advance(now, watching, trackPresent);
-    if (this.missingTrackMs >= MISSING_MEDIA_TRACK_TIMEOUT_MS) return 'no-track';
+    if (this.trackNegotiated && this.missingTrackMs >= MISSING_MEDIA_TRACK_TIMEOUT_MS) return 'no-track';
     if (!watching) return 'wait';
     if (this.hasFrame) return this.idleSinceFrameMs >= DECODED_FRAME_STALL_TIMEOUT_MS ? 'stalled' : 'wait';
     // A negotiated WebRTC track that never yields its first decoded frame is

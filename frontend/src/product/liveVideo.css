@@ -17,3 +17,33 @@
 @media(max-width:760px){.p-live-controls{gap:6px}.p-live-controls .p-button{font-size:11px;padding:8px}.p-live-controls .p-small-note{width:100%;margin-left:0}.p-live-cover{padding:16px;gap:8px}.p-live-cover strong{font-size:15px}.p-live-cover span{font-size:11px}.p-live-badge{top:8px;right:8px}.p-detection-stages{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 html[data-theme="dark"] .p-live-player{background:#222326}html[data-theme="dark"] .p-live-player:fullscreen .p-live-controls{background:#222326}.p-video-preview .p-live-player{border:0;border-radius:0}.p-video-preview .p-live-controls{padding:8px}.p-video-preview .p-live-controls .p-button{font-size:10px;padding:6px 8px}
+
+/* Give the live player a clearer action bar and a quieter, readable recovery state. */
+.p-live-player{border-color:var(--brand-border,#d8dfda);border-radius:13px;box-shadow:0 10px 28px #091b1c12}
+.p-live-stage{background:radial-gradient(ellipse at 50% 38%,#183337 0%,#101b1d 68%,#0b1214 100%)}
+.p-live-cover{background:radial-gradient(ellipse at 50% 32%,#20383b 0%,#121d20 68%,#0c1315 100%);color:#f2f3f1}
+.p-live-cover>svg{color:#68c7ce}
+.p-live-cover strong{font-size:clamp(17px,2.2vw,21px);letter-spacing:-.02em}
+.p-live-cover span{color:#c1cbcc}
+.p-live-controls{gap:9px;padding:12px 15px;background:var(--brand-surface,#fff);border-top:1px solid var(--brand-border,#d8dfda)}
+.p-live-controls>.p-button{min-height:40px;padding:0 13px;border-radius:9px;font-size:12px;font-weight:600;gap:8px;transition:background-color .16s ease,border-color .16s ease,transform .16s ease}
+.p-live-controls>.p-button:not(:disabled):hover{transform:translateY(-1px)}
+.p-live-controls>.p-button:first-child:not(:disabled){background:var(--brand-action,#00707a);border-color:var(--brand-action,#00707a);color:#fff!important}
+.p-live-controls>.p-button:first-child:disabled{background:var(--brand-selection,#edf3f3);color:var(--brand-muted,#5b6066)!important;border-color:var(--brand-border,#d8dfda)}
+.p-live-controls>.p-button:disabled{opacity:.7;cursor:not-allowed}
+.p-live-controls>.p-small-note{margin-left:auto;max-width:350px;font-size:10px;line-height:1.55;text-align:right;color:var(--brand-muted,#5b6066)}
+.p-live-player>.p-inline-error.p-live-error{display:flex;align-items:flex-start;gap:9px;margin:0 14px 14px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--brand-danger,#8a4b36) 32%,var(--brand-border,#d8dfda));border-radius:9px;background:color-mix(in srgb,var(--brand-danger,#8a4b36) 9%,var(--brand-surface,#fff));color:var(--brand-ink,#111316);font-size:11px;line-height:1.55}
+.p-live-error>svg{flex:none;margin-top:1px;color:var(--brand-danger,#8a4b36)}
+.p-live-error>span{min-width:0}
+html[data-theme="dark"] .p-live-player{background:var(--brand-surface,#1b1e20);box-shadow:0 12px 32px #0003}
+html[data-theme="dark"] .p-live-controls{background:var(--brand-surface,#1b1e20)}
+html[data-theme="dark"] .p-live-controls>.p-button:first-child:disabled{background:#263234;color:#b9c5c6!important;border-color:#475455}
+html[data-theme="dark"] .p-live-player>.p-inline-error.p-live-error{border-color:#66543b;background:#2b271f;color:#f1e4c7}
+html[data-theme="dark"] .p-live-error>svg{color:#e1bd70}
+@media(max-width:760px){.p-live-controls{gap:7px;padding:10px}.p-live-controls>.p-button{min-height:42px;padding-inline:11px;font-size:11px}.p-live-controls>.p-small-note{max-width:none;text-align:left}}
+.p-live-player[id="camera-live-player"]{scroll-margin-top:18px}
+.p-detection-stage{background:var(--brand-surface,#fff);color:var(--brand-ink,#17231c);border-radius:9px;padding:9px 11px;min-height:42px}
+.p-detection-stage strong{color:var(--brand-action,#00707a);font-size:14px}
+.p-detection-diagnostic{background:linear-gradient(110deg,color-mix(in srgb,var(--brand-action,#00707a) 7%,var(--brand-surface,#fff)),var(--brand-surface,#fff) 72%);color:var(--brand-ink,#17231c)}
+.p-detection-diagnostic-head span,.p-detection-diagnostic>p,.p-detection-label-note{color:var(--brand-muted,#5b6066)}
+.p-detection-diagnostic>.p-detection-zone-diagnostic{background:color-mix(in srgb,#c08a36 10%,var(--brand-surface,#fff));color:var(--brand-ink,#17231c)}

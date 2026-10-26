@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { apiUrl } from '../api/urls';
 import { Badge, Icon } from './ui';
 import { RoadZoneEditor } from './RoadZoneEditor';
@@ -33,6 +33,12 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
 ];
+export function cameraIceServersForHost(hostname: string): RTCIceServer[] {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const isLocalHost = host === 'localhost' || host.endsWith('.localhost')
+    || host === '::1' || /^127(?:\.\d{1,3}){3}$/.test(host);
+  return isLocalHost ? [] : DEFAULT_ICE_SERVERS;
+}
 const base = '/api/v1/mobility/video';
 class VideoRequestError extends Error {
   readonly status: number;
@@ -63,6 +69,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function LiveCameraPlayer({ cameraId, name, supported = true, providerOutOfService = false, sourceUnavailableMessage, sourceHealthTimedOut = false, onReading, compact = false, startZoneEditing = false, onZoneSaved, routeReference }: {
   cameraId: string; name: string; supported?: boolean; providerOutOfService?: boolean; sourceUnavailableMessage?: string; sourceHealthTimedOut?: boolean; onReading?: (reading: VideoReading | null) => void; compact?: boolean; startZoneEditing?: boolean; onZoneSaved?: () => void; routeReference?: string;
 }) {
+  const controlsHelpId = useId();
   const ref = useRef<HTMLVideoElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const motionTrailBuffer = useRef(new LiveTrackTrailBuffer());
@@ -172,7 +179,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
         setError(retrying ? automaticReconnectMessage(lastFailure.current) : '');
         setViewer(''); setPaused(false); clearCounts();
         if (typeof RTCPeerConnection === 'undefined') throw new Error('This browser does not support WebRTC video.');
-        peer = new RTCPeerConnection({ iceServers: DEFAULT_ICE_SERVERS });
+        peer = new RTCPeerConnection({ iceServers: cameraIceServersForHost(window.location.hostname) });
         // Bound negotiation even when ICE never emits a terminal state event.
         negotiationTimer = window.setTimeout(() => failed('Video connection timed out.'), VIDEO_NEGOTIATION_TIMEOUT_MS);
         peer.addTransceiver('video', { direction: 'recvonly' });
@@ -235,6 +242,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
         if (!active) { closeViewer(viewerId); return; }
         setViewer(viewerId);
         await peer.setRemoteDescription({ sdp: answer.sdp, type: answer.type });
+        frameHealth.beginTrackWait(performance.now());
         window.clearTimeout(negotiationTimer);
       } catch (reason) {
         if (active) failed(reason instanceof Error ? reason.message : 'Could not connect to video.',
@@ -327,7 +335,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
     : (pipeline.road_candidate_frames || 0) > 0 ? `Vehicle candidates appeared in ${pipeline.road_candidate_frames} of ${windowFrames} recent frames; tracking is checking consistent motion.`
     : (pipeline.raw_candidate_frames || 0) > 0 ? `${formatOutsideZoneFrameSummary(pipeline.outside_zone_observations ?? pipeline.outside_zone_candidates ?? pipeline.raw_candidates, pipeline.outside_zone_classes, pipeline.raw_candidate_frames)} They may be traffic on another carriageway or vehicles missed by the current road boundary. Review the dashed gold boxes in Edit road zone before changing the polygon.`
     : `No objects were detected in the last ${windowSeconds} seconds. Night glare, blur, and distant vehicles can hide traffic.`;
-  return <div className="p-live-player" ref={stage}>
+  return <div className="p-live-player" id={!compact ? 'camera-live-player' : undefined} ref={stage}>
     <div className="p-live-stage" ref={setVideoStage}><video ref={ref} autoPlay muted playsInline aria-label={`Continuous video from ${name}`} />
       {covered && <div className="p-live-cover" role="status"><Icon name="camera" size={34} /><strong>{status}</strong><span>{sourceUnavailable ? providerOutOfService ? 'Caltrans currently lists this camera as out of service. Saved history and clips remain available below.' : `${sourceUnavailableMessage} Saved history and clips remain available below.` : !supported ? 'This source does not provide continuous video.' : reconnectMessage}</span></div>}
       <div className="p-live-badge"><Badge tone={status === 'Live' ? 'green' : 'amber'}>{status}</Badge></div>
@@ -360,8 +368,8 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
     }}><Icon name={paused ? 'play' : 'pause'} />{paused ? 'Resume' : 'Pause'}</button>
       <button className="p-button" disabled={!supported} onClick={() => { intentionallyPaused.current = false; autoplayBlocked.current = false; retries.current = 0; lastFailure.current = ''; if (sourceUnavailable) setProviderOverride({ cameraId, reason: unavailableReason }); setRevision(value => value + 1); }}><Icon name="refresh" />{sourceUnavailable ? 'Try video anyway' : 'Reconnect'}</button>
       {!compact && <button className="p-button" onClick={() => void stage.current?.requestFullscreen?.().catch(() => setError('Fullscreen is unavailable in this browser.'))}><Icon name="expand" />Fullscreen</button>}
-      {!compact && <button className="p-button" disabled={state !== 'Live'} onClick={() => setEditingZone(open => !(open ?? (startZoneEditing && state === 'Live')))}>Edit road zone</button>}
-      {!compact && <span className="p-small-note">{reading ? `${reading.rendered_fps ?? reading.output_fps} ${reading.rendered_fps == null ? 'server' : 'rendered'} FPS · ${reading.inference_fps} detection updates/s${reading.detection_profile === 'low_light' ? ' · Low-light analysis' : ''}` : 'Continuous video · vehicle tracking'}</span>}
+      {!compact && <button className="p-button" disabled={state !== 'Live'} aria-describedby={state !== 'Live' ? controlsHelpId : undefined} title={state !== 'Live' ? 'Available when live video is connected' : 'Edit the camera road zone'} onClick={() => setEditingZone(open => !(open ?? (startZoneEditing && state === 'Live')))}>Edit road zone</button>}
+      {!compact && <span className="p-small-note" id={controlsHelpId}>{reading ? `${reading.rendered_fps ?? reading.output_fps} ${reading.rendered_fps == null ? 'server' : 'rendered'} FPS · ${reading.inference_fps} detection updates/s${reading.detection_profile === 'low_light' ? ' · Low-light analysis' : ''}` : 'Edit road zone unlocks after live video connects.'}</span>}
     </div>
     {reading && !compact && <details className="p-live-settings"><summary>Detection settings</summary><p className="p-small-note">Shared by all viewers of this camera.</p>
       <p className="p-small-note">Model: {reading.model || 'Configured detector'} · {reading.tracker || 'Tracker'}. {reading.analysis_zone?.enabled ? `Approaching traffic only · zone revision ${reading.analysis_zone.revision}.` : 'Full-scene analysis; configure a road zone to restrict direction.'} Specific types require repeated class evidence; uncertain objects remain “vehicle”.</p>
@@ -371,7 +379,7 @@ export function LiveCameraPlayer({ cameraId, name, supported = true, providerOut
       <label className="p-low-light-candidates"><input type="checkbox" checked={reading.settings.show_candidates} onChange={event => void changeFilter({ ...reading.settings, show_candidates: event.target.checked })} />Show repeated low-light candidates <span>Dashed amber boxes are provisional; this display setting does not change saved tracks, crossing totals or road estimates.</span></label>
       <div className="p-overlay-options">{['car', 'motorcycle', 'bus', 'truck', 'vehicle', 'bicycle', 'pedestrian', ...(reading.settings.classes.includes('rider') ? ['rider'] : [])].map(name => <label key={name}><input type="checkbox" checked={reading.settings.classes.includes(name)} onChange={event => void changeFilter({ ...reading.settings, classes: event.target.checked ? [...reading.settings.classes, name] : reading.settings.classes.filter(item => item !== name) })} />{name === 'vehicle' ? 'Uncertain vehicle type' : name === 'rider' ? 'Rider (bike or motorcycle unclear)' : name}</label>)}</div>
     </details>}
-    {error && <p className="p-inline-error" role="status">{error}</p>}
+    {error && <p className="p-inline-error p-live-error" role="status"><Icon name="alert" size={16} /><span>{error}</span></p>}
     {reading?.storage_error && <p className="p-inline-error" role="status">{reading.storage_error}</p>}
   </div>;
 }

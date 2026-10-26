@@ -48,6 +48,8 @@ html[data-theme="dark"],html[data-theme="dark"] body,html[data-theme="dark"] #ro
 body,#root { background: var(--brand-bg) !important; color: var(--brand-ink); }
 .p-platform,html[data-theme="dark"] .p-platform {
   --p-bg: var(--brand-bg);
+  --p-surface: var(--brand-surface);
+  --p-panel: var(--brand-surface);
   --p-ink: var(--brand-ink);
   --p-muted: var(--brand-muted);
   --p-border: var(--brand-border);
@@ -68,6 +70,9 @@ html[data-theme="dark"] .p-platform .p-search input::placeholder { color: var(--
 .p-platform .p-navigation nav :is(button, a):hover { transform: none; }
 .p-platform .p-brand-lockup { display: grid; gap: 5px; min-width: 0; }
 .p-platform .p-brand-lockup .fs-brand-wordmark { height: 22px; }
+.p-platform .fs-mobile-brand .fs-brand-wordmark { height: 14px; }
+.p-platform .fs-mobile-brand,
+html[data-theme="dark"] .p-platform .fs-mobile-brand { color: var(--brand-ink); }
 .p-platform :is(.p-brand small,.p-nav-note small,.p-region>span,.p-region small,.p-system-state>span>small) { color: var(--brand-muted); }
 .p-platform .p-brand small { white-space: nowrap; letter-spacing: 1.1px; font-size: 7px; }
 .p-platform .p-brand>span:last-child,.p-platform .p-brand>span:last-child>span,

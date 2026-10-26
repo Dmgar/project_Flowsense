@@ -97,6 +97,9 @@ html[data-theme="dark"] .p-platform :is(.p-connection-error,.p-video-fallback,.p
 html[data-theme="dark"] .p-platform .p-inline-error { background: #422c26; color: var(--brand-danger, #f0b9a5); }
 html[data-theme="dark"] .p-platform .p-dialog::backdrop { background: #0009; }
 html[data-theme="dark"] .p-platform .p-toast { background: #46474a; color: #eeeff2; }
+html[data-theme="dark"] .p-platform :is(.p-menu-button,.p-mobile-filter-button,.p-route-options button,.p-corridor-progress-row) { background: var(--brand-surface); border-color: var(--brand-border); color: var(--brand-ink); }
+html[data-theme="dark"] .p-platform .p-desk-recovery { background: #2b271f; border-color: #66543b; color: #f1e4c7; }
+html[data-theme="dark"] .p-platform .p-route-assessment { background: #202b27; border-color: #40514a; color: #d8e5dc; }
 .p-navigation-close { display: none; }
 @media (max-width: 760px) {
   .p-theme-toggle { width: 32px; height: 34px; }
