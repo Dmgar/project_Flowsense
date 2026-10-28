@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/product-reference/images/product-reference-01.jpeg" alt="FlowSense mobility workspace preview" width="820" />
+  <img src="docs/flowsense-overview-live.jpg" alt="Real screenshot of the FlowSense overview workspace" width="820" />
 </p>
 
 <p align="center">
