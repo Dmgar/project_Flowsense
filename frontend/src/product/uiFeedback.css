@@ -35,3 +35,4 @@
 .p-map-placeholder p { margin: 0; color: var(--brand-muted); font-size: 12px; line-height: 1.8; }
 @keyframes fs-request-progress { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .p-request-progress { animation: none; } }
+.p-icon { display: inline-block; flex: none; vertical-align: middle; overflow: visible; }

@@ -32,7 +32,15 @@ const paths: Record<string, string> = {
   bell: 'M18 8a6 6 0 00-12 0v7l-2 3h16l-2-3z M10 21h4',
   info: 'M12 2a10 10 0 100 20 10 10 0 000-20z M12 10v7 M12 6h.01',
 };
-export function Icon({ name, size = 18 }: { name: string; size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.grid} /></svg>; }
+export function Icon({ name, size = 18 }: { name: string; size?: number }) {
+  const path = paths[name];
+  if (!path) {
+    if (import.meta.env.DEV) console.error(`Unknown FlowSense icon: "${name}"`);
+    return null;
+  }
+
+  return <svg className="p-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={path} /></svg>;
+}
 export function Badge({ children, tone = 'green' }: { children: ReactNode; tone?: string }) { return <span className={`p-badge ${tone}`}><i />{children}</span>; }
 export function SeverityBadge({ value }: { value: Severity }) { return <Badge tone={value === 'high' ? 'red' : value === 'medium' ? 'amber' : 'green'}>{severityLabels[value]}</Badge>; }
 export function ReviewBadge({ value }: { value: string }) { return <Badge tone={value === 'confirmed' || value === 'resolved' ? 'green' : value === 'dismissed' ? 'gray' : 'amber'}>{statusLabels[value] || value}</Badge>; }
