@@ -1,204 +1,200 @@
-# FlowSense: City Mobility Intelligence [![Live Demo](https://img.shields.io/badge/Live_Demo-flowsense.duckdns.org-blue?logo=amazon-aws)](https://flowsense.duckdns.org) [![OpenCV 5](https://img.shields.io/badge/Computer_Vision-OpenCV_5-green?logo=opencv)](https://opencv.org/) [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-green?logo=fastapi)](https://fastapi.tiangolo.com/)
+<p align="center">
+  <img src="frontend/public/brand/imagotipo-horizontal-petrol.png" alt="FlowSense" width="360" />
+</p>
 
-> **Real-Time Computer Vision & Urban Graph Modeling for Emergency Vehicles (Ambulances & Fire Trucks)**
-> Proposal for the **OpenCV AI Competition 2026, powered by AWS**.
-> **Live Production Deployment**: [https://flowsense.duckdns.org](https://flowsense.duckdns.org)
+<h1 align="center">City mobility intelligence, grounded in road evidence</h1>
 
-FlowSense connects public camera evidence, aggregate movement observations, corridor
-analytics, pedestrian context, prioritized review and emergency route support in one
-navigable operations interface. Cameras now use continuous, annotated WebRTC video
-with vehicle tracking, rather than periodically refreshed photos. The registered
-Caltrans catalog covers seven Greater Los Angeles zones; the video-only interface
-excludes sources without a video link. Explore streets and nearby cameras, then
-watch up to four video sessions on the observation desk. Playback availability and
-frame rate depend on the provider and processing capacity.
-See [continuous video delivery and measured verification](docs/CONTINUOUS_VIDEO_DELIVERY.md).
-See [road-user detection corrections and real-class verification](docs/DETECTION_CORRECTIONS.md)
-See [detection and persistence implementation](docs/DETECTION_PERSISTENCE_PLAN.md) for saved observations, replayable video evidence and the earlier YOLO26 configuration.
-See [current approaching-road tracking and YOLOv8 / YOLO11 comparison](docs/DIRECTIONAL_TRACKING.md) for the selected YOLOv8s detector, ByteTrack, editable road zones and stable type labels.
-See [current monitoring experience and passage history](docs/MONITORING_EXPERIENCE.md) for faster road-focused inference, persistent cumulative counts, background monitoring and camera-based road conditions. This supersedes the earlier display and automatic clip-recording defaults.
-See [nighttime detection diagnosis and measured limits](docs/NIGHT_DETECTION_DIAGNOSIS.md) for the adaptive YOLO11s low-light profile, optical-flow-assisted association and the remaining missed-vehicle problem at night.
-See [the current road-domain detector and paced-video comparison](docs/ROAD_DOMAIN_TRACKING.md) for the selected BDD100K YOLO11n model, faster analysis, motion-verified continuity and reproducible annotated videos. This supersedes the earlier COCO low-light model selection.
-See [the explorer and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
-and [the regional plan](docs/REGIONAL_EXPANSION_PLAN.md) for verification and limits.
-Historical indicators used for presentation are explicitly separated from observations.
+<p align="center">
+  <strong>Explore streets · inspect public cameras · compare corridors · support human review</strong>
+</p>
 
-## Run the product on Windows
+<p align="center">
+  <a href="https://flowsense.duckdns.org"><img src="https://img.shields.io/badge/Live%20workspace-flowsense.duckdns.org-087f8c?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Open the live FlowSense workspace" /></a>
+  <img src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/FastAPI-Python-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/License-MIT-5865f2?style=for-the-badge" alt="MIT license" />
+</p>
 
-Requires Python 3.13+ and Node.js 24 with npm:
+<p align="center">
+  <img src="docs/product-reference/images/product-reference-01.jpeg" alt="FlowSense mobility workspace preview" width="820" />
+</p>
 
-```powershell
-.\scripts\run_flowsense.ps1 -Setup
-# On subsequent runs:
-.\scripts\run_flowsense.ps1
-```
+<p align="center">
+  <em>One workspace to move from a street-level question to a well-informed next check.</em>
+</p>
 
-If the system drive is low on space, new MP4 evidence can be directed to a mounted
-volume without moving or deleting existing clips. Choose a quota that fits that
-volume; the existing clips remain linked and reviewable from the same camera history:
-
-```powershell
-.\scripts\run_flowsense.ps1 -EvidenceDirectory 'E:\FlowSense\Evidence' -EvidenceMaxGigabytes 50
-```
-
-The launcher drains active evidence before refreshing an already-running API. The
-configured disk safety reserve is checked on the volume receiving new clips, while
-the total clip quota includes both existing and new evidence.
-
-Open `http://127.0.0.1:3002/overview`. The Los Angeles API uses port 8004. Camera video requires
-internet access; no Caltrans account, payment or API key is required. Sources may be
-interrupted. The launcher downloads the LA graph and ONNX model when absent.
-Run `-Setup` when upgrading an existing installation to install the new aiortc/PyAV
-video dependencies. WebRTC is configured for local use; remote deployment needs
-an appropriate ICE/STUN/TURN configuration and network validation.
-
-- [Frontend V3: complete change log and verification](docs/FLOWSENSE_FRONTEND_V3.md)
-- [Street explorer, video recovery and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
-- [Detailed implementation plan](docs/PRODUCT_IMPLEMENTATION_PLAN.md)
-- [Product delivery, verification and data boundaries](docs/PRODUCT_DELIVERY.md)
-- [Verified public camera sources](docs/PUBLIC_CAMERAS.md)
-- [Original frontend handoff](docs/product-reference/README.md)
-
-Checks: `python -m pytest -q`, `python -m scripts.verify_los_angeles_integration`,
-and, in `frontend/`, `npm test`, `npm run build` and `npm run lint`. The legacy test fixtures
-pin Manhattan independently of the profile selected by the local launcher.
+<p align="center">
+  <a href="#-what-you-can-do">Explore features</a> ·
+  <a href="#-get-started">Get started</a> ·
+  <a href="#-how-it-fits-together">Architecture</a> ·
+  <a href="#-documentation">Documentation</a>
+</p>
 
 ---
 
-## One-Line Pitch
+## ✨ What you can do
 
-**FlowSense** turns camera-derived movement observations into city mobility intelligence: visible conditions, corridor context, prioritized human review and emergency route continuity.
+FlowSense brings public camera sources, road-network context, mobility analysis and review workflows into one navigable workspace. Follow the built-in guide or jump straight to a task.
 
-For dispatch teams, FlowSense pairs each recommended corridor with a topology-based backup assessment, so an operator can see whether the alternate route depends on the same vulnerable streets. Camera-derived incident candidates can be reviewed before they affect routing, then exported as verified partner-feed events.
+| Workspace | What it helps you do |
+| --- | --- |
+| **Overview & map** | Explore the regional context, map layers, linked road segments and source locations. |
+| **Street explorer** | Search roads and cameras, compare nearby sources and check video availability. Proximity alone does not establish road coverage. |
+| **Cameras & observation desk** | Inspect public video where available and compare up to four selected feeds with their independent source times. |
+| **Corridors & hotspots** | Review road context, ranked items and the evidence behind a signal. |
+| **Risk review & reports** | Keep a human in the loop, record decisions and prepare evidence-based exports. |
+| **Emergency corridors** | Compare a selected route with a topology-based alternate and its overlap assessment. A result does not dispatch units. |
+| **Guide & settings** | Learn the workspace through a navigable 14-topic tour; adjust appearance, data mode and source context. |
 
-## Product Wedge: Dispatch Continuity
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Segoe+UI&weight=600&size=18&duration=2800&pause=900&color=68C7CE&center=true&vCenter=true&width=680&lines=Find+a+street%2C+then+inspect+its+sources;Compare+road+context+before+choosing+a+route;Keep+uncertainty+visible.+Keep+people+in+control." alt="FlowSense: discover, inspect, review" />
+</p>
 
-The target user is a municipal emergency dispatcher or traffic-management operator. FlowSense is designed to complement existing CAD and navigation tools with three connected steps: review roadway evidence, compare the primary emergency route with a lower-overlap fallback, and measure verification and clearance times. Verified events can be exported in Waze CIFS format for an agency-approved partner feed.
-
-For the Cartagena pilot, confirmed and unexpired water-depth reports remove affected road nodes from emergency route calculations. A dispatcher sees the source, reported depth, confirmation state, expiry and alternate-route continuity. Pending and synthetic demo observations never silently change a route. The default water tolerance is 0 cm for both unit types; the agency must set approved operating limits before live use. See [Cartagena pilot setup and data limits](docs/CARTAGENA_PILOT.md).
-
----
-
-## The Problem: The Golden Hour Bottleneck
-
-Emergency response systems (EMS and Fire Departments) rely heavily on historical GPS routing or static distance calculations. During medical traumas or structural fires, every second counts towards the *"Golden Hour"*. Static models fail because they cannot perceive:
-
-- Bottlenecks, gridlocks, or localized accidents occurring **in real time**.
-- Bottleneck intersections where an emergency vehicle might get trapped without shoulder space.
-- Dynamic lane clearance before the emergency vehicle arrives.
-
-The challenge is not just calculating shortest paths on OpenStreetMap, but **grounding routing algorithms with real-time perception signals from municipal traffic cameras**.
-
----
-
-## Solution Architecture
-
-FlowSense bridges computer vision perception with graph optimization in a three-tier pipeline:
+### A guided path through the workspace
 
 ```mermaid
 flowchart LR
-A[Traffic Cameras / Feeds] -->|Video Ingestion| B(OpenCV 5 Perception Engine)
-B -->|Flow & Congestion Signals| C{Dynamic Urban Graph Engine}
-D[EMS Incident Dispatch: Origin/Destination] --> C
-C -->|Dynamic Dijkstra / A* / NSGA-II| E(FastAPI + WebSockets Backend)
-E -->|Real-Time Telemetry| F[Leaflet.js Emergency Dashboard]
+    A([🧭 Ask a question]) --> B[🔎 Find a street]
+    B --> C[📹 Inspect a source]
+    C --> D[🛣️ Review road context]
+    D --> E[👤 Check and document]
+    E --> F([➡️ Choose the next check])
+    classDef start fill:#073b40,stroke:#68c7ce,color:#f2f8f8,stroke-width:2px;
+    classDef step fill:#172124,stroke:#416a70,color:#eaf4f2;
+    class A,F start;
+    class B,C,D,E step;
+    linkStyle default stroke:#68c7ce,stroke-width:2px;
 ```
 
-### 1. Perception Engine (OpenCV 5 — Core)
+## 🧩 How it fits together
 
-- **Ingestion:** Feeds from municipal/DOT traffic cameras or urban traffic datasets (UA-DETRAC, BDD100K).
-- **Detection & Tracking:** Powered by OpenCV 5's dnn module executing lightweight ONNX-exported object detection models alongside `cv2.Tracker` and optical flow estimation.
-- **Congestion & Impedance Extraction:** Aggregated vehicle counts, estimated average flow velocity, and road impedance factors per segment/intersection.
+```mermaid
+flowchart LR
+    CAM[Public camera video] --> CV[OpenCV and ONNX perception]
+    CV --> REVIEW[Evidence and human review]
+    OSM[OpenStreetMap road graph] --> ROUTE[FastAPI routing services]
+    REVIEW --> API[FastAPI mobility API]
+    ROUTE --> API
+    API --> WEB[React workspace]
+    API <--> LIVE[WebSocket telemetry]
+    LIVE <--> WEB
+    classDef source fill:#102e33,stroke:#68c7ce,color:#f1f8f8;
+    classDef service fill:#172124,stroke:#416a70,color:#edf6f0;
+    classDef ui fill:#087f8c,stroke:#68c7ce,color:#fff;
+    class CAM,OSM source;
+    class CV,REVIEW,ROUTE,API,LIVE service;
+    class WEB ui;
+```
 
-### 2. Urban Emergency Graph (osmnx + networkx)
+**Frontend:** React 19, TypeScript, Vite, Leaflet and Zustand. **Backend:** Python, FastAPI, OpenCV, ONNX Runtime and NetworkX. **Deployment:** Docker Compose with an Nginx single-page-app server and API/WebSocket proxy.
 
-- The city road network is represented as a directed graph derived from OpenStreetMap.
-- Instead of static travel times, edge weights ($W_e$) adjust dynamically based on OpenCV congestion metrics:
-  $$W_e = \text{Length} \times \left(1 + \alpha \cdot \text{CongestionFactor}\right)$$
-- Emergency routing algorithms prioritize wide avenues, clearance velocity, and safety over purely physical shortest distances.
+## 🚀 Get started
 
-### 3. Dispatch Operations Dashboard
+### Windows
 
-- **FastAPI** backend streaming recalculated routes, corridor clearance signals, and telemetry via WebSockets.
-- **Leaflet.js** web frontend displaying an interactive 'digital twin':
-  - Color-coded street congestion levels.
-  - Active emergency units tracking along dynamically re-routing green corridors.
+Requires Python 3.13+ and Node.js 24 with npm. From PowerShell at the repository root:
 
-## AWS Cloud Architecture (Scoped to Free Tier)
+```powershell
+.\scripts\run_flowsense.ps1 -Setup
+```
 
-Designed for practical, low-cost execution within AWS Free Tier limits:
+On later runs, use `scripts/run_flowsense.ps1`. Open [http://127.0.0.1:3002/overview](http://127.0.0.1:3002/overview). The launcher starts the Los Angeles API on port 8004 and the web interface on port 3002 by default.
 
-- **Development & Prototyping:** Vision inference runs locally on sampled datasets to preserve cloud resources.
-- **Stream Ingestion & Batch Store:** Amazon S3 for storing model weights, map extracts, and recorded evaluation clips.
-- **Orchestration & Backend:** FastAPI app hosted on an AWS Free Tier EC2 instance (t2.micro / t3.micro), coordinating graph state and WebSocket clients.
-- **Cost Controls:** Real-time billing alerts and usage caps enforced from day one.
+### Run the frontend on its own
 
-## Tech Stack
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
 
-| Domain | Technologies |
-| :--- | :--- |
-| **Computer Vision** | OpenCV 5 (dnn, tracking, optical flow), ONNX Runtime, YOLO-based models |
-| **Urban Graph & Routing** | osmnx, networkx, scipy |
-| **Backend & Real-Time** | Python 3.13+, FastAPI, WebSockets, Uvicorn |
-| **Frontend & GIS** | Leaflet.js, HTML5, CSS3, GeoJSON |
-| **Cloud & Deployment** | AWS (EC2, S3, IAM), Docker |
+Vite serves the frontend on port 3001 and proxies `/api` and `/ws` to `http://127.0.0.1:8002` by default. See [`frontend/README.md`](frontend/README.md) and [`frontend/.env.example`](frontend/.env.example) for API configuration.
 
-## Documentation
-
-For deep technical dives into the specific modules, check the versioned documentation:
-
-- [AWS Cloud Deployment & Operational Runbook](docs/AWS_DEPLOYMENT.md)
-- [Backend v5.0: Advanced Dispatch, Docker AWS & CI](docs/FLOWSENSE_BACKEND_V5.md)
-- [Perception Engine & Advanced Routing](docs/FLOWSENSE_PERCEPTION_AND_ROUTING_V4.md)
-- [Backend Green Wave Simulation](docs/FLOWSENSE_BACKEND_V3.md)
-- [Frontend Iteration 1](docs/FLOWSENSE_FRONTEND_V1.md)
-
-## Roadmap (Aug 26 – Oct 26)
-
-| Weeks | Phase | Core Deliverable | Status |
-| :--- | :--- | :--- | :--- |
-| 1–2 | Graph & Base Vision | Extract pilot city graph via osmnx. Implement initial vehicle detection with OpenCV 5. | ✅ Done |
-| 3–4 | Density Metrics | Build road segment impedance algorithm based on vehicle counts and flow velocity. | ✅ Done |
-| 5–6 | Emergency Routing Engine | Dynamic weight integration on networkx (A* Multi-criteria). Emergency clearance path selection. | ✅ Done |
-| 7–8 | Real-Time Dispatch Dashboard | FastAPI WebSocket pipeline connected to interactive Leaflet.js command map. | ✅ Done |
-| 9–10 | Cloud Deployment & Benchmarking | AWS EC2 production deployment, simulated response time benchmarks, and complete test suites. | ✅ Done |
-
-## Engineering Team
-
-- Dariem Garcia
-- Jesus Campo Yuunes
-- Thomas Cristhancho
-- Daniel Franco
-
-## Responsible AI & Privacy Guarantee
-
-- **Zero Surveillance:** The perception engine processes aggregate vehicle counts and flow densities only.
-- **Privacy by Design:** No facial recognition or license plate identification (ALPR) is performed or stored.
-- **Data Compliance:** Uses exclusively public research datasets (UA-DETRAC, BDD100K) and open municipal streams without expectation of personal privacy.
-
-## Getting Started
+### Docker Compose
 
 ```bash
-# Clone the repository
-git clone https://github.com/Dmgar/project_Flowsense.git
-cd project_Flowsense
-
-# Create and activate environment (Python 3.13+)
-python -m venv venv
-source venv/bin/activate # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+docker compose up --build
 ```
 
-## AWS Cloud Deployment & Production SSL
+Compose serves Nginx on ports 80 and 5173, with the FastAPI service on port 8000. See the [AWS deployment and operations guide](docs/AWS_DEPLOYMENT.md) for production configuration and TLS.
 
-FlowSense is containerized with Docker and optimized for AWS Free Tier (EC2 `t3.micro`, Amazon Linux 2023):
-- **Live URL**: [https://flowsense.duckdns.org](https://flowsense.duckdns.org)
-- **Architecture**: Multi-stage Nginx Alpine frontend (< 15 MB RAM) acting as reverse proxy for the FastAPI backend, static SPA, and real-time WebSockets (`/ws/telemetry`).
-- **SSL**: Automatic Let's Encrypt TLS certificates via Certbot (`scripts/setup_ssl.sh`).
-- **Deployment Script**: One-step automated deployment via `scripts/deploy_aws.sh` (configures swap memory, Docker buildx, and container orchestration).
+## 🛠️ Development checks
 
-## License
+Run from `frontend/`:
 
-This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+```bash
+npm test
+npm run build
+npm run lint
+```
+
+Run the Python suite from the repository root:
+
+```bash
+python -m pytest -q
+```
+
+## 🛡️ Evidence, safety & privacy
+
+- A camera appearing on a map does not prove that it sees a particular road. Check the source and viewing context.
+- Public video, saved evidence, illustrative scenarios and live telemetry have different origins; the interface labels the distinction. Presentation examples are not live traffic measurements.
+- Missing or unavailable data means **unknown**, not zero. Model detections and scores do not confirm an incident.
+- Route estimates use the available road graph and speed assumptions. An alternate-route score describes overlap and detour, not the probability of arrival.
+- FlowSense does not dispatch emergency vehicles, operate traffic signals, perform facial recognition or identify license plates.
+- Public video sources can change or become unavailable. Availability depends on providers, connectivity and processing resources.
+
+Read [product delivery and data boundaries](docs/PRODUCT_DELIVERY.md), the [public camera source notes](docs/PUBLIC_CAMERAS.md) and [privacy notice](docs/legal/PRIVACY_NOTICE.md).
+
+## 📚 Documentation
+
+<details>
+<summary><strong>Product and frontend</strong></summary>
+
+- [Frontend V3 overview](docs/FLOWSENSE_FRONTEND_V3.md)
+- [Frontend journey and 14-topic guide](docs/FRONTEND_JOURNEY.md)
+- [Frontend reliability and verification scope](docs/FRONTEND_RELIABILITY.md)
+- [Explorer and observation desk](docs/EXPLORER_AND_OBSERVATION_DESK.md)
+- [Product delivery and evidence boundaries](docs/PRODUCT_DELIVERY.md)
+- [Brand assets and visual system](docs/BRANDING.md)
+- [Product-reference guide and screenshots](docs/product-reference/README.md)
+
+</details>
+
+<details>
+<summary><strong>Video, perception and road context</strong></summary>
+
+- [Continuous video delivery and verification](docs/CONTINUOUS_VIDEO_DELIVERY.md)
+- [Road-domain tracking and model comparison](docs/ROAD_DOMAIN_TRACKING.md)
+- [Directional tracking](docs/DIRECTIONAL_TRACKING.md)
+- [Night detection diagnosis and limits](docs/NIGHT_DETECTION_DIAGNOSIS.md)
+- [Detection and persistence](docs/DETECTION_PERSISTENCE_PLAN.md)
+- [Verified public camera sources](docs/PUBLIC_CAMERAS.md)
+
+</details>
+
+<details>
+<summary><strong>Routing, deployment and pilots</strong></summary>
+
+- [Road-network tracking](docs/ROAD_DOMAIN_TRACKING.md)
+- [Regional expansion plan](docs/REGIONAL_EXPANSION_PLAN.md)
+- [Cartagena pilot](docs/CARTAGENA_PILOT.md)
+- [AWS deployment runbook](docs/AWS_DEPLOYMENT.md)
+- [Backend v5](docs/FLOWSENSE_BACKEND_V5.md)
+- [Project delivery notes](docs/PRODUCT_DELIVERY.md)
+
+</details>
+
+## 🌐 Live workspace
+
+Try [flowsense.duckdns.org](https://flowsense.duckdns.org). The live workspace depends on public source availability and its current deployment configuration; the local setup above is available for development and review.
+
+---
+
+<p align="center">
+  Built for clearer mobility decisions.<br />
+  <sub>Evidence · context · human review</sub>
+</p>
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:073b40,50:087f8c,100:68c7ce&height=100&section=footer" alt="" width="100%" />
+</p>
