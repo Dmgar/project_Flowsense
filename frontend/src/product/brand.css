@@ -66,6 +66,7 @@ html[data-theme="dark"] .p-platform .p-search input::placeholder { color: var(--
 .p-platform .p-search:focus-within { border-color: var(--brand-focus); outline: 3px solid var(--brand-focus); outline-offset: 3px; }
 .p-platform .p-search input:focus-visible { outline: 0; box-shadow: none; }
 .p-platform .p-brand-symbol,html[data-theme="dark"] .p-platform .p-brand-symbol { width: 42px; height: 42px; border-radius: 0; transform: none; background: transparent; box-shadow: none; border: 0; }
+.p-platform .p-profile > .p-icon { width: 21px; height: 21px; stroke-width: 2; }
 .p-platform .p-brand { gap: 12px; }
 .p-platform .p-navigation nav :is(button, a):hover { transform: none; }
 .p-platform .p-brand-lockup { display: grid; gap: 5px; min-width: 0; }
