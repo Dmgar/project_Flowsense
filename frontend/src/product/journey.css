@@ -363,10 +363,10 @@ html[data-theme="dark"] .fs-first-visit-close { color: #b9e6e8 !important; }
 }
 
 .fs-tasks > a { box-sizing: border-box; text-decoration: none; }
-.p-platform:has(.fs-tour-layer) { --fs-tour-reserved-space: calc(min(360px, 46dvh) + max(28px, calc(env(safe-area-inset-bottom) + 16px))); }
+.p-platform:has(.fs-tour-layer) { --fs-tour-reserved-space: calc(min(520px, 64dvh) + max(28px, calc(env(safe-area-inset-bottom) + 16px))); }
 .p-platform:has(.fs-tour-layer) .p-content { padding-bottom: var(--fs-tour-reserved-space); scroll-padding-top: 16px; scroll-padding-bottom: var(--fs-tour-reserved-space); }
-.p-platform .fs-coachmark { box-sizing: border-box; width: 400px; max-width: calc(100vw - 24px); max-height: min(360px, 46dvh); padding: 18px 20px; border-radius: 16px; transition: none; scroll-padding-block: 12px 76px; }
-.p-platform .fs-coachmark.mobile { width: calc(100% - 24px); max-height: min(360px, 46dvh); }
+.p-platform .fs-coachmark { box-sizing: border-box; width: 400px; max-width: calc(100vw - 24px); max-height: min(520px, 64dvh); padding: 18px 20px; border-radius: 16px; transition: none; scroll-padding-block: 12px 76px; }
+.p-platform .fs-coachmark.mobile { width: calc(100% - 24px); max-height: min(520px, 64dvh); }
 .p-platform .fs-coachmark h2 { font-size: 20px; margin-bottom: 8px; }
 .p-platform .fs-coachmark p { font-size: 13px; line-height: 1.65; }
 .p-platform .fs-tour-up-next { margin: 6px 0 12px; padding-bottom: 8px; }
@@ -379,6 +379,7 @@ html[data-theme="dark"] .fs-first-visit-close { color: #b9e6e8 !important; }
 .fs-coachmark-body > :is(.fs-coachmark-copy, .fs-tour-status, .fs-tour-up-next, .fs-tour-topics, .fs-tour-keyboard-help, .fs-scenario-note) { max-width: 68ch; }
 .p-platform .fs-coachmark footer, .p-platform .fs-coachmark.mobile footer { position: static; flex: none; margin: 0; padding: 10px 16px; box-shadow: none; gap: 8px; }
 @media (max-width: 1100px) { .p-platform .fs-tour-up-next { display: none; } }
+.p-platform .fs-tour-up-next { position: relative; z-index: 1; display: flex; align-items: baseline; gap: 8px; min-height: 36px; margin: 0; padding: 8px 10px; border: 1px solid #416a70; border-radius: 8px; background: #20383a; }
 .fs-coachmark-header-actions { display: flex; align-items: center; gap: 8px; }
 .p-platform .fs-coachmark [hidden] { display: none !important; }
 .p-platform .fs-tour-inspect { min-height: 40px; padding: 8px 10px; border: 1px solid #52777b; border-radius: 8px; background: #20383a; color: #b9e6e8; font-size: 11px; cursor: pointer; }
